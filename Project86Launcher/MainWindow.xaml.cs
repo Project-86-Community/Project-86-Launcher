@@ -6,9 +6,11 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-
+using Amazon.S3;
+using Amazon.S3.Model;
 using Path = System.IO.Path;
 
 namespace Project86Launcher
@@ -41,7 +43,7 @@ namespace Project86Launcher
                 _localVersion = value;
                 VersionText.Text = _localVersion.ToString();
                 _gameZip = Path.Combine(_rootPath, $"Project86-v{_localVersion}.zip");
-                _gameExe = Path.Combine(_rootPath, $"Build/Project86-v{_localVersion}/", ExeName);
+                _gameExe = Path.Combine(_rootPath, $"Build/", ExeName);
             }
         }
         private Version _remoteVersion;
@@ -52,7 +54,7 @@ namespace Project86Launcher
             set
             {
                 _gameZip = Path.Combine(_rootPath, $"Project86-v{_remoteVersion}.zip");
-                _gameExe = Path.Combine(_rootPath, $"Build/Project86-v{_remoteVersion}/", ExeName);
+                _gameExe = Path.Combine(_rootPath, $"Build/", ExeName);
             }
         }
         
@@ -167,6 +169,7 @@ namespace Project86Launcher
             DownloadGameWithWebClient();
         }
 
+        [Obsolete("Now using Amazon S3")]
         private void DownloadGameWithWebClient()
         {
             using (var client = new WebClient())
@@ -178,6 +181,7 @@ namespace Project86Launcher
             }
         }
 
+        [Obsolete("Now using Amazon S3")]
         private void ClientOnDownloadFileCompleted(object? sender, AsyncCompletedEventArgs e)
         {
             LauncherStatus status;
@@ -196,9 +200,6 @@ namespace Project86Launcher
             }
             Status = LauncherStatus.Ready;
             ZipFile.ExtractToDirectory(_gameZip, _gamePath,  Encoding.UTF8, true); 
-            var oldFolder = Path.Combine(_gamePath, $"Project86-v{_localVersion}");
-            if (Directory.Exists(oldFolder))
-                Directory.Delete(oldFolder);
             File.Delete(_gameZip);
             File.WriteAllText(_versionFile, _remoteVersion.ToString());
             
@@ -210,6 +211,14 @@ namespace Project86Launcher
         {
             Application.Current.Dispatcher.Invoke(() => PlayButton.Content = _buttonContent + $" ({e.ProgressPercentage}%)");
         }
+        
+        private void OnDownloadProgress(ulong downloaded, ulong total)
+        {
+            var downloadMb = downloaded / 1024f / 1024f;
+            var totalMb = total / 1024f / 1024f;
+            Application.Current.Dispatcher.Invoke(() => PlayButton.Content = _buttonContent + $" {downloadMb:F0}/{totalMb:F0}mb ({(int)(downloaded / (float)total * 100)}%)");
+        }
+        
 
         /// <summary>
         /// A temporary function to download and extract the game data.
@@ -240,12 +249,39 @@ namespace Project86Launcher
                 Application.Current.Dispatcher.Invoke(() => Status = status);
             });
         }
+        
+        
+        
+
+
+
 
         private void DownloadUpdate()
         {
+            
             Status = LauncherStatus.DownloadingUpdate;
-            DownloadGameWithWebClient();
-            //FetchingAndExtractingGameData();
+            Debug.WriteLine("Downloading checksum file.");
+            var checksumPath = Task.Run(() => Checksum.DownloadChecksum(_rootPath, _remoteVersion.ToString()));
+            checksumPath.ContinueWith((task) =>
+            {
+
+                Debug.WriteLine("Checksum file downloaded.");
+                // @"F:\CheckSumCreator\ChecksumCreator\ChecksumCreator\bin\Debug\net7.0\checksum.txt"
+                Checksum checksum = new Checksum(_gamePath, task.Result, _remoteVersion.ToString());
+                checksum.DownloadProgress += OnDownloadProgress;
+                checksum.CheckAsync().ContinueWith(
+                    delegate
+                    {
+                        Debug.WriteLine("Checksum done.");
+                        Status = LauncherStatus.Ready;
+                        checksum.DownloadProgress -= OnDownloadProgress;
+                        File.WriteAllText(_versionFile, _remoteVersion.ToString());
+                        Application.Current.Dispatcher.Invoke(() => LocalVersion = _remoteVersion);
+                    });
+
+                //DownloadGameWithWebClient();
+                //FetchingAndExtractingGameData();
+            });
         }
     }
 

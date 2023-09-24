@@ -15,6 +15,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Amazon.CDK.AWS.S3" Version="1.204.0" />
+      <PackageReference Include="AWSSDK.S3" Version="3.7.204" />
+      <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.201.39" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     </ItemGroup>
 
