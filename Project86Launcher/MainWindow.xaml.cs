@@ -91,12 +91,16 @@ namespace Project86Launcher
         public MainWindow()
         {
             InitializeComponent();
-            _rootPath = Directory.GetCurrentDirectory();
+            _rootPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var path = Directory.CreateDirectory(Path.Combine(_rootPath, "Project-86-Community", "Project-86-Launcher"));
+            _rootPath = path.FullName;
             _versionFile = Path.Combine(_rootPath, "version.txt");
             
             
             _gamePath = Path.Combine(_rootPath, $"Build/");
             //File.WriteAllText(_versionFile, "0.0.0-alpha"); // To force download last version
+            if (!Directory.Exists(_gamePath))
+                Directory.CreateDirectory(_gamePath);
 
         }
 
@@ -216,7 +220,27 @@ namespace Project86Launcher
         {
             var downloadMb = downloaded / 1024f / 1024f;
             var totalMb = total / 1024f / 1024f;
-            Application.Current.Dispatcher.Invoke(() => PlayButton.Content = _buttonContent + $" {downloadMb:F0}/{totalMb:F0}mb ({(int)(downloaded / (float)total * 100)}%)");
+            
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                DownloadProgressBar.Value = (downloadMb / totalMb) * 100;
+
+                var downloadS = downloadMb > 1000 ? (downloadMb / 1024).ToString("F1") + "Gb" : downloadMb.ToString("F0") + "mb";
+                var totalS = totalMb > 1000 ? (totalMb / 1024).ToString("F1") + "Gb" : totalMb.ToString("F0") + "mb";
+                PlayButton.Content = _buttonContent +
+                                            $" {downloadS}/{totalS} ({(int)(downloaded / (float)total * 100)}%)";
+            });
+        }
+
+        private void OnChecksumProgress(object sender, (float current, float total) progress)
+        {
+
+            Application.Current.Dispatcher.Invoke(() =>
+                {
+                    PlayButton.Content = "Checking Files Integrity " + (progress.current / progress.total * 100).ToString("F0") + "/100%";
+                    DownloadProgressBar.Value = progress.current / progress.total * 100;
+                 
+                });
         }
         
 
@@ -269,6 +293,7 @@ namespace Project86Launcher
                 // @"F:\CheckSumCreator\ChecksumCreator\ChecksumCreator\bin\Debug\net7.0\checksum.txt"
                 Checksum checksum = new Checksum(_gamePath, task.Result, _remoteVersion.ToString());
                 checksum.DownloadProgress += OnDownloadProgress;
+                checksum.ChecksumProgress += OnChecksumProgress;
                 checksum.CheckAsync().ContinueWith(
                     delegate
                     {

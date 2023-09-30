@@ -2,11 +2,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
-using Amazon.S3;
 
 namespace Project86Launcher;
 
@@ -37,7 +35,8 @@ public class Checksum
     private MethodType _methodType = MethodType.Parallel;
     
     public event DownloadProgressHandler DownloadProgress;
-    
+
+    public event EventHandler<(float current, float complete)> ChecksumProgress;
 
     public Checksum(string root, string remoteChecksumPath, string remoteVersion)
     {
@@ -52,6 +51,7 @@ public class Checksum
     }
     public void Check(MethodType methodType = MethodType.Parallel)
     {
+        int linesCount = File.ReadAllLines(_remoteChecksumPath).Length;
         var streamReader = new StreamReader(_remoteChecksumPath);
         _methodType = methodType;
         
@@ -74,8 +74,10 @@ public class Checksum
                 HeaderGatherFiles(_remoteVersion);
         }
 
+        int count = 0;
         while (!streamReader.EndOfStream)
         {
+            ChecksumProgress?.Invoke(this, (count, linesCount));
             var line = streamReader.ReadLine()!;
             var split = line.Split(LineSeparator);
             
@@ -91,6 +93,8 @@ public class Checksum
                 handler(locaPpath, size);
             }
         }
+        ChecksumProgress?.Invoke(this, (count, linesCount));
+
         if (methodType == MethodType.Parallel)
         {
             EndGatherFiles();
@@ -102,7 +106,8 @@ public class Checksum
     {
         if (!File.Exists(GatherPath))
         {
-            _gatherWriter = new StreamWriter(GatherPath);
+
+            _gatherWriter = new StreamWriter(GatherPath, false) ;
             return true;
         }
 

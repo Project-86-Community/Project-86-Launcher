@@ -7,11 +7,15 @@
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen"
         ContentRendered="MainWindow_OnContentRendered"
-        Title="Launcher" Height="576" Width="1080">
+        Title="Project-86" Height="576" Width="1080"
+        >
     <Grid>
         <Image Stretch="UniformToFill" Source="images/temporaryImage.png"/>
-        <TextBlock Name="VersionText" VerticalAlignment="Bottom" HorizontalAlignment="Right" FontSize="20" Foreground="White" Margin="0, 0, 5, 0"></TextBlock>
+        <TextBlock Name="VersionText" VerticalAlignment="Bottom" HorizontalAlignment="Right" FontSize="20" Foreground="White" Margin="0,0,5,10" Text="v0.5.0-alpha"></TextBlock>
         <Button Name="PlayButton" Content="Checking for updates" Click="PlayButton_OnClick" Height="60" FontSize="28" FontWeight="Bold" Background="MediumPurple" Foreground="#DDFFFFFF" Padding="5, 0, 5, 0" Margin="0, 0, 0, 15" VerticalAlignment="Bottom" HorizontalAlignment="Center"></Button>
-        
+        <Button Name="SettingsButton" Margin="1028,10,5,508" Background="#00DDDDDD" BorderBrush="#01707070">
+            <Image Source="images/settings_icon.png"/>
+        </Button>
+        <ProgressBar x:Name="DownloadProgressBar" Background="#CC333333" Foreground="MediumPurple" Width="1080" Height="10" VerticalAlignment="Bottom" BorderBrush="#00BCBCBC"/>
     </Grid>
 </Window>
