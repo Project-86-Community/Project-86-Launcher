@@ -9,10 +9,8 @@
 
     <ItemGroup>
       <None Remove="images\temporaryImage.png" />
-      <Resource Include="images\temporaryImage.png">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Resource>
-		<Resource Include="images/settings_icon.png">
+      
+		<Resource Include="images/*.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Resource>
     </ItemGroup>

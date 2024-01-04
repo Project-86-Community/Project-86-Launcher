@@ -2,7 +2,9 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon;
 using Amazon.Runtime;
+using Amazon.Runtime.Endpoints;
 using Amazon.S3;
 using Amazon.S3.Model;
 
@@ -10,13 +12,19 @@ namespace Project86Launcher;
 
 public static class AwsAPI
 {
+    
+    const string BucketName = "project-86";
     private static IAmazonS3 _client;
     
     public static event EventHandler<WriteObjectProgressArgs> WriteObjectProgressEvent; 
 
     static AwsAPI()
     {
-        _client = new AmazonS3Client(Amazon.RegionEndpoint.EUWest3);
+        var config = new AmazonS3Config
+        {
+            ServiceURL = "https://s3.leviia.com",
+        };
+        _client = new AmazonS3Client(Settings.PublicKey, Settings.PrivateKey ,config);
     }
 
     /// <summary>

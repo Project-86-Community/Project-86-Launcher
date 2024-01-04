@@ -126,7 +126,7 @@ namespace Project86Launcher
                 CheckForUpdates();
         }
 
-        private void CheckForUpdates()
+        private void CheckForUpdates(bool force = false)
         {
             if (File.Exists(_versionFile))
             {
@@ -149,7 +149,9 @@ namespace Project86Launcher
                 _remoteVersion = new Version(response.tag_name, true);
                 Debug.WriteLine("Got latest release.");
 
-                if (LocalVersion != _remoteVersion)
+                if (LocalVersion == Version.Zero)
+                    DownloadGame();
+                else if (LocalVersion != _remoteVersion || force)
                 {
                     DownloadUpdate();
                 }
@@ -307,6 +309,50 @@ namespace Project86Launcher
                 //DownloadGameWithWebClient();
                 //FetchingAndExtractingGameData();
             });
+        }
+
+        // repair button
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            string gather_path = Path.Combine(_gamePath, "gather");
+            File.Delete(gather_path);
+                
+            // not the zero but something to re-trigger the check
+            CheckForUpdates(true);
+        }
+
+        private void OpenFolder_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("explorer.exe", _rootPath + "\\");
+        }
+
+        private void DeleteAll_Click(object sender, RoutedEventArgs e)
+        {
+            if (MessageBox.Show("This operation will delete all the game files.", "Delete All Files", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
+            {
+                Directory.Delete(_gamePath, true);
+                File.Delete(Path.Combine(_rootPath, "version.txt"));
+                LocalVersion = Version.Zero;
+            }
+        }
+
+        private void DiscordButton_Click(object sender, RoutedEventArgs e)
+        {
+            const string discordURL = "https://discord.gg/JGP3MUygQu";
+
+            Process.Start("explorer", discordURL);
+        }
+
+        private void TwitterButton_Click(object sender, RoutedEventArgs e)
+        {
+            const string twitterURL = "https://x.com/86UnknownGlory";
+            Process.Start("explorer", twitterURL);
+        }
+
+        private void GithubButton_Click(object sender, RoutedEventArgs e)
+        {
+            const string githubURL = "https://github.com/Taliayaya/Project-86";
+            Process.Start("explorer", githubURL);
         }
     }
 

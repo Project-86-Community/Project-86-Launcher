@@ -92,6 +92,7 @@ public class Checksum
             {
                 handler(locaPpath, size);
             }
+            count++;
         }
         ChecksumProgress?.Invoke(this, (count, linesCount));
 
@@ -191,7 +192,7 @@ public class Checksum
         Debug.WriteLine($"Downloading {path}");
         var folderName = $"Project86-v{_remoteVersion}/";
         var sanitizePath = path.Replace('\\', '/');
-        var request = AwsAPI.DownloadObjectFromBucketAsync("project-86-europe", $"{folderName}{sanitizePath}",
+        var request = AwsAPI.DownloadObjectFromBucketAsync("project-86", $"{folderName}{sanitizePath}",
             _root, folderName);
         request.Wait();
         if (!request.Result)
@@ -235,7 +236,7 @@ public class Checksum
     public static string DownloadChecksum(string path, string version)
     {
         var folderName = $"Project86-v{version}/";
-        var request = AwsAPI.DownloadObjectFromBucketAsync("project-86-europe", $"{folderName}checksum.txt",
+        var request = AwsAPI.DownloadObjectFromBucketAsync("project-86", $"{folderName}checksum.txt",
             path, folderName);
         request.Wait();
         if (!request.Result)
