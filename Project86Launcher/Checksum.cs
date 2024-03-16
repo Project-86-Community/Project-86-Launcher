@@ -2,9 +2,12 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
+using Amazon.Runtime.Internal;
+using Amazon.S3;
 
 namespace Project86Launcher;
 
@@ -192,7 +195,7 @@ public class Checksum
         Debug.WriteLine($"Downloading {path}");
         var folderName = $"Project86-v{_remoteVersion}/";
         var sanitizePath = path.Replace('\\', '/');
-        var request = AwsAPI.DownloadObjectFromBucketAsync("project-86", $"{folderName}{sanitizePath}",
+        var request = AwsAPI.DownloadObjectFromBucketAsync(AwsAPI.BucketName, $"{folderName}{sanitizePath}",
             _root, folderName);
         request.Wait();
         if (!request.Result)
@@ -226,7 +229,7 @@ public class Checksum
         var hash = sha256.ComputeHash(stream);
         return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
     }
-    
+
     /// <summary>
     /// Downloads the checksum file from S3
     /// </summary>
@@ -235,13 +238,24 @@ public class Checksum
     /// <returns>The path of the download file</returns>
     public static string DownloadChecksum(string path, string version)
     {
-        var folderName = $"Project86-v{version}/";
-        var request = AwsAPI.DownloadObjectFromBucketAsync("project-86", $"{folderName}checksum.txt",
-            path, folderName);
-        request.Wait();
-        if (!request.Result)
-            MessageBox.Show($"Failed to download {path} from S3.", "Download Error", MessageBoxButton.OK,
-                MessageBoxImage.Error);
+        var folderName = $"Project-86-v{version}/";
+
+        try
+
+        {
+            var request = AwsAPI.DownloadObjectFromBucketAsync(AwsAPI.BucketName, $"{folderName}checksum.txt",
+                path, folderName);
+            if (!request.Result)
+                MessageBox.Show($"Failed to download {path} from S3.", "Download Error", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            request.Wait();
+        }
+        catch (AggregateException e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+
         return Path.Combine(path, "checksum.txt");
     }
 

@@ -13,10 +13,10 @@ namespace Project86Launcher;
 public static class AwsAPI
 {
     
-    const string BucketName = "project-86";
+    public const string BucketName = "project-86-eu";
     private static IAmazonS3 _client;
     
-    public static event EventHandler<WriteObjectProgressArgs> WriteObjectProgressEvent; 
+    public static event EventHandler<WriteObjectProgressArgs>? WriteObjectProgressEvent; 
 
     static AwsAPI()
     {
