@@ -148,6 +148,7 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 				}
 			}
 
+			s.toggleButton.SetValue(false)
 			content.Mgdata.DeleteObject("darkmode")
 			content.Mgdata.DeleteObject("game")
 			content.Mgdata.DeleteObject("changelog")
