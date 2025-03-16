@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -185,6 +186,8 @@ func (h *Home) gamePlay() {
 		h.err = err
 		return
 	}
+
+	os.Exit(1)
 }
 
 func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
