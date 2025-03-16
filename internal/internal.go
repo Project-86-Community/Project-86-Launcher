@@ -83,7 +83,7 @@ func OpenFileManager(path string) error {
 
 	switch runtime.GOOS {
 	case "windows":
-		cmd = exec.Command("explorer", path)
+		cmd = exec.Command("start", path)
 	case "darwin":
 		cmd = exec.Command("open", path)
 	case "linux":
