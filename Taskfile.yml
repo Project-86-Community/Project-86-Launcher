@@ -1,0 +1,10 @@
+version: '3'
+
+tasks:
+  run:
+    cmds:
+      - go run ./cmd/eightysix
+
+  build:
+    cmds:
+      - go build -o ./bin/ ./cmd/eightysix
