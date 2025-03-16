@@ -122,7 +122,12 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 			folderPath := content.Mgdata.ObjectPropPath("darkmode", "darkmode.data")
 			if strings.Contains(folderPath, "darkmode/darkmode.data") {
 				folderPath = strings.TrimSuffix(folderPath, "darkmode/darkmode.data")
-				internal.OpenFileManager(folderPath)
+				go func() {
+					err := internal.OpenFileManager(folderPath)
+					if err != nil {
+						fmt.Println(err)
+					}
+				}()
 			}
 		}
 	})
