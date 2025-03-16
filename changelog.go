@@ -24,7 +24,6 @@ import (
 	"eightysix/content"
 	"eightysix/internal"
 	"encoding/json"
-	"fmt"
 	"image"
 	"time"
 
@@ -35,6 +34,8 @@ import (
 
 type Changelog struct {
 	guigui.DefaultWidget
+
+	changelogPanel basicwidget.ScrollablePanel
 
 	vLayout         internal.VerticalLayout
 	changelogText   basicwidget.Text
@@ -118,13 +119,26 @@ func (c *Changelog) Layout(context *guigui.Context, appender *guigui.ChildWidget
 	w, _ := c.Size(context)
 	pt := guigui.Position(c).Add(image.Pt(int(0.5*u), int(0.5*u)))
 
+	_, changelogTextHeight := c.changelogText.Size(context)
+	c.changelogPanel.SetSize(context, w-int(2*u), changelogTextHeight+int(2*u))
+
+	c.changelogPanel.SetContent(func(context *guigui.Context, childAppender *basicwidget.ContainerChildWidgetAppender, offsetX, offsetY float64) {
+		p := guigui.Position(&c.changelogPanel).Add(image.Pt(int(offsetX), int(offsetY)))
+
+		guigui.SetPosition(&c.changelogText, image.Pt(p.X+int(u), p.Y+int(u)))
+		childAppender.AppendChildWidget(&c.changelogText)
+	})
+
+	c.changelogPanel.SetPadding(0, int(0.5*u))
+	guigui.SetPosition(&c.changelogPanel, guigui.Position(c).Add(image.Pt(0, int(2*u))))
+
 	c.vLayout.SetHorizontalAlign(internal.HorizontalAlignCenter)
 
 	c.vLayout.SetWidth(context, w-int(1*u))
 	guigui.SetPosition(&c.vLayout, pt)
 
 	c.vLayout.SetItems([]*internal.LayoutItem{
-		{Widget: &c.changelogText},
+		{Widget: &c.changelogPanel},
 		{Widget: &c.changelogButton},
 	})
 	appender.AppendChildWidget(&c.vLayout)
@@ -132,10 +146,8 @@ func (c *Changelog) Layout(context *guigui.Context, appender *guigui.ChildWidget
 
 func (c *Changelog) Update(context *guigui.Context) error {
 	if c.err != nil {
-		fmt.Println(c.err)
 		return c.err
 	}
-
 	return nil
 }
 

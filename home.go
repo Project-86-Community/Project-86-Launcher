@@ -243,10 +243,6 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		if content.IsInternet {
 			gameFileData := content.GameFile{}
 			h.requestGame(&gameFileData)
-
-			h.gameButton.SetText("Install")
-			guigui.Enable(&h.gameButton)
-			h.gameStatus = "install"
 		} else {
 			h.gameButton.SetText("NO INTERNET")
 			guigui.Disable(&h.gameButton)
@@ -280,7 +276,7 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	h.titleText.SetText("Welcome to Project 86")
 	h.titleText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 
-	h.gameButton.SetWidth(200)
+	h.gameButton.SetWidth(240)
 
 	h.websiteButton.SetText("Website")
 	h.websiteButton.SetWidth(110)
