@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"image"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/hajimehoshi/guigui"
@@ -36,6 +37,8 @@ import (
 
 type Home struct {
 	guigui.DefaultWidget
+
+	initOnce sync.Once
 
 	gameStatus string
 	gamePanel  basicwidget.ScrollablePanel
@@ -265,6 +268,11 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 			guigui.Disable(&h.gameButton)
 		}
 	}
+
+	h.initOnce.Do(func() {
+		gameFileData := &content.GameFile{}
+		h.requestUpdate(gameFileData)
+	})
 
 	u := float64(basicwidget.UnitSize(context))
 	w, _ := h.Size(context)
