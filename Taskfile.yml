@@ -8,3 +8,7 @@ tasks:
   build:
     cmds:
       - go build -o ./bin/ ./cmd/eightysix
+
+  build:windows:
+    cmds:
+      - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -o ./bin/ ./cmd/eightysix/
