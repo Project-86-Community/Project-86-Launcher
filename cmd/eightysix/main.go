@@ -23,6 +23,7 @@ package main
 import (
 	"eightysix"
 	"eightysix/content"
+	"eightysix/content/icon"
 	"eightysix/internal"
 	"fmt"
 	"os"
@@ -135,6 +136,12 @@ func main() {
 	}
 	content.Mgdata = m
 
+	iconImages, err := icon.GetIconImages()
+	if err != nil {
+		panic(err)
+	}
+
+	ebiten.SetWindowIcon(iconImages)
 	op := &guigui.RunOptions{
 		Title:           "Project 86 Launcher",
 		WindowMinWidth:  500,
