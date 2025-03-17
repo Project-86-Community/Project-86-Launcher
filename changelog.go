@@ -120,7 +120,7 @@ func (c *Changelog) Layout(context *guigui.Context, appender *guigui.ChildWidget
 	pt := guigui.Position(c).Add(image.Pt(int(0.5*u), int(0.5*u)))
 
 	_, changelogTextHeight := c.changelogText.Size(context)
-	c.changelogPanel.SetSize(context, w-int(2*u), changelogTextHeight+int(2*u))
+	c.changelogPanel.SetSize(context, w, changelogTextHeight+int(2*u))
 
 	c.changelogPanel.SetContent(func(context *guigui.Context, childAppender *basicwidget.ContainerChildWidgetAppender, offsetX, offsetY float64) {
 		p := guigui.Position(&c.changelogPanel).Add(image.Pt(int(offsetX), int(offsetY)))
@@ -129,7 +129,7 @@ func (c *Changelog) Layout(context *guigui.Context, appender *guigui.ChildWidget
 		childAppender.AppendChildWidget(&c.changelogText)
 	})
 
-	c.changelogPanel.SetPadding(0, int(0.5*u))
+	c.changelogPanel.SetPadding(int(2*u), 0)
 	guigui.SetPosition(&c.changelogPanel, guigui.Position(c).Add(image.Pt(0, int(2*u))))
 
 	c.vLayout.SetHorizontalAlign(internal.HorizontalAlignCenter)
