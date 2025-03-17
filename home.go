@@ -233,7 +233,6 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 
 		if content.IsInternet {
 			if time.Since(gameFileData.Timestamp) > gameFileData.ExpiresIn {
-				fmt.Println("OUTDATED")
 				h.requestUpdate(gameFileData)
 			}
 			if content.UpdateGame {
