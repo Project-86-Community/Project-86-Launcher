@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"image"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -46,6 +45,7 @@ type Home struct {
 	banner        basicwidget.Image
 	titleText     basicwidget.Text
 	form          basicwidget.Form
+	gameInfoText  basicwidget.Text
 	gameButton    basicwidget.TextButton
 	websiteButton basicwidget.TextButton
 	githubButton  basicwidget.TextButton
@@ -58,11 +58,11 @@ type Home struct {
 func (h *Home) requestGame(gameFileData *content.GameFile) {
 	release, _, err := content.GithubClient.Repositories.GetLatestRelease(content.GithubContext, content.RepoOwner, content.RepoName)
 	if err != nil {
-		h.gameButton.SetText(err.Error())
+		h.gameInfoText.SetText(err.Error())
 		guigui.Disable(&h.gameButton)
 	} else {
 		if len(release.Assets) == 0 {
-			h.gameButton.SetText(err.Error())
+			h.gameInfoText.SetText(err.Error())
 			guigui.Disable(&h.gameButton)
 		} else {
 			*gameFileData = content.GameFile{
@@ -93,11 +93,11 @@ func (h *Home) requestGame(gameFileData *content.GameFile) {
 func (h *Home) requestUpdate(newGameFileData *content.GameFile) {
 	release, _, err := content.GithubClient.Repositories.GetLatestRelease(content.GithubContext, content.RepoOwner, content.RepoName)
 	if err != nil {
-		h.gameButton.SetText(err.Error())
+		h.gameInfoText.SetText(err.Error())
 		guigui.Disable(&h.gameButton)
 	} else {
 		if len(release.Assets) == 0 {
-			h.gameButton.SetText(err.Error())
+			h.gameInfoText.SetText(err.Error())
 			guigui.Disable(&h.gameButton)
 		} else {
 			*newGameFileData = content.GameFile{
@@ -153,9 +153,7 @@ func (h *Home) gameInstall() {
 		}
 
 		folderPath := content.Mgdata.ObjectPropPath("darkmode", "darkmode.data")
-		if strings.Contains(folderPath, "darkmode/darkmode.data") {
-			folderPath = strings.TrimSuffix(folderPath, "darkmode/darkmode.data")
-		}
+		folderPath = internal.TrimDarkModePath(folderPath)
 
 		go func() {
 			err = internal.DownloadFile(gameFileData.URL, folderPath+"game.zip")
@@ -171,9 +169,7 @@ func (h *Home) gameInstall() {
 
 func (h *Home) gamePlay() {
 	folderPath := content.Mgdata.ObjectPropPath("darkmode", "darkmode.data")
-	if strings.Contains(folderPath, "darkmode/darkmode.data") {
-		folderPath = strings.TrimSuffix(folderPath, "darkmode/darkmode.data")
-	}
+	folderPath = internal.TrimDarkModePath(folderPath)
 
 	exePath, err := internal.FindExecutable(folderPath+"run", "Project-86.exe")
 	if err != nil {
@@ -197,6 +193,7 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		return
 	}
 	h.banner.SetImage(img)
+	h.gameInfoText.SetText("")
 
 	if content.Mgdata.ObjectPropExists("game", "game.json") {
 		gameFileJSON, err := content.Mgdata.LoadObjectProp("game", "game.json")
@@ -212,9 +209,8 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		}
 
 		folderPath := content.Mgdata.ObjectPropPath("darkmode", "darkmode.data")
-		if strings.Contains(folderPath, "darkmode/darkmode.data") {
-			folderPath = strings.TrimSuffix(folderPath, "darkmode/darkmode.data")
-		}
+		folderPath = internal.TrimDarkModePath(folderPath)
+
 		if internal.FolderExists(folderPath + "run") {
 			h.gameButton.SetText("Play")
 			guigui.Enable(&h.gameButton)
@@ -235,7 +231,12 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 				h.gameStatus = "update"
 			}
 			if content.DownloadStatus != -1 {
-				h.gameButton.SetText(fmt.Sprintf(" Downloading... %.1f%% - ETA: %s ", content.DownloadStatus, content.DownloadETA))
+				if content.DownloadStatus >= 99.99 {
+					h.gameInfoText.SetText("Extracting zip file...")
+				} else {
+					h.gameInfoText.SetText(fmt.Sprintf("%.1f%% - ETA: %s", content.DownloadStatus, content.DownloadETA))
+				}
+				h.gameButton.SetText("Downloading...")
 				guigui.Disable(&h.gameButton)
 			}
 		}
@@ -314,6 +315,7 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	h.vLayout.SetItems([]*internal.LayoutItem{
 		{Widget: &h.banner},
 		{Widget: &h.titleText},
+		{Widget: &h.gameInfoText},
 		{Widget: &h.gameButton},
 		{Widget: &h.form},
 	})

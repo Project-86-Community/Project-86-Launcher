@@ -27,7 +27,6 @@ import (
 	"image"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -120,21 +119,20 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 	s.openButton.SetOnDown(func() {
 		if content.Mgdata.ObjectPropExists("darkmode", "darkmode.data") {
 			folderPath := content.Mgdata.ObjectPropPath("darkmode", "darkmode.data")
-			if strings.Contains(folderPath, "darkmode/darkmode.data") {
-				folderPath = strings.TrimSuffix(folderPath, "darkmode/darkmode.data")
-				go func() {
-					err := internal.OpenFileManager(folderPath)
-					if err != nil {
-						fmt.Println(err)
-					}
-				}()
-			}
+			folderPath = internal.TrimDarkModePath(folderPath)
+
+			go func() {
+				err := internal.OpenFileManager(folderPath)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}()
 		}
 	})
 	s.deleteButton.SetOnDown(func() {
 		if content.Mgdata.ObjectPropExists("darkmode", "darkmode.data") {
 			folderPath := content.Mgdata.ObjectPropPath("darkmode", "darkmode.data")
-			folderPath = strings.TrimSuffix(folderPath, "darkmode/darkmode.data")
+			folderPath = internal.TrimDarkModePath(folderPath)
 
 			_, err := os.Stat(folderPath + "run")
 			if err == nil || !os.IsNotExist(err) {
