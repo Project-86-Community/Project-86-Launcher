@@ -92,25 +92,6 @@ func OpenFileManager(path string) error {
 	return open.Run(path)
 }
 
-func AddLineBreaks(input string, wordsPerLine int) string {
-	words := strings.Fields(input)
-	var result strings.Builder
-
-	for i, word := range words {
-		result.WriteString(word)
-
-		if i < len(words)-1 {
-			if (i+1)%wordsPerLine == 0 {
-				result.WriteString("\n")
-			} else {
-				result.WriteString(" ")
-			}
-		}
-	}
-
-	return result.String()
-}
-
 func FindExecutable(rootDir, targetFile string) (string, error) {
 	var foundPath string
 
