@@ -124,23 +124,26 @@ func (h *Home) requestUpdate(newGameFileData *content.GameFile) {
 				return
 			}
 
+			// Check if new
 			isNewer, err := internal.CheckNewerVersion(oldGameFileData.Tag, newGameFileData.Tag)
 			if err != nil {
 				h.err = err
 				return
 			}
+
+			// FIX update spam
+			cachedJSON, err := json.Marshal(newGameFileData)
+			if err != nil {
+				h.err = err
+				return
+			}
+			if err := content.Mgdata.SaveObjectProp("game", "game.json", cachedJSON); err != nil {
+				h.err = err
+				return
+			}
+
 			if isNewer {
 				content.UpdateGame = true
-
-				cachedJSON, err := json.Marshal(newGameFileData)
-				if err != nil {
-					h.err = err
-					return
-				}
-				if err := content.Mgdata.SaveObjectProp("game", "game.json", cachedJSON); err != nil {
-					h.err = err
-					return
-				}
 			}
 		}
 	}
