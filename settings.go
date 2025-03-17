@@ -36,7 +36,7 @@ type Settings struct {
 	guigui.DefaultWidget
 
 	vLayout          internal.VerticalLayout
-	hLayout          internal.HorizontalLayout
+	hLayout          internal.Form
 	cacheButton      basicwidget.TextButton
 	toggleButtonText basicwidget.Text
 	toggleButton     basicwidget.ToggleButton
@@ -74,15 +74,8 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 	s.openButton.SetText("Open folder")
 	s.deleteButton.SetText("Delete all files")
 
-	s.hLayout.SetVerticalAlign(internal.VerticalAlignStart)
-	s.hLayout.DisableBackground(true)
-	s.hLayout.DisableLineBreak(true)
-	s.hLayout.DisableBorder(true)
-
-	s.hLayout.SetHeight(context, 25)
-	s.hLayout.SetItems([]*internal.LayoutItem{
-		{Widget: &s.toggleButtonText},
-		{Widget: &s.toggleButton},
+	s.hLayout.SetItems([]*internal.FormItem{
+		{PrimaryWidget: &s.toggleButtonText, SecondaryWidget: &s.toggleButton},
 	})
 
 	s.vLayout.SetHorizontalAlign(internal.HorizontalAlignCenter)
