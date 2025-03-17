@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"image"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/hajimehoshi/guigui"
@@ -38,8 +37,9 @@ import (
 type Home struct {
 	guigui.DefaultWidget
 
-	initOnce   sync.Once
 	gameStatus string
+	gamePanel  basicwidget.ScrollablePanel
+	gameLayout internal.VerticalLayout
 
 	vLayout       internal.VerticalLayout
 	banner        basicwidget.Image
@@ -131,6 +131,16 @@ func (h *Home) requestUpdate(newGameFileData *content.GameFile) {
 			}
 			if isNewer {
 				content.UpdateGame = true
+
+				cachedJSON, err := json.Marshal(newGameFileData)
+				if err != nil {
+					h.err = err
+					return
+				}
+				if err := content.Mgdata.SaveObjectProp("game", "game.json", cachedJSON); err != nil {
+					h.err = err
+					return
+				}
 			}
 		}
 	}
@@ -223,6 +233,7 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 
 		if content.IsInternet {
 			if time.Since(gameFileData.Timestamp) > gameFileData.ExpiresIn {
+				fmt.Println("OUTDATED")
 				h.requestUpdate(gameFileData)
 			}
 			if content.UpdateGame {
@@ -244,18 +255,14 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		if content.IsInternet {
 			gameFileData := content.GameFile{}
 			h.requestGame(&gameFileData)
+
+			h.gameButton.SetText("Install")
+			guigui.Disable(&h.gameButton)
 		} else {
 			h.gameButton.SetText("NO INTERNET")
 			guigui.Disable(&h.gameButton)
 		}
 	}
-
-	h.initOnce.Do(func() {
-		if content.Mgdata.ObjectPropExists("game", "game.json") {
-			gameFileData := content.GameFile{}
-			h.requestUpdate(&gameFileData)
-		}
-	})
 
 	u := float64(basicwidget.UnitSize(context))
 	w, _ := h.Size(context)
@@ -277,7 +284,27 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	h.titleText.SetText("Welcome to Project 86")
 	h.titleText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 
+	_, gameTextHeight := h.gameInfoText.Size(context)
+	h.gamePanel.SetSize(context, w, gameTextHeight+int(2*u))
 	h.gameButton.SetWidth(240)
+
+	h.gamePanel.SetContent(func(context *guigui.Context, childAppender *basicwidget.ContainerChildWidgetAppender, offsetX, offsetY float64) {
+		p := guigui.Position(&h.gamePanel).Add(image.Pt(int(offsetX), int(offsetY)))
+
+		h.gameLayout.SetHorizontalAlign(internal.HorizontalAlignCenter)
+		h.gameLayout.DisableBackground(true)
+		h.gameLayout.DisableLineBreak(true)
+		h.gameLayout.DisableBorder(true)
+
+		h.gameLayout.SetWidth(context, w-int(1*u))
+		guigui.SetPosition(&h.gameLayout, image.Pt(p.X+int(u), p.Y+int(u)))
+
+		h.gameLayout.SetItems([]*internal.LayoutItem{
+			{Widget: &h.gameInfoText},
+		})
+		childAppender.AppendChildWidget(&h.gameLayout)
+	})
+	h.gamePanel.SetPadding(int(2*u), 0)
 
 	h.websiteButton.SetText("Website")
 	h.websiteButton.SetWidth(110)
@@ -315,7 +342,7 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	h.vLayout.SetItems([]*internal.LayoutItem{
 		{Widget: &h.banner},
 		{Widget: &h.titleText},
-		{Widget: &h.gameInfoText},
+		{Widget: &h.gamePanel},
 		{Widget: &h.gameButton},
 		{Widget: &h.form},
 	})
@@ -326,6 +353,7 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		case "install":
 			h.gameInstall()
 		case "update":
+			content.UpdateGame = false
 			gameFileData := content.GameFile{}
 			h.requestGame(&gameFileData)
 			h.gameInstall()
