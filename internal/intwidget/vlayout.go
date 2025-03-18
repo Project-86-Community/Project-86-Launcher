@@ -18,7 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package internal
+package intwidget
 
 import (
 	"image"
@@ -74,7 +74,7 @@ func (v *VerticalLayout) SetHorizontalAlign(align HorizontalAlign) {
 	guigui.RequestRedraw(v)
 }
 
-func (v *VerticalLayout) DisableBackground(value bool) {
+func (v *VerticalLayout) SetBackground(value bool) {
 	if v.background == value {
 		return
 	}
@@ -83,7 +83,7 @@ func (v *VerticalLayout) DisableBackground(value bool) {
 	guigui.RequestRedraw(v)
 }
 
-func (v *VerticalLayout) DisableLineBreak(value bool) {
+func (v *VerticalLayout) SetLineBreak(value bool) {
 	if v.lineBreak == value {
 		return
 	}
@@ -92,7 +92,7 @@ func (v *VerticalLayout) DisableLineBreak(value bool) {
 	guigui.RequestRedraw(v)
 }
 
-func (v *VerticalLayout) DisableBorder(value bool) {
+func (v *VerticalLayout) SetBorder(value bool) {
 	if v.border == value {
 		return
 	}
@@ -181,11 +181,11 @@ func (v *VerticalLayout) calcItemBounds(context *guigui.Context) {
 func (v *VerticalLayout) Draw(context *guigui.Context, dst *ebiten.Image) {
 	bounds := guigui.Bounds(v)
 	bounds.Max.Y = bounds.Min.Y + v.height(context)
-	if !v.background {
+	if v.background {
 		basicwidget.DrawRoundedRect(context, dst, bounds, basicwidget.Color(context.ColorMode(), basicwidget.ColorTypeBase, 0.925), basicwidget.RoundedCornerRadius(context))
 	}
 
-	if !v.lineBreak && len(v.items) > 0 {
+	if v.lineBreak && len(v.items) > 0 {
 		paddingX, paddingY := formItemPadding(context)
 		y := paddingY
 		for _, item := range v.items[:len(v.items)-1] {
@@ -205,7 +205,7 @@ func (v *VerticalLayout) Draw(context *guigui.Context, dst *ebiten.Image) {
 		}
 	}
 
-	if !v.border {
+	if v.border {
 		basicwidget.DrawRoundedRectBorder(context, dst, bounds, basicwidget.Color(context.ColorMode(), basicwidget.ColorTypeBase, 0.875), basicwidget.RoundedCornerRadius(context), 1*float32(context.Scale()), basicwidget.RoundedRectBorderTypeRegular)
 	}
 }

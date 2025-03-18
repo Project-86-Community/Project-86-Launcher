@@ -27,6 +27,7 @@ import (
 	"eightysix/internal"
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -45,39 +46,17 @@ type Root struct {
 	lastCheckInternet    time.Time
 	checkInternetTimeout time.Duration
 
-	sidebar   eightysix.Sidebar
-	home      eightysix.Home
-	settings  eightysix.Settings
-	changelog eightysix.Changelog
-	about     eightysix.About
-
-	err error
+	sidebar eightysix.Sidebar
+	home    eightysix.Home
+	//settings  eightysix.Settings
+	//changelog eightysix.Changelog
+	//about     eightysix.About
 }
 
 func (r *Root) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	r.initOnce.Do(func() {
 		r.checkInternetTimeout = 2 * time.Second
 	})
-
-	if content.Mgdata.ObjectPropExists("darkmode", "darkmode.data") {
-		darkModeByte, err := content.Mgdata.LoadObjectProp("darkmode", "darkmode.data")
-		if err != nil {
-			r.err = err
-			return
-		}
-		darkModeData, err := strconv.Atoi(string(darkModeByte))
-		if err != nil {
-			r.err = err
-			return
-		}
-		context.SetColorMode(guigui.ColorMode(darkModeData))
-	} else {
-		darkModeData := guigui.ColorModeLight
-		if err := content.Mgdata.SaveObjectProp("darkmode", "darkmode.data", []byte(fmt.Sprintf("%v", darkModeData))); err != nil {
-			r.err = err
-			return
-		}
-	}
 
 	appender.AppendChildWidget(&r.sidebar)
 
@@ -86,9 +65,9 @@ func (r *Root) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	p := guigui.Position(r)
 	p.X += sw
 	guigui.SetPosition(&r.home, p)
-	guigui.SetPosition(&r.settings, p)
-	guigui.SetPosition(&r.changelog, p)
-	guigui.SetPosition(&r.about, p)
+	//guigui.SetPosition(&r.settings, p)
+	//guigui.SetPosition(&r.changelog, p)
+	//guigui.SetPosition(&r.about, p)
 
 	switch r.sidebar.SelectedItemTag() {
 	case "home":
@@ -103,8 +82,21 @@ func (r *Root) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 }
 
 func (r *Root) Update(context *guigui.Context) error {
-	if r.err != nil {
-		return r.err
+	if content.Mgdata.ObjectPropExists("cache", "darkmode.data") {
+		darkModeByte, err := content.Mgdata.LoadObjectProp("cache", "darkmode.data")
+		if err != nil {
+			return err
+		}
+		darkModeData, err := strconv.Atoi(string(darkModeByte))
+		if err != nil {
+			return err
+		}
+		context.SetColorMode(guigui.ColorMode(darkModeData))
+	} else {
+		darkModeData := guigui.ColorModeLight
+		if err := content.Mgdata.SaveObjectProp("cache", "darkmode.data", []byte(fmt.Sprintf("%v", darkModeData))); err != nil {
+			return err
+		}
 	}
 
 	now := time.Now()
@@ -128,8 +120,15 @@ func (r *Root) Draw(context *guigui.Context, dst *ebiten.Image) {
 }
 
 func main() {
+	var appName string
+	if runtime.GOOS == "windows" {
+		appName = "Project-86-Community\\Project-86-Launcher"
+	} else {
+		appName = "Project-86-Community/Project-86-Launcher"
+	}
+
 	m, err := gdata.Open(gdata.Config{
-		AppName: "eightysixlauncher",
+		AppName: appName,
 	})
 	if err != nil {
 		panic(err)
@@ -145,7 +144,7 @@ func main() {
 	op := &guigui.RunOptions{
 		Title:           "Project 86 Launcher",
 		WindowMinWidth:  500,
-		WindowMinHeight: 310,
+		WindowMinHeight: 280,
 	}
 	if err = guigui.Run(&Root{}, op); err != nil {
 		fmt.Fprintln(os.Stderr, err)

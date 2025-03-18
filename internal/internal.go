@@ -73,9 +73,9 @@ func CheckNewerVersion(currentVersion, newVersion string) (bool, error) {
 
 func TrimDarkModePath(path string) string {
 	if runtime.GOOS == "windows" {
-		path = strings.TrimSuffix(path, "darkmode\\darkmode.data")
+		path = strings.TrimSuffix(path, "cache\\darkmode.data")
 	} else {
-		path = strings.TrimSuffix(path, "darkmode/darkmode.data")
+		path = strings.TrimSuffix(path, "cache/darkmode.data")
 	}
 	return path
 }
