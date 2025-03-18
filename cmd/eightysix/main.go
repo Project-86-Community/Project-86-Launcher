@@ -94,11 +94,11 @@ func (r *Root) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	case "home":
 		appender.AppendChildWidget(&r.home)
 	case "settings":
-		appender.AppendChildWidget(&r.settings)
+		//appender.AppendChildWidget(&r.settings)
 	case "changelog":
-		appender.AppendChildWidget(&r.changelog)
+		//appender.AppendChildWidget(&r.changelog)
 	case "about":
-		appender.AppendChildWidget(&r.about)
+		//appender.AppendChildWidget(&r.about)
 	}
 }
 
