@@ -34,8 +34,6 @@ import (
 type Home struct {
 	guigui.DefaultWidget
 
-	initOnce sync.Once
-
 	vLayout         intwidget.VerticalLayout
 	smLayoutForm    intwidget.Form
 	smLayoutVLayout intwidget.VerticalLayout
@@ -53,7 +51,8 @@ type Home struct {
 	discordButton basicwidget.TextButton
 	patreonButton basicwidget.TextButton
 
-	err error
+	initOnce sync.Once
+	err      error
 }
 
 func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
@@ -130,7 +129,7 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	h.vLayout.SetWidth(context, w-int(1*u))
 	guigui.SetPosition(&h.vLayout, pt)
 
-	if w >= 940 {
+	if w >= int(940*context.AppScale()) {
 		{
 			imgWidth := img.Bounds().Dx()
 			imgHeight := img.Bounds().Dy()
@@ -175,13 +174,12 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		h.vLayout.SetItems([]*intwidget.LayoutItem{
 			{Widget: &h.mdLayoutForm},
 		})
-	} else if w >= 640 {
+	} else if w >= int(640*context.AppScale()) {
 		h.gameButton.SetWidth(int(float64(w)/2.3) - int(1*u))
 		h.titleText.SetWidth(int(float64(w)/2.3) - int(1*u))
 		h.titleText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 
 		h.titleText.SetScale(1.8)
-
 		h.smLayoutVLayout.SetHorizontalAlign(intwidget.HorizontalAlignStart)
 		h.smLayoutVLayout.SetBackground(false)
 		h.smLayoutVLayout.SetLineBreak(false)

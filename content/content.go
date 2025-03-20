@@ -25,8 +25,15 @@ import (
 	"time"
 
 	"github.com/google/go-github/v69/github"
+	"github.com/hajimehoshi/guigui"
 	"github.com/quasilyte/gdata/v2"
 )
+
+type debugMode struct {
+	Logs bool
+}
+
+var TheDebugMode debugMode
 
 type GameFile struct {
 	Tag       string
@@ -50,9 +57,11 @@ var (
 )
 
 var (
-	RepoOwner      = "Taliayaya"
-	RepoName       = "Project-86"
-	UpdateGame     = false
-	DownloadStatus = -1.0
-	DownloadETA    string
+	RepoOwner = "Taliayaya"
+	RepoName  = "Project-86"
+)
+
+var (
+	ColorMode = guigui.ColorModeLight
+	AppScale  = 2
 )

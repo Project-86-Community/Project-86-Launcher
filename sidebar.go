@@ -61,6 +61,7 @@ func (s *Sidebar) Layout(context *guigui.Context, appender *guigui.ChildWidgetAp
 			t.SetScale(1.2)
 			t.SetText("Home")
 			t.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+			t.SetWidth(sidebarWidth(context))
 			t.SetHeight((basicwidget.UnitSize(context) / 2) + basicwidget.UnitSize(context))
 			s.listItemWidgets = append(s.listItemWidgets, basicwidget.ListItem{
 				Content:    &t,
@@ -73,6 +74,7 @@ func (s *Sidebar) Layout(context *guigui.Context, appender *guigui.ChildWidgetAp
 			t.SetScale(1.2)
 			t.SetText("Settings")
 			t.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+			t.SetWidth(sidebarWidth(context))
 			t.SetHeight((basicwidget.UnitSize(context) / 2) + basicwidget.UnitSize(context))
 			s.listItemWidgets = append(s.listItemWidgets, basicwidget.ListItem{
 				Content:    &t,
@@ -85,6 +87,7 @@ func (s *Sidebar) Layout(context *guigui.Context, appender *guigui.ChildWidgetAp
 			t.SetScale(1.2)
 			t.SetText("Instances")
 			t.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+			t.SetWidth(sidebarWidth(context))
 			t.SetHeight((basicwidget.UnitSize(context) / 2) + basicwidget.UnitSize(context))
 			s.listItemWidgets = append(s.listItemWidgets, basicwidget.ListItem{
 				Content:    &t,
@@ -97,6 +100,7 @@ func (s *Sidebar) Layout(context *guigui.Context, appender *guigui.ChildWidgetAp
 			t.SetScale(1.2)
 			t.SetText("Changelog")
 			t.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+			t.SetWidth(sidebarWidth(context))
 			t.SetHeight((basicwidget.UnitSize(context) / 2) + basicwidget.UnitSize(context))
 			s.listItemWidgets = append(s.listItemWidgets, basicwidget.ListItem{
 				Content:    &t,
@@ -109,6 +113,7 @@ func (s *Sidebar) Layout(context *guigui.Context, appender *guigui.ChildWidgetAp
 			t.SetScale(1.2)
 			t.SetText("About")
 			t.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+			t.SetWidth(sidebarWidth(context))
 			t.SetHeight((basicwidget.UnitSize(context) / 2) + basicwidget.UnitSize(context))
 			s.listItemWidgets = append(s.listItemWidgets, basicwidget.ListItem{
 				Content:    &t,

@@ -5,10 +5,14 @@ tasks:
     cmds:
       - go run ./cmd/eightysix
 
+  run:debug:
+    cmds:
+      - GUIGUI_DEBUG=showrenderingregions go run ./cmd/eightysix
+
   build:
     cmds:
-      - go build -o ./bin/ ./cmd/eightysix
+      - go build -ldflags "-s -w -X main.AppBuild=release" -o ./bin/ ./cmd/eightysix
 
   build:windows:
     cmds:
-      - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -o ./bin/ ./cmd/eightysix/
+      - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.AppBuild=release -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -o ./bin/ ./cmd/eightysix/

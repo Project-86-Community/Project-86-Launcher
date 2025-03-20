@@ -21,102 +21,32 @@
 package main
 
 import (
-	"eightysix"
 	"eightysix/content"
 	"eightysix/content/icon"
-	"eightysix/internal"
+	"eightysix/internal/app"
 	"fmt"
 	"os"
 	"runtime"
-	"strconv"
-	"sync"
-	"time"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
-	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/quasilyte/gdata/v2"
 )
 
-type Root struct {
-	guigui.RootWidget
+var AppBuild string
 
-	initOnce sync.Once
-
-	lastCheckInternet    time.Time
-	checkInternetTimeout time.Duration
-
-	sidebar eightysix.Sidebar
-	home    eightysix.Home
-	//settings  eightysix.Settings
-	//changelog eightysix.Changelog
-	//about     eightysix.About
-}
-
-func (r *Root) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	r.initOnce.Do(func() {
-		r.checkInternetTimeout = 2 * time.Second
-	})
-
-	appender.AppendChildWidget(&r.sidebar)
-
-	guigui.SetPosition(&r.sidebar, guigui.Position(r))
-	sw, _ := r.sidebar.Size(context)
-	p := guigui.Position(r)
-	p.X += sw
-	guigui.SetPosition(&r.home, p)
-	//guigui.SetPosition(&r.settings, p)
-	//guigui.SetPosition(&r.changelog, p)
-	//guigui.SetPosition(&r.about, p)
-
-	switch r.sidebar.SelectedItemTag() {
-	case "home":
-		appender.AppendChildWidget(&r.home)
-	case "settings":
-		//appender.AppendChildWidget(&r.settings)
-	case "changelog":
-		//appender.AppendChildWidget(&r.changelog)
-	case "about":
-		//appender.AppendChildWidget(&r.about)
-	}
-}
-
-func (r *Root) Update(context *guigui.Context) error {
-	if content.Mgdata.ObjectPropExists("cache", "darkmode.data") {
-		darkModeByte, err := content.Mgdata.LoadObjectProp("cache", "darkmode.data")
-		if err != nil {
-			return err
-		}
-		darkModeData, err := strconv.Atoi(string(darkModeByte))
-		if err != nil {
-			return err
-		}
-		context.SetColorMode(guigui.ColorMode(darkModeData))
+func init() {
+	if AppBuild == "release" {
+		content.TheDebugMode.Logs = true
 	} else {
-		darkModeData := guigui.ColorModeLight
-		if err := content.Mgdata.SaveObjectProp("cache", "darkmode.data", []byte(fmt.Sprintf("%v", darkModeData))); err != nil {
-			return err
+		for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
+			switch token {
+			case "logs":
+				content.TheDebugMode.Logs = true
+			}
 		}
 	}
-
-	now := time.Now()
-
-	if now.Sub(r.lastCheckInternet) > r.checkInternetTimeout {
-		go func() {
-			if internal.IsInternetReachable() {
-				content.IsInternet = true
-			} else {
-				content.IsInternet = false
-			}
-		}()
-		r.lastCheckInternet = now
-	}
-
-	return nil
-}
-
-func (r *Root) Draw(context *guigui.Context, dst *ebiten.Image) {
-	basicwidget.FillBackground(dst, context)
 }
 
 func main() {
@@ -146,7 +76,7 @@ func main() {
 		WindowMinWidth:  500,
 		WindowMinHeight: 280,
 	}
-	if err = guigui.Run(&Root{}, op); err != nil {
+	if err = guigui.Run(&app.Root{}, op); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
