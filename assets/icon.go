@@ -18,14 +18,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icon
+package assets
 
 import (
 	"bytes"
 	_ "embed"
 	"image"
 
-	"github.com/biessek/golang-ico"
+	ico "github.com/biessek/golang-ico"
 )
 
 //go:embed eightysix.ico

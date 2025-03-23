@@ -1,5 +1,6 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
+ * SPDX-FileCopyrightText: 2025 Ilan Mayeux
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
  * Copyright (C) 2025 Ilan Mayeux
@@ -21,9 +22,9 @@
 package main
 
 import (
-	"eightysix/content"
-	"eightysix/content/icon"
-	"eightysix/internal/app"
+	"eightysix"
+	"eightysix/assets"
+	"eightysix/internal/content"
 	"fmt"
 	"os"
 	"runtime"
@@ -65,7 +66,7 @@ func main() {
 	}
 	content.Mgdata = m
 
-	iconImages, err := icon.GetIconImages()
+	iconImages, err := assets.GetIconImages()
 	if err != nil {
 		panic(err)
 	}
@@ -76,7 +77,7 @@ func main() {
 		WindowMinWidth:  500,
 		WindowMinHeight: 280,
 	}
-	if err = guigui.Run(&app.Root{}, op); err != nil {
+	if err = guigui.Run(&eightysix.Root{}, op); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

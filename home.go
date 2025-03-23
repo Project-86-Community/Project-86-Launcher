@@ -1,5 +1,6 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
+ * SPDX-FileCopyrightText: 2025 Ilan Mayeux
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
  * Copyright (C) 2025 Ilan Mayeux
@@ -21,10 +22,9 @@
 package eightysix
 
 import (
-	"eightysix/content"
+	"eightysix/assets"
 	"eightysix/internal/intwidget"
 	"image"
-	"sync"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -51,12 +51,16 @@ type Home struct {
 	discordButton basicwidget.TextButton
 	patreonButton basicwidget.TextButton
 
-	initOnce sync.Once
-	err      error
+	err error
 }
 
 func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	h.initOnce.Do(func() {})
+	img, err := assets.TheImageCache.Get("banner")
+	if err != nil {
+		h.err = err
+		return
+	}
+	h.bannerImage.SetImage(img)
 
 	h.websiteButton.SetOnDown(func() {
 		go browser.OpenURL("https://taliayaya.github.io/Project-86-Website/")
@@ -70,13 +74,6 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	h.patreonButton.SetOnDown(func() {
 		go browser.OpenURL("https://patreon.com/project86")
 	})
-
-	img, err := content.TheImageCache.Get("banner")
-	if err != nil {
-		h.err = err
-		return
-	}
-	h.bannerImage.SetImage(img)
 
 	u := float64(basicwidget.UnitSize(context))
 	w, _h := h.Size(context)

@@ -18,22 +18,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package content
+package types
 
-import (
-	"context"
-	"time"
-
-	"github.com/google/go-github/v69/github"
-	"github.com/hajimehoshi/guigui"
-	"github.com/quasilyte/gdata/v2"
-)
-
-type debugMode struct {
-	Logs bool
-}
-
-var TheDebugMode debugMode
+import "time"
 
 type GameFile struct {
 	Tag       string
@@ -48,20 +35,3 @@ type Changelog struct {
 	Timestamp time.Time
 	ExpiresIn time.Duration
 }
-
-var (
-	IsInternet    = false
-	Mgdata        *gdata.Manager
-	GithubClient  = github.NewClient(nil)
-	GithubContext = context.Background()
-)
-
-var (
-	RepoOwner = "Taliayaya"
-	RepoName  = "Project-86"
-)
-
-var (
-	ColorMode = guigui.ColorModeLight
-	AppScale  = 2
-)

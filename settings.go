@@ -21,8 +21,8 @@
 package eightysix
 
 import (
-	"eightysix/content"
-	"eightysix/internal"
+	"eightysix/internal/app"
+	"eightysix/internal/content"
 	"eightysix/internal/intwidget"
 	"image"
 	"sync"
@@ -75,7 +75,7 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 	s.openFolderButton.SetOnDown(func() {
 		if content.Mgdata.ObjectPropExists("cache", "darkmode.data") {
 			go func() {
-				err := internal.OpenFileManager(internal.CompanyPathFolder())
+				err := app.OpenFileManager(app.LauncherPathFolder())
 				s.err = err
 			}()
 		}
@@ -85,6 +85,7 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 		if content.Mgdata.ObjectPropExists("cache", "darkmode.data") {
 			content.Mgdata.DeleteObject("cache")
 			s.darkModeToggle.SetValue(false)
+			s.appScaleDropdownList.SetSelectedItemIndex(2)
 		}
 	})
 
