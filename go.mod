@@ -7,9 +7,10 @@ require (
 	github.com/google/go-github/v69 v69.2.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.4
 	github.com/hajimehoshi/guigui v0.0.0-20250308105630-f3a83f8de608
-	github.com/hashicorp/go-version v1.7.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
+	github.com/pkg/errors v0.9.1
 	github.com/quasilyte/gdata/v2 v2.0.0
+	github.com/rs/zerolog v1.33.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 )
 
@@ -26,7 +27,6 @@ require (
 	github.com/jsummers/gobmp v0.0.0-20230614200233-a9de23ed2e25 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/rs/zerolog v1.33.0 // indirect
 	golang.org/x/image v0.25.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect

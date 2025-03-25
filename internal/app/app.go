@@ -28,8 +28,14 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/guigui"
+	"github.com/rs/zerolog/log"
 	"github.com/skratchdot/open-golang/open"
 )
+
+func PopError(err error) {
+	log.Error().Stack().Err(err).Send()
+	content.Errs = append(content.Errs, err)
+}
 
 func IsInternetReachable() bool {
 	client := http.Client{

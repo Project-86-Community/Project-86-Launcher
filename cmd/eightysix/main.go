@@ -25,7 +25,6 @@ import (
 	"eightysix"
 	"eightysix/assets"
 	"eightysix/internal/content"
-	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -33,11 +32,18 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
 	"github.com/quasilyte/gdata/v2"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog/pkgerrors"
 )
 
 var AppBuild string
 
 func init() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	if AppBuild == "release" {
 		content.TheDebugMode.Logs = true
 	} else {
@@ -48,6 +54,10 @@ func init() {
 			}
 		}
 	}
+
+	if !content.TheDebugMode.Logs {
+		zerolog.SetGlobalLevel(zerolog.Disabled)
+	}
 }
 
 func main() {
@@ -57,18 +67,19 @@ func main() {
 	} else {
 		appName = "Project-86-Community/Project-86-Launcher"
 	}
+	log.Info().Str("Detected OS", runtime.GOOS).Send()
 
 	m, err := gdata.Open(gdata.Config{
 		AppName: appName,
 	})
 	if err != nil {
-		panic(err)
+		log.Panic().Err(err).Send()
 	}
 	content.Mgdata = m
 
 	iconImages, err := assets.GetIconImages()
 	if err != nil {
-		panic(err)
+		log.Panic().Err(err).Send()
 	}
 
 	ebiten.SetWindowIcon(iconImages)
@@ -78,7 +89,7 @@ func main() {
 		WindowMinHeight: 280,
 	}
 	if err = guigui.Run(&eightysix.Root{}, op); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		log.Error().Stack().Err(err).Send()
 		os.Exit(1)
 	}
 }

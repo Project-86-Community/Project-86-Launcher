@@ -28,6 +28,7 @@ import (
 	"strconv"
 
 	"github.com/hajimehoshi/guigui"
+	"github.com/rs/zerolog/log"
 )
 
 func InitDarkMode() error {
@@ -43,7 +44,6 @@ func InitDarkMode() error {
 		content.ColorMode = guigui.ColorMode(darkModeData)
 
 	}
-
 	err := saveDarkMode()
 	return err
 }
@@ -112,13 +112,33 @@ func SetAppScale(context *guigui.Context) {
 	}
 }
 
-func UpdateData(context *guigui.Context) {
+func UpdateData(context *guigui.Context) error {
 	if content.ColorMode != context.ColorMode() {
 		context.SetColorMode(content.ColorMode)
-		saveDarkMode()
+		if err := saveDarkMode(); err != nil {
+			return err
+		}
+		log.Info().Int("ColorMode", int(content.ColorMode)).Msg("ColorMode changed")
 	}
 	if content.AppScale != GetAppScale(context.AppScale()) {
 		SetAppScale(context)
-		saveAppScale()
+		if err := saveAppScale(); err != nil {
+			return err
+		}
+		log.Info().Int("AppScale", content.AppScale).Msg("AppScale changed")
 	}
+	return nil
+}
+
+func HandleDataReset() error {
+	content.ColorMode = guigui.ColorModeLight
+	content.AppScale = 2
+
+	if err := saveDarkMode(); err != nil {
+		return err
+	}
+	if err := saveAppScale(); err != nil {
+		return err
+	}
+	return nil
 }

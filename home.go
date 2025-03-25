@@ -23,12 +23,14 @@ package eightysix
 
 import (
 	"eightysix/assets"
+	"eightysix/internal/app"
 	"eightysix/internal/intwidget"
 	"image"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/pkg/browser"
+	"github.com/pkg/errors"
 )
 
 type Home struct {
@@ -57,22 +59,38 @@ type Home struct {
 func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	img, err := assets.TheImageCache.Get("banner")
 	if err != nil {
-		h.err = err
+		h.err = errors.New(err.Error())
 		return
 	}
 	h.bannerImage.SetImage(img)
 
 	h.websiteButton.SetOnDown(func() {
-		go browser.OpenURL("https://taliayaya.github.io/Project-86-Website/")
+		go func() {
+			if err := browser.OpenURL("https://taliayaya.github.io/Project-86-Website/"); err != nil {
+				app.PopError(errors.New(err.Error()))
+			}
+		}()
 	})
 	h.githubButton.SetOnDown(func() {
-		go browser.OpenURL("https://github.com/Taliayaya/Project-86")
+		go func() {
+			if err := browser.OpenURL("https://github.com/Taliayaya/Project-86"); err != nil {
+				app.PopError(errors.New(err.Error()))
+			}
+		}()
 	})
 	h.discordButton.SetOnDown(func() {
-		go browser.OpenURL("https://discord.gg/Yh2TQH97yA")
+		go func() {
+			if err := browser.OpenURL("https://discord.gg/Yh2TQH97yA"); err != nil {
+				app.PopError(errors.New(err.Error()))
+			}
+		}()
 	})
 	h.patreonButton.SetOnDown(func() {
-		go browser.OpenURL("https://patreon.com/project86")
+		go func() {
+			if err := browser.OpenURL("https://patreon.com/project86"); err != nil {
+				app.PopError(errors.New(err.Error()))
+			}
+		}()
 	})
 
 	u := float64(basicwidget.UnitSize(context))

@@ -21,6 +21,7 @@
 package eightysix
 
 import (
+	"eightysix/configs"
 	"eightysix/internal/app"
 	"eightysix/internal/content"
 	"eightysix/internal/intwidget"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/pkg/errors"
 )
 
 type Settings struct {
@@ -44,6 +46,7 @@ type Settings struct {
 	openFolderButton     basicwidget.TextButton
 	repairButton         basicwidget.TextButton
 	clearCacheButton     basicwidget.TextButton
+	clearDataButton      basicwidget.TextButton
 	deleteFilesButton    basicwidget.TextButton
 
 	initOnce sync.Once
@@ -73,17 +76,30 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 	})
 
 	s.openFolderButton.SetOnDown(func() {
-		if content.Mgdata.ObjectPropExists("cache", "darkmode.data") {
+		if content.Mgdata.ObjectPropExists(configs.Data, configs.DarkModeFile) {
 			go func() {
-				err := app.OpenFileManager(app.LauncherPathFolder())
-				s.err = err
+				if err := app.OpenFileManager(app.LauncherPathFolder()); err != nil {
+					app.PopError(errors.New(err.Error()))
+				}
 			}()
 		}
 	})
 
 	s.clearCacheButton.SetOnDown(func() {
-		if content.Mgdata.ObjectPropExists("cache", "darkmode.data") {
-			content.Mgdata.DeleteObject("cache")
+		if content.Mgdata.ObjectPropExists(configs.Data, configs.DarkModeFile) {
+			if err := content.Mgdata.DeleteObject(configs.Cache); err != nil {
+				s.err = errors.New(err.Error())
+				return
+			}
+		}
+	})
+
+	s.clearDataButton.SetOnDown(func() {
+		if content.Mgdata.ObjectPropExists(configs.Data, configs.DarkModeFile) {
+			if err := content.Mgdata.DeleteObject(configs.Data); err != nil {
+				s.err = errors.New(err.Error())
+				return
+			}
 			s.darkModeToggle.SetValue(false)
 			s.appScaleDropdownList.SetSelectedItemIndex(2)
 		}
@@ -98,6 +114,7 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 	s.openFolderButton.SetText("Open folder")
 	s.repairButton.SetText("Repair")
 	s.clearCacheButton.SetText("Clear cache")
+	s.clearDataButton.SetText("Clear data")
 	s.deleteFilesButton.SetText("Delete all files")
 
 	s.darkModeForm.SetItems([]*intwidget.FormItem{
@@ -119,6 +136,7 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 		{Widget: &s.openFolderButton},
 		{Widget: &s.repairButton},
 		{Widget: &s.clearCacheButton},
+		{Widget: &s.clearDataButton},
 		{Widget: &s.deleteFilesButton},
 	})
 	appender.AppendChildWidget(&s.vLayout)

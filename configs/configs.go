@@ -26,7 +26,7 @@ var (
 	RepoName  = "Project-86"
 
 	Data         = "data"
-	DarkModeFile = "darkmode.data"
+	DarkModeFile = "colormode.data"
 	AppScaleFile = "appscale.data"
 
 	Cache = "cache"

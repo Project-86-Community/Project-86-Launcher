@@ -25,7 +25,6 @@ import (
 	"eightysix/configs"
 	"eightysix/internal/app"
 	"eightysix/internal/content"
-	"errors"
 	"image"
 	"sync"
 	"time"
@@ -33,6 +32,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 type Root struct {
@@ -41,9 +42,9 @@ type Root struct {
 	lastCheckInternet    time.Time
 	checkInternetTimeout time.Duration
 
-	sidebar Sidebar
-	home    Home
-	//settings Settings
+	sidebar  Sidebar
+	home     Home
+	settings Settings
 	//changelog Changelog
 	//about     eightysix.About
 
@@ -59,16 +60,14 @@ func (r *Root) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	r.initOnce.Do(func() {
 		r.checkInternetTimeout = time.Second
 		if err := app.InitDarkMode(); err != nil {
-			r.err = err
+			r.err = errors.New(err.Error())
 			return
 		}
 		if err := app.InitAppScale(); err != nil {
-			r.err = err
+			r.err = errors.New(err.Error())
 			return
 		}
-
-		e := errors.New("test")
-		content.Errs = append(content.Errs, e)
+		log.Info().Msg("Init DarkMode and AppScale")
 	})
 
 	appender.AppendChildWidget(&r.sidebar)
@@ -80,10 +79,13 @@ func (r *Root) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	p := guigui.Position(r)
 	p.X += sw
 	guigui.SetPosition(&r.home, p)
+	guigui.SetPosition(&r.settings, p)
 
 	switch r.sidebar.SelectedItemTag() {
 	case "home":
 		appender.AppendChildWidget(&r.home)
+	case "settings":
+		appender.AppendChildWidget(&r.settings)
 	}
 
 	if len(content.Errs) != 0 {
@@ -131,15 +133,20 @@ func (r *Root) Update(context *guigui.Context) error {
 		return r.err
 	}
 
-	app.UpdateData(context)
+	err := app.UpdateData(context)
+	if err != nil {
+		return errors.New(err.Error())
+	}
 
 	now := time.Now()
 
 	if now.Sub(r.lastCheckInternet) > r.checkInternetTimeout {
 		if !content.Mgdata.ObjectPropExists(configs.Data, configs.DarkModeFile) || !content.Mgdata.ObjectPropExists(configs.Data, configs.AppScaleFile) {
-			content.ColorMode = guigui.ColorModeLight
-			content.AppScale = 2
-			app.UpdateData(context)
+			err := app.HandleDataReset()
+			if err != nil {
+				return errors.New(err.Error())
+			}
+			log.Info().Msg("HandleDataReset")
 		}
 
 		go func() {
