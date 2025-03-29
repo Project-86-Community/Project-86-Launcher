@@ -1,5 +1,6 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
+ * SPDX-FileCopyrightText: 2025 Ilan Mayeux
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
  * Copyright (C) 2025 Ilan Mayeux
@@ -22,25 +23,22 @@ package eightysix
 
 import (
 	"eightysix/configs"
-	"eightysix/internal/app"
-	"eightysix/internal/content"
-	"eightysix/internal/intwidget"
+	"eightysix/internal/widget"
 	"image"
 	"sync"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/pkg/errors"
 )
 
 type Settings struct {
 	guigui.DefaultWidget
 
-	vLayout      intwidget.VerticalLayout
-	darkModeForm intwidget.Form
+	vLayout       widget.VerticalLayout
+	colorModeForm widget.Form
 
-	darkModeText         basicwidget.Text
-	darkModeToggle       basicwidget.ToggleButton
+	colorModeText        basicwidget.Text
+	colorModeToggle      basicwidget.ToggleButton
 	appScaleText         basicwidget.Text
 	appScaleDropdownList basicwidget.DropdownList
 	openFolderButton     basicwidget.TextButton
@@ -56,51 +54,54 @@ type Settings struct {
 func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	s.appScaleDropdownList.SetItemsByStrings([]string{"50%", "75%", "100%", "125%", "150%"})
 	s.initOnce.Do(func() {
-		if content.ColorMode == guigui.ColorModeDark {
-			s.darkModeToggle.SetValue(true)
+		if app.Data.ColorMode == guigui.ColorModeDark {
+			s.colorModeToggle.SetValue(true)
 		}
 
-		s.appScaleDropdownList.SetSelectedItemIndex(content.AppScale)
+		s.appScaleDropdownList.SetSelectedItemIndex(app.Data.AppScale)
 	})
 
-	s.darkModeToggle.SetOnValueChanged(func(value bool) {
+	s.colorModeToggle.SetOnValueChanged(func(value bool) {
 		if value {
-			content.ColorMode = guigui.ColorModeDark
+			app.Data.ColorMode = guigui.ColorModeDark
 		} else {
-			content.ColorMode = guigui.ColorModeLight
+			app.Data.ColorMode = guigui.ColorModeLight
 		}
 	})
 
 	s.appScaleDropdownList.SetOnValueChanged(func(value int) {
-		content.AppScale = value
+		app.Data.AppScale = value
 	})
 
 	s.openFolderButton.SetOnDown(func() {
-		if content.Mgdata.ObjectPropExists(configs.Data, configs.DarkModeFile) {
+		if dir, err := app.FS.LauncherDir(); err != nil {
+			// TODO: Add errors
+			return
+		} else {
 			go func() {
-				if err := app.OpenFileManager(app.LauncherPathFolder()); err != nil {
-					app.PopError(errors.New(err.Error()))
+				if err := app.FS.OpenFileManager(dir); err != nil {
+					// TODO: Add errors
 				}
 			}()
 		}
 	})
 
 	s.clearCacheButton.SetOnDown(func() {
-		if content.Mgdata.ObjectPropExists(configs.Data, configs.DarkModeFile) {
-			if err := content.Mgdata.DeleteObject(configs.Cache); err != nil {
-				s.err = errors.New(err.Error())
+		if app.FS.IsDir() {
+			if err := GDataM.DeleteObject(configs.Cache); err != nil {
+				s.err = app.Error(err)
 				return
 			}
 		}
 	})
 
 	s.clearDataButton.SetOnDown(func() {
-		if content.Mgdata.ObjectPropExists(configs.Data, configs.DarkModeFile) {
-			if err := content.Mgdata.DeleteObject(configs.Data); err != nil {
-				s.err = errors.New(err.Error())
+		if app.FS.IsDir() {
+			if err := GDataM.DeleteObject(configs.Data); err != nil {
+				s.err = app.Error(err)
 				return
 			}
-			s.darkModeToggle.SetValue(false)
+			s.colorModeToggle.SetValue(false)
 			s.appScaleDropdownList.SetSelectedItemIndex(2)
 		}
 	})
@@ -109,7 +110,7 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 	w, _ := s.Size(context)
 	pt := guigui.Position(s).Add(image.Pt(int(0.5*u), int(0.5*u)))
 
-	s.darkModeText.SetText("Dark Mode")
+	s.colorModeText.SetText("Dark Mode")
 	s.appScaleText.SetText("App Scale")
 	s.openFolderButton.SetText("Open folder")
 	s.repairButton.SetText("Repair")
@@ -117,11 +118,11 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 	s.clearDataButton.SetText("Clear data")
 	s.deleteFilesButton.SetText("Delete all files")
 
-	s.darkModeForm.SetItems([]*intwidget.FormItem{
-		{PrimaryWidget: &s.darkModeText, SecondaryWidget: &s.darkModeToggle},
+	s.colorModeForm.SetItems([]*widget.FormItem{
+		{PrimaryWidget: &s.colorModeText, SecondaryWidget: &s.colorModeToggle},
 	})
 
-	s.vLayout.SetHorizontalAlign(intwidget.HorizontalAlignCenter)
+	s.vLayout.SetHorizontalAlign(widget.HorizontalAlignCenter)
 	s.vLayout.SetBackground(true)
 	s.vLayout.SetLineBreak(false)
 	s.vLayout.SetBorder(true)
@@ -129,8 +130,8 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 	s.vLayout.SetWidth(context, w-int(1*u))
 	guigui.SetPosition(&s.vLayout, pt)
 
-	s.vLayout.SetItems([]*intwidget.LayoutItem{
-		{Widget: &s.darkModeForm},
+	s.vLayout.SetItems([]*widget.LayoutItem{
+		{Widget: &s.colorModeForm},
 		{Widget: &s.appScaleText},
 		{Widget: &s.appScaleDropdownList},
 		{Widget: &s.openFolderButton},

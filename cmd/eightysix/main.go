@@ -24,7 +24,8 @@ package main
 import (
 	"eightysix"
 	"eightysix/assets"
-	"eightysix/internal/content"
+	"eightysix/configs"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -42,20 +43,23 @@ var AppBuild string
 func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 	if AppBuild == "release" {
-		content.TheDebugMode.Logs = true
+		eightysix.TheDebugMode.Logs = true
 	} else {
 		for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
 			switch token {
 			case "logs":
-				content.TheDebugMode.Logs = true
+				log.Logger = log.Output(zerolog.ConsoleWriter{
+					Out:        os.Stderr,
+					TimeFormat: "2006/01/02 15:04:05",
+				})
+				eightysix.TheDebugMode.Logs = true
 			}
 		}
 	}
 
-	if !content.TheDebugMode.Logs {
+	if !eightysix.TheDebugMode.Logs {
 		zerolog.SetGlobalLevel(zerolog.Disabled)
 	}
 }
@@ -63,25 +67,29 @@ func init() {
 func main() {
 	var appName string
 	if runtime.GOOS == "windows" {
-		appName = "Project-86-Community\\Project-86-Launcher"
-	} else {
-		appName = "Project-86-Community/Project-86-Launcher"
+		appName = fmt.Sprintf("%s\\%s", configs.CompanyName, configs.AppName)
 	}
-	log.Info().Str("Detected OS", runtime.GOOS).Send()
+	appName = fmt.Sprintf("%s/%s", configs.CompanyName, configs.AppName)
 
 	m, err := gdata.Open(gdata.Config{
 		AppName: appName,
 	})
 	if err != nil {
-		log.Panic().Err(err).Send()
+		panic(err)
 	}
-	content.Mgdata = m
 
 	iconImages, err := assets.GetIconImages()
 	if err != nil {
-		log.Panic().Err(err).Send()
+		panic(err)
 	}
 
+	eightysix.GDataM = m
+	// eightysix.App = &app.App{
+	// 	FS:   &file.AppFS{GdataM: m},
+	// 	Data: &data.Data{GDataM: m},
+	// }
+
+	log.Info().Str("Detected OS", runtime.GOOS).Send()
 	ebiten.SetWindowIcon(iconImages)
 	op := &guigui.RunOptions{
 		Title:           "Project 86 Launcher",

@@ -4,10 +4,8 @@ go 1.23.6
 
 require (
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
-	github.com/google/go-github/v69 v69.2.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.4
 	github.com/hajimehoshi/guigui v0.0.0-20250308105630-f3a83f8de608
-	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/quasilyte/gdata/v2 v2.0.0
 	github.com/rs/zerolog v1.33.0
@@ -20,7 +18,6 @@ require (
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/ebitengine/purego v0.9.0-alpha.2 // indirect
 	github.com/go-text/typesetting v0.3.0 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hajimehoshi/oklab v0.0.0-20231202174141-83d68450b640 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20241217141322-fcc2cadd6f08 // indirect
 	github.com/jezek/xgb v1.1.1 // indirect

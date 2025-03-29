@@ -21,124 +21,114 @@
 
 package app
 
-import (
-	"eightysix/configs"
-	"eightysix/internal/content"
-	"fmt"
-	"strconv"
-
-	"github.com/hajimehoshi/guigui"
-	"github.com/rs/zerolog/log"
-)
-
-func InitDarkMode() error {
-	if content.Mgdata.ObjectPropExists(configs.Data, configs.DarkModeFile) {
-		darkModeByte, err := content.Mgdata.LoadObjectProp(configs.Data, configs.DarkModeFile)
-		if err != nil {
-			return err
-		}
-		darkModeData, err := strconv.Atoi(string(darkModeByte))
-		if err != nil {
-			return err
-		}
-		content.ColorMode = guigui.ColorMode(darkModeData)
-
-	}
-	err := saveDarkMode()
-	return err
-}
-
-func InitAppScale() error {
-	if content.Mgdata.ObjectPropExists(configs.Data, configs.AppScaleFile) {
-		appScaleByte, err := content.Mgdata.LoadObjectProp(configs.Data, configs.AppScaleFile)
-		if err != nil {
-			return err
-		}
-		appScaleData, err := strconv.Atoi(string(appScaleByte))
-		if err != nil {
-			return err
-		}
-		content.AppScale = appScaleData
-	}
-	err := saveAppScale()
-	return err
-}
-
-func saveDarkMode() error {
-	if err := content.Mgdata.SaveObjectProp(configs.Data, configs.DarkModeFile, []byte(fmt.Sprintf("%v", content.ColorMode))); err != nil {
-		return err
-	}
-	return nil
-}
-
-func saveAppScale() error {
-	if err := content.Mgdata.SaveObjectProp(configs.Data, configs.AppScaleFile, []byte(fmt.Sprintf("%v", content.AppScale))); err != nil {
-		return err
-	}
-	return nil
-}
-
-func GetAppScale(scale float64) int {
-	var appScale int
-
-	switch scale {
-	case 0.5: // 50%
-		appScale = 0
-	case 0.75: // 75%
-		appScale = 1
-	case 1.0: // 100%
-		appScale = 2
-	case 1.25: // 125%
-		appScale = 3
-	case 1.50: // 150%
-		appScale = 4
-	}
-
-	return appScale
-}
-
-func SetAppScale(context *guigui.Context) {
-	switch content.AppScale {
-	case 0: // 50%
-		context.SetAppScale(0.5)
-	case 1: // 75%
-		context.SetAppScale(0.75)
-	case 2: // 100%
-		context.SetAppScale(1)
-	case 3: // 125%
-		context.SetAppScale(1.25)
-	case 4: // 150%
-		context.SetAppScale(1.50)
-	}
-}
-
-func UpdateData(context *guigui.Context) error {
-	if content.ColorMode != context.ColorMode() {
-		context.SetColorMode(content.ColorMode)
-		if err := saveDarkMode(); err != nil {
-			return err
-		}
-		log.Info().Int("ColorMode", int(content.ColorMode)).Msg("ColorMode changed")
-	}
-	if content.AppScale != GetAppScale(context.AppScale()) {
-		SetAppScale(context)
-		if err := saveAppScale(); err != nil {
-			return err
-		}
-		log.Info().Int("AppScale", content.AppScale).Msg("AppScale changed")
-	}
-	return nil
-}
-
-func HandleDataReset() error {
-	content.ColorMode = guigui.ColorModeLight
-	content.AppScale = 2
-
-	if err := saveDarkMode(); err != nil {
-		return err
-	}
-	if err := saveAppScale(); err != nil {
-		return err
-	}
-	return nil
-}
+// func InitDarkMode() error {
+// 	if content.Mgdata.ObjectPropExists(configs.Data, configs.DarkModeFile) {
+// 		darkModeByte, err := content.Mgdata.LoadObjectProp(configs.Data, configs.DarkModeFile)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		darkModeData, err := strconv.Atoi(string(darkModeByte))
+// 		if err != nil {
+// 			return err
+// 		}
+// 		content.ColorMode = guigui.ColorMode(darkModeData)
+//
+// 	}
+// 	err := saveDarkMode()
+// 	return err
+// }
+//
+// func InitAppScale() error {
+// 	if content.Mgdata.ObjectPropExists(configs.Data, configs.AppScaleFile) {
+// 		appScaleByte, err := content.Mgdata.LoadObjectProp(configs.Data, configs.AppScaleFile)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		appScaleData, err := strconv.Atoi(string(appScaleByte))
+// 		if err != nil {
+// 			return err
+// 		}
+// 		content.AppScale = appScaleData
+// 	}
+// 	err := saveAppScale()
+// 	return err
+// }
+//
+// func saveDarkMode() error {
+// 	if err := content.Mgdata.SaveObjectProp(configs.Data, configs.DarkModeFile, []byte(fmt.Sprintf("%v", content.ColorMode))); err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+//
+// func saveAppScale() error {
+// 	if err := content.Mgdata.SaveObjectProp(configs.Data, configs.AppScaleFile, []byte(fmt.Sprintf("%v", content.AppScale))); err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+//
+// func GetAppScale(scale float64) int {
+// 	var appScale int
+//
+// 	switch scale {
+// 	case 0.5: // 50%
+// 		appScale = 0
+// 	case 0.75: // 75%
+// 		appScale = 1
+// 	case 1.0: // 100%
+// 		appScale = 2
+// 	case 1.25: // 125%
+// 		appScale = 3
+// 	case 1.50: // 150%
+// 		appScale = 4
+// 	}
+//
+// 	return appScale
+// }
+//
+// func SetAppScale(context *guigui.Context) {
+// 	switch content.AppScale {
+// 	case 0: // 50%
+// 		context.SetAppScale(0.5)
+// 	case 1: // 75%
+// 		context.SetAppScale(0.75)
+// 	case 2: // 100%
+// 		context.SetAppScale(1)
+// 	case 3: // 125%
+// 		context.SetAppScale(1.25)
+// 	case 4: // 150%
+// 		context.SetAppScale(1.50)
+// 	}
+// }
+//
+// func UpdateData(context *guigui.Context) error {
+// 	if content.ColorMode != context.ColorMode() {
+// 		context.SetColorMode(content.ColorMode)
+// 		if err := saveDarkMode(); err != nil {
+// 			return err
+// 		}
+// 		log.Info().Int("ColorMode", int(content.ColorMode)).Msg("ColorMode changed")
+// 	}
+// 	if content.AppScale != GetAppScale(context.AppScale()) {
+// 		SetAppScale(context)
+// 		if err := saveAppScale(); err != nil {
+// 			return err
+// 		}
+// 		log.Info().Int("AppScale", content.AppScale).Msg("AppScale changed")
+// 	}
+// 	return nil
+// }
+//
+// func HandleDataReset() error {
+// 	content.ColorMode = guigui.ColorModeLight
+// 	content.AppScale = 2
+//
+// 	if err := saveDarkMode(); err != nil {
+// 		return err
+// 	}
+// 	if err := saveAppScale(); err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }

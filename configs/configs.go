@@ -22,12 +22,15 @@
 package configs
 
 var (
+	CompanyName = "Project-86-Community"
+	AppName     = "Project-86-Launcher"
+
 	RepoOwner = "Taliayaya"
 	RepoName  = "Project-86"
 
-	Data         = "data"
-	DarkModeFile = "colormode.data"
-	AppScaleFile = "appscale.data"
+	Data          = "data"
+	ColorModeFile = "colormode.data"
+	AppScaleFile  = "appscale.data"
 
 	Cache = "cache"
 )

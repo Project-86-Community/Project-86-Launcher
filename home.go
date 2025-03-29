@@ -23,24 +23,21 @@ package eightysix
 
 import (
 	"eightysix/assets"
-	"eightysix/internal/app"
-	"eightysix/internal/intwidget"
+	"eightysix/internal/widget"
 	"image"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/pkg/browser"
-	"github.com/pkg/errors"
 )
 
 type Home struct {
 	guigui.DefaultWidget
 
-	vLayout         intwidget.VerticalLayout
-	smLayoutForm    intwidget.Form
-	smLayoutVLayout intwidget.VerticalLayout
-	mdLayoutForm    intwidget.Form
-	mdLayoutVLayout intwidget.VerticalLayout
+	vLayout         widget.VerticalLayout
+	smLayoutForm    widget.Form
+	smLayoutVLayout widget.VerticalLayout
+	mdLayoutForm    widget.Form
+	mdLayoutVLayout widget.VerticalLayout
 
 	bannerImage basicwidget.Image
 	titleText   basicwidget.Text
@@ -59,38 +56,38 @@ type Home struct {
 func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	img, err := assets.TheImageCache.Get("banner")
 	if err != nil {
-		h.err = errors.New(err.Error())
+		h.err = app.Error(err)
 		return
 	}
 	h.bannerImage.SetImage(img)
 
 	h.websiteButton.SetOnDown(func() {
-		go func() {
-			if err := browser.OpenURL("https://taliayaya.github.io/Project-86-Website/"); err != nil {
-				app.PopError(errors.New(err.Error()))
-			}
-		}()
+		// go func() {
+		// 	if err := browser.OpenURL("https://taliayaya.github.io/Project-86-Website/"); err != nil {
+		// 		app.PopError(errors.New(err.Error()))
+		// 	}
+		// }()
 	})
 	h.githubButton.SetOnDown(func() {
-		go func() {
-			if err := browser.OpenURL("https://github.com/Taliayaya/Project-86"); err != nil {
-				app.PopError(errors.New(err.Error()))
-			}
-		}()
+		// go func() {
+		// 	if err := browser.OpenURL("https://github.com/Taliayaya/Project-86"); err != nil {
+		// 		app.PopError(errors.New(err.Error()))
+		// 	}
+		// }()
 	})
 	h.discordButton.SetOnDown(func() {
-		go func() {
-			if err := browser.OpenURL("https://discord.gg/Yh2TQH97yA"); err != nil {
-				app.PopError(errors.New(err.Error()))
-			}
-		}()
+		// go func() {
+		// 	if err := browser.OpenURL("https://discord.gg/Yh2TQH97yA"); err != nil {
+		// 		app.PopError(errors.New(err.Error()))
+		// 	}
+		// }()
 	})
 	h.patreonButton.SetOnDown(func() {
-		go func() {
-			if err := browser.OpenURL("https://patreon.com/project86"); err != nil {
-				app.PopError(errors.New(err.Error()))
-			}
-		}()
+		// go func() {
+		// 	if err := browser.OpenURL("https://patreon.com/project86"); err != nil {
+		// 		app.PopError(errors.New(err.Error()))
+		// 	}
+		// }()
 	})
 
 	u := float64(basicwidget.UnitSize(context))
@@ -136,13 +133,21 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		},
 	})
 
-	h.vLayout.SetHorizontalAlign(intwidget.HorizontalAlignCenter)
+	h.vLayout.SetHorizontalAlign(widget.HorizontalAlignCenter)
 	h.vLayout.SetBackground(false)
 	h.vLayout.SetLineBreak(false)
 	h.vLayout.SetBorder(false)
 
 	h.vLayout.SetWidth(context, w-int(1*u))
 	guigui.SetPosition(&h.vLayout, pt)
+
+	if app.IsInternet() {
+		h.gameButton.SetText("Install")
+		guigui.Enable(&h.gameButton)
+	} else {
+		h.gameButton.SetText("NO INTERNET")
+		guigui.Disable(&h.gameButton)
+	}
 
 	if w >= int(940*context.AppScale()) {
 		{
@@ -167,26 +172,26 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		h.patreonButton.SetWidth(int(float64(w)/5) - int(1*u))
 		h.form.SetWidth(context, int(float64(w)/2.5)-int(0.5*u))
 
-		h.mdLayoutVLayout.SetHorizontalAlign(intwidget.HorizontalAlignCenter)
+		h.mdLayoutVLayout.SetHorizontalAlign(widget.HorizontalAlignCenter)
 		h.mdLayoutVLayout.SetBackground(false)
 		h.mdLayoutVLayout.SetLineBreak(false)
 		h.mdLayoutVLayout.SetBorder(false)
 
 		h.mdLayoutVLayout.SetWidth(context, int(float64(w)/2.2)-int(2*u))
-		h.mdLayoutVLayout.SetItems([]*intwidget.LayoutItem{
+		h.mdLayoutVLayout.SetItems([]*widget.LayoutItem{
 			{Widget: &h.titleText},
 			{Widget: &h.gameButton},
 			{Widget: &h.form},
 		})
 
 		h.mdLayoutForm.SetWidth(context, w-int(1*u))
-		h.mdLayoutForm.SetItems([]*intwidget.FormItem{
+		h.mdLayoutForm.SetItems([]*widget.FormItem{
 			{PrimaryWidget: &h.bannerImage, SecondaryWidget: &h.mdLayoutVLayout},
 		})
 
 		_, mdLayoutFormHeight := h.mdLayoutForm.Size(context)
 		guigui.SetPosition(&h.vLayout, image.Pt(pt.X, pt.Y+(_h/2-int(float64(mdLayoutFormHeight)/1.5))))
-		h.vLayout.SetItems([]*intwidget.LayoutItem{
+		h.vLayout.SetItems([]*widget.LayoutItem{
 			{Widget: &h.mdLayoutForm},
 		})
 	} else if w >= int(640*context.AppScale()) {
@@ -195,26 +200,26 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		h.titleText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 
 		h.titleText.SetScale(1.8)
-		h.smLayoutVLayout.SetHorizontalAlign(intwidget.HorizontalAlignStart)
+		h.smLayoutVLayout.SetHorizontalAlign(widget.HorizontalAlignStart)
 		h.smLayoutVLayout.SetBackground(false)
 		h.smLayoutVLayout.SetLineBreak(false)
 		h.smLayoutVLayout.SetBorder(false)
 
 		h.smLayoutVLayout.SetWidth(context, w/2-int(2*u))
-		h.smLayoutVLayout.SetItems([]*intwidget.LayoutItem{
+		h.smLayoutVLayout.SetItems([]*widget.LayoutItem{
 			{Widget: &h.titleText},
 			{Widget: &h.gameButton},
 		})
 
 		h.smLayoutForm.SetWidth(context, w-int(1*u))
-		h.smLayoutForm.SetItems([]*intwidget.FormItem{
+		h.smLayoutForm.SetItems([]*widget.FormItem{
 			{
 				PrimaryWidget:   &h.smLayoutVLayout,
 				SecondaryWidget: &h.form,
 			},
 		})
 
-		h.vLayout.SetItems([]*intwidget.LayoutItem{
+		h.vLayout.SetItems([]*widget.LayoutItem{
 			{Widget: &h.bannerImage},
 			{Widget: &h.smLayoutForm},
 		})
@@ -224,7 +229,7 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 
 		h.titleText.SetScale(2)
 
-		h.vLayout.SetItems([]*intwidget.LayoutItem{
+		h.vLayout.SetItems([]*widget.LayoutItem{
 			{Widget: &h.bannerImage},
 			{Widget: &h.titleText},
 			{Widget: &h.gameButton},

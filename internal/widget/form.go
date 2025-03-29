@@ -3,7 +3,7 @@
 
 // Changed for eightysix by realskyquest
 
-package intwidget
+package widget
 
 import (
 	"image"

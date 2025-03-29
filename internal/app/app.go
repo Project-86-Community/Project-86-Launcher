@@ -1,5 +1,6 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
+ * SPDX-FileCopyrightText: 2025 Ilan Mayeux
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
  * Copyright (C) 2025 Ilan Mayeux
@@ -21,23 +22,30 @@
 package app
 
 import (
-	"eightysix/internal/content"
+	"eightysix/internal/data"
+	"eightysix/internal/file"
 	"net/http"
-	"runtime"
-	"strings"
 	"time"
 
-	"github.com/hajimehoshi/guigui"
-	"github.com/rs/zerolog/log"
-	"github.com/skratchdot/open-golang/open"
+	"github.com/pkg/errors"
 )
 
-func PopError(err error) {
-	log.Error().Stack().Err(err).Send()
-	content.Errs = append(content.Errs, err)
+type App struct {
+	isInternet bool
+
+	FS   *file.AppFS
+	Data *data.Data
 }
 
-func IsInternetReachable() bool {
+func (a *App) Error(err error) error {
+	return errors.New(err.Error())
+}
+
+func (a *App) IsInternet() bool {
+	return a.isInternet
+}
+
+func (a *App) isInternetReachable() bool {
 	client := http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -50,6 +58,19 @@ func IsInternetReachable() bool {
 
 	return resp.StatusCode == 204
 }
+
+func (a *App) UpdateInternet() {
+	if a.isInternetReachable() {
+		a.isInternet = true
+	} else {
+		a.isInternet = false
+	}
+}
+
+// func PopError(err error) {
+// 	log.Error().Stack().Err(err).Send()
+// 	content.Errs = append(content.Errs, err)
+// }
 
 // func RequestChangelog() (types.Changelog, error) {
 // 	changelogData := types.Changelog{}
@@ -69,82 +90,58 @@ func IsInternetReachable() bool {
 // 	return changelogData, nil
 // }
 
-func CompanyPathFolder() string {
-	folderPath := content.Mgdata.ObjectPropPath("cache", "darkmode.data")
-	if runtime.GOOS == "windows" {
-		folderPath = strings.TrimSuffix(folderPath, "Project-86-Launcher\\cache\\darkmode.data")
-	} else {
-		folderPath = strings.TrimSuffix(folderPath, "Project-86-Launcher/cache/darkmode.data")
-	}
-	return folderPath
-}
-
-func LauncherPathFolder() string {
-	folderPath := content.Mgdata.ObjectPropPath("cache", "darkmode.data")
-	if runtime.GOOS == "windows" {
-		folderPath = strings.TrimSuffix(folderPath, "cache\\darkmode.data")
-	} else {
-		folderPath = strings.TrimSuffix(folderPath, "cache/darkmode.data")
-	}
-	return folderPath
-}
-
-func OpenFileManager(path string) error {
-	return open.Run(path)
-}
-
-func WrapText(context *guigui.Context, input string, maxWidth int) string {
-	charWidthDivisor := 6.2 * context.AppScale()
-	charCount := int(float64(maxWidth) / charWidthDivisor)
-	input = strings.ReplaceAll(input, "\r\n", "\n")
-
-	lines := strings.Split(input, "\n")
-	var result []string
-
-	for _, line := range lines {
-		if len(line) == 0 {
-			result = append(result, "")
-			continue
-		}
-
-		words := strings.Fields(line)
-		if len(words) == 0 {
-			result = append(result, "")
-			continue
-		}
-
-		var currentLine string
-
-		for _, word := range words {
-			if len(word) > charCount {
-				if len(currentLine) > 0 {
-					result = append(result, currentLine)
-					currentLine = ""
-				}
-
-				for i := 0; i < len(word); i += charCount {
-					end := i + charCount
-					if end > len(word) {
-						end = len(word)
-					}
-					result = append(result, word[i:end])
-				}
-			} else {
-				if len(currentLine) == 0 {
-					currentLine = word
-				} else if len(currentLine)+1+len(word) <= charCount {
-					currentLine += " " + word
-				} else {
-					result = append(result, currentLine)
-					currentLine = word
-				}
-			}
-		}
-
-		if len(currentLine) > 0 {
-			result = append(result, currentLine)
-		}
-	}
-
-	return strings.Join(result, "\n")
-}
+// func WrapText(context *guigui.Context, input string, maxWidth int) string {
+// 	charWidthDivisor := 6.2 * context.AppScale()
+// 	charCount := int(float64(maxWidth) / charWidthDivisor)
+// 	input = strings.ReplaceAll(input, "\r\n", "\n")
+//
+// 	lines := strings.Split(input, "\n")
+// 	var result []string
+//
+// 	for _, line := range lines {
+// 		if len(line) == 0 {
+// 			result = append(result, "")
+// 			continue
+// 		}
+//
+// 		words := strings.Fields(line)
+// 		if len(words) == 0 {
+// 			result = append(result, "")
+// 			continue
+// 		}
+//
+// 		var currentLine string
+//
+// 		for _, word := range words {
+// 			if len(word) > charCount {
+// 				if len(currentLine) > 0 {
+// 					result = append(result, currentLine)
+// 					currentLine = ""
+// 				}
+//
+// 				for i := 0; i < len(word); i += charCount {
+// 					end := i + charCount
+// 					if end > len(word) {
+// 						end = len(word)
+// 					}
+// 					result = append(result, word[i:end])
+// 				}
+// 			} else {
+// 				if len(currentLine) == 0 {
+// 					currentLine = word
+// 				} else if len(currentLine)+1+len(word) <= charCount {
+// 					currentLine += " " + word
+// 				} else {
+// 					result = append(result, currentLine)
+// 					currentLine = word
+// 				}
+// 			}
+// 		}
+//
+// 		if len(currentLine) > 0 {
+// 			result = append(result, currentLine)
+// 		}
+// 	}
+//
+// 	return strings.Join(result, "\n")
+// }
