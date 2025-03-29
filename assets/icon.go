@@ -28,15 +28,15 @@ import (
 	ico "github.com/biessek/golang-ico"
 )
 
-//go:embed eightysix.ico
-var EightySixIcon []byte
+//go:embed p86l.ico
+var p86lIcon []byte
 
 // GetIconImages loads the embedded icon file and returns all images inside it
 func GetIconImages() ([]image.Image, error) {
 	var IconImages []image.Image
 
 	// Create a reader from the embedded bytes
-	reader := bytes.NewReader(EightySixIcon)
+	reader := bytes.NewReader(p86lIcon)
 
 	// Decode the ICO file
 	icons, err := ico.DecodeAll(reader)

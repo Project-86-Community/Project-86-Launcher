@@ -1,7 +1,7 @@
-package eightysix
+package p86l
 
 import (
-	ESApp "eightysix/internal/app"
+	ESApp "p86l/internal/app"
 
 	"github.com/quasilyte/gdata/v2"
 )

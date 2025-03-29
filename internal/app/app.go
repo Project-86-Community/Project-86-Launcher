@@ -22,9 +22,9 @@
 package app
 
 import (
-	"eightysix/internal/data"
-	"eightysix/internal/file"
 	"net/http"
+	"p86l/internal/data"
+	"p86l/internal/file"
 	"time"
 
 	"github.com/pkg/errors"

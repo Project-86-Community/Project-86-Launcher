@@ -22,8 +22,8 @@
 package file
 
 import (
-	"eightysix/configs"
 	"fmt"
+	"p86l/configs"
 	"runtime"
 	"strings"
 

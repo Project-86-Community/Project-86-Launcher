@@ -1,4 +1,4 @@
-module eightysix
+module p86l
 
 go 1.23.6
 

@@ -19,12 +19,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package eightysix
+package p86l
 
 import (
-	ESApp "eightysix/internal/app"
-	"eightysix/internal/data"
-	"eightysix/internal/file"
+	ESApp "p86l/internal/app"
+	"p86l/internal/data"
+	"p86l/internal/file"
 	"sync"
 	"time"
 
@@ -44,7 +44,7 @@ type Root struct {
 	home     Home
 	settings Settings
 	//changelog Changelog
-	//about     eightysix.About
+	//about     p86l.About
 
 	popup            basicwidget.Popup
 	popupTitleText   basicwidget.Text
@@ -60,6 +60,9 @@ func (r *Root) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 			FS:   &file.AppFS{GdataM: GDataM},
 			Data: &data.Data{GDataM: GDataM},
 		}
+
+		app.Data.ColorMode = guigui.ColorModeLight
+		app.Data.AppScale = 2
 
 		r.checkInternetTimeout = time.Second
 		if err := app.Data.InitColorMode(); err != nil {

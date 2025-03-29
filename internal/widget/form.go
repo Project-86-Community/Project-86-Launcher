@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2024 Hajime Hoshi
 
-// Changed for eightysix by realskyquest
+// Changed for p86l by realskyquest
 
 package widget
 

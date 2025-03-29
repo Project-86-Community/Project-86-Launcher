@@ -22,8 +22,8 @@
 package data
 
 import (
-	"eightysix/configs"
 	"fmt"
+	"p86l/configs"
 	"strconv"
 
 	"github.com/hajimehoshi/guigui"

@@ -3,16 +3,16 @@ version: '3'
 tasks:
   run:
     cmds:
-      - go run ./cmd/eightysix
+      - go run ./cmd/p86l
 
   run:debug:
     cmds:
-      - GUIGUI_DEBUG=showrenderingregions go run ./cmd/eightysix
+      - GUIGUI_DEBUG=showrenderingregions go run ./cmd/p86l
 
   build:
     cmds:
-      - go build -ldflags "-s -w -X main.AppBuild=release" -o ./bin/ ./cmd/eightysix
+      - go build -ldflags "-s -w -X main.AppBuild=release" -o ./bin/ ./cmd/p86l
 
   build:windows:
     cmds:
-      - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.AppBuild=release -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -o ./bin/project86launcher.exe ./cmd/eightysix
+      - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.AppBuild=release -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -o ./bin/project86launcher.exe ./cmd/p86l

@@ -19,12 +19,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package eightysix
+package p86l
 
 import (
-	"eightysix/assets"
-	"eightysix/internal/widget"
 	"image"
+	"p86l/assets"
+	"p86l/internal/widget"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"

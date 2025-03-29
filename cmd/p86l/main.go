@@ -22,11 +22,11 @@
 package main
 
 import (
-	"eightysix"
-	"eightysix/assets"
-	"eightysix/configs"
 	"fmt"
 	"os"
+	"p86l"
+	"p86l/assets"
+	"p86l/configs"
 	"runtime"
 	"strings"
 
@@ -45,7 +45,7 @@ func init() {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 
 	if AppBuild == "release" {
-		eightysix.TheDebugMode.Logs = true
+		p86l.TheDebugMode.Logs = true
 	} else {
 		for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
 			switch token {
@@ -54,22 +54,21 @@ func init() {
 					Out:        os.Stderr,
 					TimeFormat: "2006/01/02 15:04:05",
 				})
-				eightysix.TheDebugMode.Logs = true
+				p86l.TheDebugMode.Logs = true
 			}
 		}
 	}
 
-	if !eightysix.TheDebugMode.Logs {
+	if !p86l.TheDebugMode.Logs {
 		zerolog.SetGlobalLevel(zerolog.Disabled)
 	}
 }
 
 func main() {
-	var appName string
+	appName := fmt.Sprintf("%s/%s", configs.CompanyName, configs.AppName)
 	if runtime.GOOS == "windows" {
 		appName = fmt.Sprintf("%s\\%s", configs.CompanyName, configs.AppName)
 	}
-	appName = fmt.Sprintf("%s/%s", configs.CompanyName, configs.AppName)
 
 	m, err := gdata.Open(gdata.Config{
 		AppName: appName,
@@ -83,11 +82,7 @@ func main() {
 		panic(err)
 	}
 
-	eightysix.GDataM = m
-	// eightysix.App = &app.App{
-	// 	FS:   &file.AppFS{GdataM: m},
-	// 	Data: &data.Data{GDataM: m},
-	// }
+	p86l.GDataM = m
 
 	log.Info().Str("Detected OS", runtime.GOOS).Send()
 	ebiten.SetWindowIcon(iconImages)
@@ -96,7 +91,7 @@ func main() {
 		WindowMinWidth:  500,
 		WindowMinHeight: 280,
 	}
-	if err = guigui.Run(&eightysix.Root{}, op); err != nil {
+	if err = guigui.Run(&p86l.Root{}, op); err != nil {
 		log.Error().Stack().Err(err).Send()
 		os.Exit(1)
 	}
