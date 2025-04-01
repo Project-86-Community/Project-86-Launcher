@@ -1,5 +1,9 @@
 version: '3'
 
+vars:
+  VERSION:
+    sh: git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD
+
 tasks:
   run:
     cmds:
@@ -15,4 +19,4 @@ tasks:
 
   build:windows:
     cmds:
-      - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.AppBuild=release -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -o ./bin/project86launcher.exe ./cmd/p86l
+      - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.AppBuild=release -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -o ./bin/Project-86-Launcher-{{.VERSION}}.exe ./cmd/p86l
