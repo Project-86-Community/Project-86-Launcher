@@ -1,9 +1,9 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
- * SPDX-FileCopyrightText: 2025 Ilan Mayeux
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
+ * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ import (
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/rs/zerolog/log"
 )
 
 type Settings struct {
@@ -74,15 +75,17 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 	})
 
 	s.openFolderButton.SetOnDown(func() {
-		if dir, err := app.FS.LauncherDir(); err != nil {
-			// TODO: Add errors
-			return
-		} else {
-			go func() {
-				if err := app.FS.OpenFileManager(dir); err != nil {
-					// TODO: Add errors
-				}
-			}()
+		if app.FS.IsDir() {
+			if dir, err := app.FS.LauncherDir(); err != nil {
+				app.PopupError(err)
+				return
+			} else {
+				go func() {
+					if err := app.FS.OpenFileManager(dir); err != nil {
+						app.PopupError(err)
+					}
+				}()
+			}
 		}
 	})
 
@@ -92,6 +95,7 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 				s.err = app.Error(err)
 				return
 			}
+			log.Info().Msg("Clear cache")
 		}
 	})
 
@@ -101,8 +105,28 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 				s.err = app.Error(err)
 				return
 			}
+			log.Info().Msg("Clear data")
+
 			s.colorModeToggle.SetValue(false)
 			s.appScaleDropdownList.SetSelectedItemIndex(2)
+		}
+	})
+
+	s.deleteFilesButton.SetOnDown(func() {
+		if app.FS.IsDir() {
+			if dir, err := app.FS.LauncherDir(); err != nil {
+				app.PopupError(err)
+				return
+			} else {
+				log.Info().Msg("Delete all files")
+
+				s.colorModeToggle.SetValue(false)
+				s.appScaleDropdownList.SetSelectedItemIndex(2)
+
+				go func() {
+					app.FS.RecursiveDelete(dir)
+				}()
+			}
 		}
 	})
 

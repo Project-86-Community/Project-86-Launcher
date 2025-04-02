@@ -1,9 +1,9 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
- * SPDX-FileCopyrightText: 2025 Ilan Mayeux
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
+ * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,15 +22,21 @@
 package p86l
 
 import (
+	"errors"
+	"fmt"
+	"image"
+	"os"
 	ESApp "p86l/internal/app"
 	"p86l/internal/data"
 	"p86l/internal/file"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -44,7 +50,7 @@ type Root struct {
 	home     Home
 	settings Settings
 	//changelog Changelog
-	//about     p86l.About
+	about About
 
 	popup            basicwidget.Popup
 	popupTitleText   basicwidget.Text
@@ -55,10 +61,45 @@ type Root struct {
 }
 
 func (r *Root) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
+	if ebiten.IsWindowBeingClosed() {
+		log.Info().Msg("Closing App")
+		if TheDebugMode.IsRelease {
+			defer TheDebugMode.LogFile.Close()
+		}
+	}
+
 	r.initOnce.Do(func() {
 		app = &ESApp.App{
 			FS:   &file.AppFS{GdataM: GDataM},
 			Data: &data.Data{GDataM: GDataM},
+		}
+
+		if TheDebugMode.IsRelease {
+			logDir, err := app.FS.LogDir()
+			if err != nil {
+				r.err = app.Error(err)
+				return
+			}
+
+			if err := os.MkdirAll(logDir, 0755); err != nil {
+				r.err = app.Error(errors.New(fmt.Sprintf("Failed to create log directory: %v\n", err)))
+				return
+			}
+
+			timestamp := time.Now().Unix()
+			logFileName := fmt.Sprintf("log_%d.log", timestamp)
+			logFilePath := filepath.Join(logDir, logFileName)
+
+			logFile, err := os.Create(logFilePath)
+			if err != nil {
+				r.err = app.Error(errors.New(fmt.Sprintf("Failed to create log file: %v\n", err)))
+				return
+			}
+
+			TheDebugMode.LogFile = logFile
+
+			multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
+			log.Logger = zerolog.New(multi).With().Timestamp().Logger()
 		}
 
 		app.Data.ColorMode = guigui.ColorModeLight
@@ -78,7 +119,7 @@ func (r *Root) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 
 	appender.AppendChildWidget(&r.sidebar)
 
-	//u := float64(basicwidget.UnitSize(context))
+	u := float64(basicwidget.UnitSize(context))
 
 	guigui.SetPosition(&r.sidebar, guigui.Position(r))
 	sw, _ := r.sidebar.Size(context)
@@ -86,52 +127,55 @@ func (r *Root) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	p.X += sw
 	guigui.SetPosition(&r.home, p)
 	guigui.SetPosition(&r.settings, p)
+	guigui.SetPosition(&r.about, p)
 
 	switch r.sidebar.SelectedItemTag() {
 	case "home":
 		appender.AppendChildWidget(&r.home)
 	case "settings":
 		appender.AppendChildWidget(&r.settings)
+	case "about":
+		appender.AppendChildWidget(&r.about)
 	}
 
-	// if len(content.Errs) != 0 {
-	// 	r.popup.Open()
-	// }
-	// if len(content.Errs) > 0 {
-	// 	contentWidth := int(12 * u)
-	// 	contentHeight := int(6 * u)
-	// 	bounds := guigui.Bounds(&r.popup)
-	// 	contentPosition := image.Point{
-	// 		X: bounds.Min.X + (bounds.Dx()-contentWidth)/2,
-	// 		Y: bounds.Min.Y + (bounds.Dy()-contentHeight)/2,
-	// 	}
-	// 	contentBounds := image.Rectangle{
-	// 		Min: contentPosition,
-	// 		Max: contentPosition.Add(image.Pt(contentWidth, contentHeight)),
-	// 	}
-	// 	r.popup.SetContent(func(context *guigui.Context, appender *basicwidget.ContainerChildWidgetAppender) {
-	// 		r.popupTitleText.SetText(content.Errs[0].Error())
-	// 		r.popupTitleText.SetBold(true)
-	// 		pt := contentBounds.Min.Add(image.Pt(int(0.5*u), int(0.5*u)))
-	// 		guigui.SetPosition(&r.popupTitleText, pt)
-	// 		appender.AppendChildWidget(&r.popupTitleText)
-	//
-	// 		r.popupCloseButton.SetText("Close")
-	// 		r.popupCloseButton.SetOnUp(func() {
-	// 			content.Errs = append(content.Errs[:0], content.Errs[1:]...)
-	// 			r.popup.Close()
-	// 		})
-	// 		w, h := r.popupCloseButton.Size(context)
-	// 		pt = contentBounds.Max.Add(image.Pt(-int(0.5*u)-w, -int(0.5*u)-h))
-	// 		guigui.SetPosition(&r.popupCloseButton, pt)
-	// 		appender.AppendChildWidget(&r.popupCloseButton)
-	// 	})
-	// 	r.popup.SetContentBounds(contentBounds)
-	// 	r.popup.SetBackgroundBlurred(true)
-	// 	r.popup.SetCloseByClickingOutside(false)
-	//
-	// 	appender.AppendChildWidget(&r.popup)
-	// }
+	if len(app.Errs) != 0 {
+		r.popup.Open()
+	}
+	if len(app.Errs) > 0 {
+		contentWidth := int(12 * u)
+		contentHeight := int(6 * u)
+		bounds := guigui.Bounds(&r.popup)
+		contentPosition := image.Point{
+			X: bounds.Min.X + (bounds.Dx()-contentWidth)/2,
+			Y: bounds.Min.Y + (bounds.Dy()-contentHeight)/2,
+		}
+		contentBounds := image.Rectangle{
+			Min: contentPosition,
+			Max: contentPosition.Add(image.Pt(contentWidth, contentHeight)),
+		}
+		r.popup.SetContent(func(context *guigui.Context, appender *basicwidget.ContainerChildWidgetAppender) {
+			r.popupTitleText.SetText(app.Errs[0].Error())
+			r.popupTitleText.SetBold(true)
+			pt := contentBounds.Min.Add(image.Pt(int(0.5*u), int(0.5*u)))
+			guigui.SetPosition(&r.popupTitleText, pt)
+			appender.AppendChildWidget(&r.popupTitleText)
+
+			r.popupCloseButton.SetText("Close")
+			r.popupCloseButton.SetOnUp(func() {
+				app.Errs = append(app.Errs[:0], app.Errs[1:]...)
+				r.popup.Close()
+			})
+			w, h := r.popupCloseButton.Size(context)
+			pt = contentBounds.Max.Add(image.Pt(-int(0.5*u)-w, -int(0.5*u)-h))
+			guigui.SetPosition(&r.popupCloseButton, pt)
+			appender.AppendChildWidget(&r.popupCloseButton)
+		})
+		r.popup.SetContentBounds(contentBounds)
+		r.popup.SetBackgroundBlurred(true)
+		r.popup.SetCloseByClickingOutside(false)
+
+		appender.AppendChildWidget(&r.popup)
+	}
 }
 
 func (r *Root) Update(context *guigui.Context) error {

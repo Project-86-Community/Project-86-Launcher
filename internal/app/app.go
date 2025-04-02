@@ -1,9 +1,9 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
- * SPDX-FileCopyrightText: 2025 Ilan Mayeux
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
+ * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,10 +28,12 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 type App struct {
 	isInternet bool
+	Errs       []error
 
 	FS   *file.AppFS
 	Data *data.Data
@@ -39,6 +41,12 @@ type App struct {
 
 func (a *App) Error(err error) error {
 	return errors.New(err.Error())
+}
+
+func (a *App) PopupError(err error) {
+	newErr := errors.Wrap(err, "Popup error")
+	log.Error().Stack().Err(newErr).Send()
+	a.Errs = append(a.Errs, newErr)
 }
 
 func (a *App) IsInternet() bool {

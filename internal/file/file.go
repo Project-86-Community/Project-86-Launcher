@@ -1,9 +1,9 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
- * SPDX-FileCopyrightText: 2025 Ilan Mayeux
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
+ * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,12 +22,16 @@
 package file
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"p86l/configs"
+	"path/filepath"
 	"runtime"
 	"strings"
 
 	"github.com/quasilyte/gdata/v2"
+	"github.com/rs/zerolog/log"
 	"github.com/skratchdot/open-golang/open"
 )
 
@@ -44,6 +48,7 @@ func (afs *AppFS) clean() string {
 }
 
 func (afs *AppFS) OpenFileManager(path string) error {
+	log.Info().Str("Open File Manager", path).Send()
 	return open.Run(path)
 }
 
@@ -59,7 +64,7 @@ func (afs *AppFS) CompanyDir() (string, error) {
 		return afs.clean(), nil
 	}
 
-	return "", nil
+	return "", errors.New("CompanyDir not found")
 }
 
 func (afs *AppFS) LauncherDir() (string, error) {
@@ -67,5 +72,74 @@ func (afs *AppFS) LauncherDir() (string, error) {
 		return afs.clean() + configs.AppName, nil
 	}
 
-	return "", nil
+	return "", errors.New("LauncherDir not found")
+}
+
+func (afs *AppFS) LogDir() (string, error) {
+	if afs.IsDir() {
+		_, err := afs.LauncherDir()
+		if err != nil {
+			return "", err
+		}
+
+		if runtime.GOOS == "windows" {
+			return afs.clean() + configs.AppName + "\\logs", nil
+		}
+		return afs.clean() + configs.AppName + "/logs", nil
+	}
+
+	return "", errors.New("LogDir not found")
+}
+
+func (afs *AppFS) RecursiveDelete(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("error accessing path %s: %w", path, err)
+	}
+
+	if !info.IsDir() {
+		return fmt.Errorf("%s is not a directory", path)
+	}
+
+	err = filepath.Walk(path, func(currentPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if currentPath == path {
+			return nil
+		}
+
+		if !info.IsDir() {
+			return os.Remove(currentPath)
+		}
+
+		entries, err := os.ReadDir(currentPath)
+		if err != nil {
+			return err
+		}
+
+		if len(entries) == 0 {
+			return os.Remove(currentPath)
+		}
+
+		return nil
+	})
+
+	err = filepath.Walk(path, func(currentPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		if currentPath == path {
+			return nil
+		}
+
+		if info.IsDir() {
+			return os.Remove(currentPath)
+		}
+		return nil
+	})
+
+	return err
 }

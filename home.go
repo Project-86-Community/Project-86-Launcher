@@ -1,9 +1,9 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
- * SPDX-FileCopyrightText: 2025 Ilan Mayeux
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
+ * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +41,6 @@ type Home struct {
 
 	bannerImage basicwidget.Image
 	titleText   basicwidget.Text
-	gameText    basicwidget.Text
 	gameButton  basicwidget.TextButton
 
 	form          basicwidget.Form

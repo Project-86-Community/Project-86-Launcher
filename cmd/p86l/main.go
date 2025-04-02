@@ -1,9 +1,9 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
- * SPDX-FileCopyrightText: 2025 Ilan Mayeux
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
+ * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@ func init() {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 
 	if AppBuild == "release" {
+		p86l.TheDebugMode.IsRelease = true
 		p86l.TheDebugMode.Logs = true
 	} else {
 		for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
@@ -54,6 +55,7 @@ func init() {
 					Out:        os.Stderr,
 					TimeFormat: "2006/01/02 15:04:05",
 				})
+				p86l.TheDebugMode.IsRelease = false
 				p86l.TheDebugMode.Logs = true
 			}
 		}
