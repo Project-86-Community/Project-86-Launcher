@@ -24,6 +24,7 @@ package p86l
 import (
 	"image"
 	"p86l/assets"
+	"p86l/internal/debug"
 	"p86l/internal/widget"
 
 	"github.com/hajimehoshi/guigui"
@@ -49,13 +50,13 @@ type Home struct {
 	discordButton basicwidget.TextButton
 	patreonButton basicwidget.TextButton
 
-	err error
+	err *debug.Error
 }
 
 func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	img, err := assets.TheImageCache.Get("banner")
 	if err != nil {
-		h.err = app.Error(err)
+		h.err = app.Debug.New(err, debug.FSError, debug.ErrFileNotFound)
 		return
 	}
 	h.bannerImage.SetImage(img)
@@ -239,8 +240,9 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 }
 
 func (h *Home) Update(context *guigui.Context) error {
-	if h.err != nil {
-		return h.err
+	if h.err != nil && h.err.Err != nil {
+		AppErr = h.err
+		return h.err.Err
 	}
 	return nil
 }

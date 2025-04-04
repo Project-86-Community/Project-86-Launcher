@@ -24,6 +24,7 @@ package data
 import (
 	"fmt"
 	"p86l/configs"
+	"p86l/internal/debug"
 	"strconv"
 
 	"github.com/hajimehoshi/guigui"
@@ -32,56 +33,55 @@ import (
 )
 
 type Data struct {
+	GDataM *gdata.Manager
+
 	ColorMode guigui.ColorMode
 	AppScale  int
-
-	GDataM *gdata.Manager
 }
 
-func (d *Data) saveColorMode() error {
+func (d *Data) saveColorMode(appDebug *debug.Debug) *debug.Error {
 	if err := d.GDataM.SaveObjectProp(configs.Data, configs.ColorModeFile, []byte(fmt.Sprintf("%v", d.ColorMode))); err != nil {
-		return err
+		return appDebug.New(err, debug.DataError, debug.ErrColorModeSave)
 	}
-	return nil
+	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
-func (d *Data) saveAppScale() error {
+func (d *Data) saveAppScale(appDebug *debug.Debug) *debug.Error {
 	if err := d.GDataM.SaveObjectProp(configs.Data, configs.AppScaleFile, []byte(fmt.Sprintf("%v", d.AppScale))); err != nil {
-		return err
+		return appDebug.New(err, debug.DataError, debug.ErrAppScaleSave)
 	}
-	return nil
+	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
-func (d *Data) InitColorMode() error {
+func (d *Data) InitColorMode(appDebug *debug.Debug) *debug.Error {
 	if d.GDataM.ObjectPropExists(configs.Data, configs.ColorModeFile) {
 		colorModeByte, err := d.GDataM.LoadObjectProp(configs.Data, configs.ColorModeFile)
 		if err != nil {
-			return err
+			return appDebug.New(err, debug.DataError, debug.ErrColorModeLoad)
 		}
 		colorModeData, err := strconv.Atoi(string(colorModeByte))
 		if err != nil {
-			return err
+			return appDebug.New(err, debug.DataError, debug.ErrColorModeLoad)
 		}
 		d.ColorMode = guigui.ColorMode(colorModeData)
-
 	}
-	err := d.saveColorMode()
+	err := d.saveColorMode(appDebug)
 	return err
 }
 
-func (d *Data) InitAppScale() error {
+func (d *Data) InitAppScale(appDebug *debug.Debug) *debug.Error {
 	if d.GDataM.ObjectPropExists(configs.Data, configs.AppScaleFile) {
 		appScaleByte, err := d.GDataM.LoadObjectProp(configs.Data, configs.AppScaleFile)
 		if err != nil {
-			return err
+			return appDebug.New(err, debug.DataError, debug.ErrAppScaleLoad)
 		}
 		appScaleData, err := strconv.Atoi(string(appScaleByte))
 		if err != nil {
-			return err
+			return appDebug.New(err, debug.DataError, debug.ErrAppScaleLoad)
 		}
 		d.AppScale = appScaleData
 	}
-	err := d.saveAppScale()
+	err := d.saveAppScale(appDebug)
 	return err
 }
 
@@ -117,33 +117,33 @@ func (d *Data) SetAppScale(context *guigui.Context) {
 	}
 }
 
-func (d *Data) UpdateData(context *guigui.Context) error {
+func (d *Data) UpdateData(context *guigui.Context, appDebug *debug.Debug) *debug.Error {
 	if d.ColorMode != context.ColorMode() {
 		context.SetColorMode(d.ColorMode)
-		if err := d.saveColorMode(); err != nil {
+		if err := d.saveColorMode(appDebug); err.Err != nil {
 			return err
 		}
 		log.Info().Int("ColorMode", int(d.ColorMode)).Msg("ColorMode changed")
 	}
 	if d.AppScale != d.GetAppScale(context.AppScale()) {
 		d.SetAppScale(context)
-		if err := d.saveAppScale(); err != nil {
+		if err := d.saveAppScale(appDebug); err.Err != nil {
 			return err
 		}
 		log.Info().Int("AppScale", d.AppScale).Msg("AppScale changed")
 	}
-	return nil
+	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
-func (d *Data) HandleDataReset() error {
+func (d *Data) HandleDataReset(appDebug *debug.Debug) *debug.Error {
 	d.ColorMode = guigui.ColorModeLight
 	d.AppScale = 2
 
-	if err := d.saveColorMode(); err != nil {
+	if err := d.saveColorMode(appDebug); err.Err != nil {
 		return err
 	}
-	if err := d.saveAppScale(); err != nil {
+	if err := d.saveAppScale(appDebug); err.Err != nil {
 		return err
 	}
-	return nil
+	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }

@@ -22,51 +22,63 @@
 package p86l
 
 import (
+	"image"
+	"p86l/internal/debug"
+	"p86l/internal/widget"
+
 	"github.com/hajimehoshi/guigui"
+	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/pkg/browser"
 )
 
 type Changelog struct {
 	guigui.DefaultWidget
 
-	//vLayout         intwidget.VerticalLayout
-	//changelogText   basicwidget.Text
-	//vButtonLayout   intwidget.VerticalLayout
-	//changelogButton basicwidget.TextButton
+	vLayout         widget.VerticalLayout
+	changelogText   basicwidget.Text
+	vButtonLayout   widget.VerticalLayout
+	changelogButton basicwidget.TextButton
 
 	//err error
 }
 
 func (c *Changelog) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	// c.changelogButton.SetOnDown(func() {
-	// 	go browser.OpenURL(content.Changelog.URL)
-	// })
-	//
-	// u := float64(basicwidget.UnitSize(context))
-	// w, _ := c.Size(context)
-	// pt := guigui.Position(c).Add(image.Pt(int(0.5*u), int(0.5*u)))
-	//
-	// c.vLayout.SetBackground(true)
-	// c.vLayout.SetBorder(true)
-	//
-	// c.vLayout.SetWidth(context, w-int(1*u))
-	// guigui.SetPosition(&c.vLayout, pt)
-	//
-	// changelogTextData := app.WrapText(context, content.Changelog.Body, w-int(1*u))
-	// c.changelogText.SetText(changelogTextData)
-	//
-	// c.changelogButton.SetText("View changelog")
-	// c.vButtonLayout.SetWidth(context, w-int(1*u))
-	// c.vButtonLayout.SetHorizontalAlign(intwidget.HorizontalAlignCenter)
-	//
-	// c.vButtonLayout.SetItems([]*intwidget.LayoutItem{
-	// 	{Widget: &c.changelogButton},
-	// })
-	//
-	// c.vLayout.SetItems([]*intwidget.LayoutItem{
-	// 	{Widget: &c.changelogText},
-	// 	{Widget: &c.vButtonLayout},
-	// })
-	// appender.AppendChildWidget(&c.vLayout)
+	c.changelogButton.SetOnDown(func() {
+		go func() {
+			if err := browser.OpenURL(app.Cache.Changelog.URL); err != nil {
+				app.Debug.SetToast(app.Debug.New(err, debug.AppError, debug.ErrBrowserOpen))
+			}
+		}()
+	})
+
+	u := float64(basicwidget.UnitSize(context))
+	w, _ := c.Size(context)
+	pt := guigui.Position(c).Add(image.Pt(int(0.5*u), int(0.5*u)))
+
+	c.vLayout.SetBackground(true)
+	c.vLayout.SetBorder(true)
+
+	c.vLayout.SetWidth(context, w-int(1*u))
+	guigui.SetPosition(&c.vLayout, pt)
+
+	if app.Cache.Changelog != nil {
+		changelogTextData := app.Cache.Changelog.Body //app.WrapText(context, content.Changelog.Body, w-int(1*u))
+		c.changelogText.SetText(changelogTextData)
+	}
+
+	c.changelogButton.SetText("View changelog")
+	c.vButtonLayout.SetWidth(context, w-int(1*u))
+	c.vButtonLayout.SetHorizontalAlign(widget.HorizontalAlignCenter)
+
+	c.vButtonLayout.SetItems([]*widget.LayoutItem{
+		{Widget: &c.changelogButton},
+	})
+
+	c.vLayout.SetItems([]*widget.LayoutItem{
+		{Widget: &c.changelogText},
+		{Widget: &c.vButtonLayout},
+	})
+	appender.AppendChildWidget(&c.vLayout)
 }
 
 func (c *Changelog) Update(context *guigui.Context) error {

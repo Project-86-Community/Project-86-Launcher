@@ -22,32 +22,44 @@
 package app
 
 import (
+	"context"
 	"net/http"
+	"p86l/internal/cache"
 	"p86l/internal/data"
+	"p86l/internal/debug"
 	"p86l/internal/file"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
+	"github.com/google/go-github/v69/github"
 )
 
 type App struct {
 	isInternet bool
-	Errs       []error
+	//Errs       []error
 
-	FS   *file.AppFS
-	Data *data.Data
+	Debug *debug.Debug
+	FS    *file.AppFS
+	Data  *data.Data
+	Cache *cache.Cache
 }
 
+/*
 func (a *App) Error(err error) error {
 	return errors.New(err.Error())
 }
 
 func (a *App) PopupError(err error) {
 	newErr := errors.Wrap(err, "Popup error")
+
+	for _, appErr := range a.Errs {
+		if appErr.Error() == newErr.Error() {
+			return
+		}
+	}
+
 	log.Error().Stack().Err(newErr).Send()
 	a.Errs = append(a.Errs, newErr)
-}
+}*/
 
 func (a *App) IsInternet() bool {
 	return a.isInternet
@@ -75,10 +87,14 @@ func (a *App) UpdateInternet() {
 	}
 }
 
-// func PopError(err error) {
-// 	log.Error().Stack().Err(err).Send()
-// 	content.Errs = append(content.Errs, err)
-// }
+func (a *App) Update(githubClient *github.Client, context context.Context) {
+	// if a.isInternet {
+	// 	err := a.Cache.InitChangelog(githubClient, context)
+	// 	if err != nil {
+	// 		a.PopupError(err)
+	// 	}
+	// }
+}
 
 // func RequestChangelog() (types.Changelog, error) {
 // 	changelogData := types.Changelog{}

@@ -24,6 +24,7 @@ package p86l
 import (
 	"image"
 	"p86l/assets"
+	"p86l/internal/debug"
 	"p86l/internal/widget"
 
 	"github.com/hajimehoshi/guigui"
@@ -40,19 +41,19 @@ type About struct {
 	devText   basicwidget.Text
 	devImage  basicwidget.Image
 
-	err error
+	err *debug.Error
 }
 
 func (a *About) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	img, err := assets.TheImageCache.Get("lead")
 	if err != nil {
-		a.err = err
+		a.err = app.Debug.New(err, debug.FSError, debug.ErrFileNotFound)
 		return
 	}
 	a.leadImage.SetImage(img)
 	img, err = assets.TheImageCache.Get("dev")
 	if err != nil {
-		a.err = err
+		a.err = app.Debug.New(err, debug.FSError, debug.ErrFileNotFound)
 		return
 	}
 	a.devImage.SetImage(img)
@@ -88,8 +89,9 @@ func (a *About) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppe
 }
 
 func (a *About) Update(context *guigui.Context) error {
-	if a.err != nil {
-		return a.err
+	if a.err != nil && a.err.Err != nil {
+		AppErr = a.err
+		return a.err.Err
 	}
 	return nil
 }

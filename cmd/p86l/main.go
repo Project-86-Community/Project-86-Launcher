@@ -27,6 +27,7 @@ import (
 	"p86l"
 	"p86l/assets"
 	"p86l/configs"
+	"p86l/internal/debug"
 	"runtime"
 	"strings"
 
@@ -72,29 +73,30 @@ func main() {
 		appName = fmt.Sprintf("%s\\%s", configs.CompanyName, configs.AppName)
 	}
 
-	m, err := gdata.Open(gdata.Config{
+	m, _err := gdata.Open(gdata.Config{
 		AppName: appName,
 	})
-	if err != nil {
-		panic(err)
+	if _err != nil {
+		log.Panic().Int("Code", debug.ErrGDataOpenFailed).Str("Type", string(debug.FSError)).Err(_err).Send()
 	}
 
-	iconImages, err := assets.GetIconImages()
-	if err != nil {
-		panic(err)
+	iconImages, _err := assets.GetIconImages()
+	if _err != nil {
+		log.Panic().Int("Code", debug.ErrIconNotFound).Str("Type", string(debug.FSError)).Err(_err).Send()
 	}
 
 	p86l.GDataM = m
 
 	log.Info().Str("Detected OS", runtime.GOOS).Send()
 	ebiten.SetWindowIcon(iconImages)
+
 	op := &guigui.RunOptions{
 		Title:           "Project 86 Launcher",
 		WindowMinWidth:  500,
 		WindowMinHeight: 280,
 	}
-	if err = guigui.Run(&p86l.Root{}, op); err != nil {
-		log.Error().Stack().Err(err).Send()
+	if _err = guigui.Run(&p86l.Root{}, op); _err != nil {
+		log.Error().Stack().Int("Code", p86l.AppErr.Code).Str("Type", string(p86l.AppErr.Type)).Err(p86l.AppErr.Err).Msg("App crashed")
 		os.Exit(1)
 	}
 }

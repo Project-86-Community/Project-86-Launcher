@@ -41,10 +41,6 @@ type VerticalLayout struct {
 	widgetBounds []image.Rectangle
 }
 
-func formItemPadding(context *guigui.Context) (int, int) {
-	return basicwidget.UnitSize(context) / 2, basicwidget.UnitSize(context) / 4
-}
-
 func (v *VerticalLayout) SetItems(items []*LayoutItem) {
 	v.items = slices.Delete(v.items, 0, len(v.items))
 	v.items = append(v.items, items...)
@@ -203,10 +199,6 @@ func (v *VerticalLayout) Size(context *guigui.Context) (int, int) {
 	return v.widthMinusDefault + defaultFormWidth(context), v.height(context)
 }
 
-func defaultFormWidth(context *guigui.Context) int {
-	return 6 * basicwidget.UnitSize(context)
-}
-
 func (v *VerticalLayout) height(context *guigui.Context) int {
 	_, paddingY := formItemPadding(context)
 
@@ -223,8 +215,4 @@ func (v *VerticalLayout) height(context *guigui.Context) int {
 		y += h + 2*paddingY
 	}
 	return y
-}
-
-func minFormItemHeight(context *guigui.Context) int {
-	return basicwidget.UnitSize(context)
 }

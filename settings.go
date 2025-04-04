@@ -24,6 +24,7 @@ package p86l
 import (
 	"image"
 	"p86l/configs"
+	"p86l/internal/debug"
 	"p86l/internal/widget"
 	"sync"
 
@@ -49,7 +50,7 @@ type Settings struct {
 	deleteFilesButton    basicwidget.TextButton
 
 	initOnce sync.Once
-	err      error
+	err      *debug.Error
 }
 
 func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
@@ -76,13 +77,12 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 
 	s.openFolderButton.SetOnDown(func() {
 		if app.FS.IsDir() {
-			if dir, err := app.FS.LauncherDir(); err != nil {
-				app.PopupError(err)
-				return
+			if dir, err := app.FS.LauncherDir(app.Debug); err.Err != nil {
+				app.Debug.SetToast(err)
 			} else {
 				go func() {
-					if err := app.FS.OpenFileManager(dir); err != nil {
-						app.PopupError(err)
+					if err := app.FS.OpenFileManager(app.Debug, dir); err.Err != nil {
+						app.Debug.SetToast(err)
 					}
 				}()
 			}
@@ -92,7 +92,7 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 	s.clearCacheButton.SetOnDown(func() {
 		if app.FS.IsDir() {
 			if err := GDataM.DeleteObject(configs.Cache); err != nil {
-				s.err = app.Error(err)
+				s.err = app.Debug.New(err, debug.DataError, debug.ErrColorModeClear)
 				return
 			}
 			log.Info().Msg("Clear cache")
@@ -102,7 +102,7 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 	s.clearDataButton.SetOnDown(func() {
 		if app.FS.IsDir() {
 			if err := GDataM.DeleteObject(configs.Data); err != nil {
-				s.err = app.Error(err)
+				s.err = app.Debug.New(err, debug.DataError, debug.ErrAppScaleClear)
 				return
 			}
 			log.Info().Msg("Clear data")
@@ -114,9 +114,8 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 
 	s.deleteFilesButton.SetOnDown(func() {
 		if app.FS.IsDir() {
-			if dir, err := app.FS.LauncherDir(); err != nil {
-				app.PopupError(err)
-				return
+			if dir, err := app.FS.LauncherDir(app.Debug); err.Err != nil {
+				app.Debug.SetToast(err)
 			} else {
 				log.Info().Msg("Delete all files")
 
@@ -124,7 +123,9 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 				s.appScaleDropdownList.SetSelectedItemIndex(2)
 
 				go func() {
-					app.FS.RecursiveDelete(dir)
+					if err := app.FS.RecursiveDelete(dir); err != nil {
+						app.Debug.New(err, debug.FSError, debug.ErrFolderClear)
+					}
 				}()
 			}
 		}
@@ -168,8 +169,9 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 }
 
 func (s *Settings) Update(context *guigui.Context) error {
-	if s.err != nil {
-		return s.err
+	if s.err != nil && s.err.Err != nil {
+		AppErr = s.err
+		return s.err.Err
 	}
 	return nil
 }

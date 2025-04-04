@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"os"
 	"p86l/configs"
+	"p86l/internal/debug"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -47,9 +48,12 @@ func (afs *AppFS) clean() string {
 	return strings.TrimSuffix(colorModeFile, fmt.Sprintf("%s/%s/%s", configs.AppName, configs.Data, configs.ColorModeFile))
 }
 
-func (afs *AppFS) OpenFileManager(path string) error {
+func (afs *AppFS) OpenFileManager(appDebug *debug.Debug, path string) *debug.Error {
 	log.Info().Str("Open File Manager", path).Send()
-	return open.Run(path)
+	if err := open.Run(path); err != nil {
+		return appDebug.New(err, debug.FSError, debug.ErrOpenFolderFailed)
+	}
+	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
 func (afs *AppFS) IsDir() bool {
@@ -59,36 +63,36 @@ func (afs *AppFS) IsDir() bool {
 	return false
 }
 
-func (afs *AppFS) CompanyDir() (string, error) {
+func (afs *AppFS) CompanyDir(appDebug *debug.Debug) (string, *debug.Error) {
 	if afs.IsDir() {
-		return afs.clean(), nil
+		return afs.clean(), appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 	}
 
-	return "", errors.New("CompanyDir not found")
+	return "", appDebug.New(errors.New("CompanyDir not found"), debug.FSError, debug.ErrDirNotFound)
 }
 
-func (afs *AppFS) LauncherDir() (string, error) {
+func (afs *AppFS) LauncherDir(appDebug *debug.Debug) (string, *debug.Error) {
 	if afs.IsDir() {
-		return afs.clean() + configs.AppName, nil
+		return afs.clean() + configs.AppName, appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 	}
 
-	return "", errors.New("LauncherDir not found")
+	return "", appDebug.New(errors.New("LauncherDir not found"), debug.FSError, debug.ErrDirNotFound)
 }
 
-func (afs *AppFS) LogDir() (string, error) {
+func (afs *AppFS) LogDir(appDebug *debug.Debug) (string, *debug.Error) {
 	if afs.IsDir() {
-		_, err := afs.LauncherDir()
-		if err != nil {
+		_, err := afs.LauncherDir(appDebug)
+		if err.Err != nil {
 			return "", err
 		}
 
 		if runtime.GOOS == "windows" {
-			return afs.clean() + configs.AppName + "\\logs", nil
+			return afs.clean() + configs.AppName + "\\logs", appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 		}
-		return afs.clean() + configs.AppName + "/logs", nil
+		return afs.clean() + configs.AppName + "/logs", appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 	}
 
-	return "", errors.New("LogDir not found")
+	return "", appDebug.New(errors.New("LogDir not found"), debug.FSError, debug.ErrDirNotFound)
 }
 
 func (afs *AppFS) RecursiveDelete(path string) error {

@@ -22,10 +22,22 @@
 package p86l
 
 import (
+	"context"
+	"fmt"
 	"os"
 	ESApp "p86l/internal/app"
+	"p86l/internal/cache"
+	"p86l/internal/data"
+	"p86l/internal/debug"
+	"p86l/internal/file"
+	"path/filepath"
+	"time"
 
+	"github.com/google/go-github/v69/github"
+	"github.com/hajimehoshi/guigui"
 	"github.com/quasilyte/gdata/v2"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type debugMode struct {
@@ -37,5 +49,47 @@ type debugMode struct {
 var (
 	TheDebugMode debugMode
 	GDataM       *gdata.Manager
-	app          *ESApp.App
+
+	AppErr        *debug.Error
+	app           *ESApp.App
+	githubClient  = github.NewClient(nil)
+	githubContext = context.Background()
 )
+
+func Run() *debug.Error {
+	app = &ESApp.App{
+		Debug: &debug.Debug{},
+		FS:    &file.AppFS{GdataM: GDataM},
+		Data:  &data.Data{GDataM: GDataM},
+		Cache: &cache.Cache{GDataM: GDataM},
+	}
+
+	if TheDebugMode.IsRelease {
+		logDir, err := app.FS.LogDir(app.Debug)
+		if err.Err != nil {
+			return err
+		}
+
+		if _err := os.MkdirAll(logDir, 0755); _err != nil {
+			return app.Debug.New(_err, debug.FSError, debug.ErrNewDirFailed)
+		}
+
+		timestamp := time.Now().Unix()
+		logFileName := fmt.Sprintf("log_%d.log", timestamp)
+		logFilePath := filepath.Join(logDir, logFileName)
+
+		logFile, _err := os.Create(logFilePath)
+		if _err != nil {
+			return app.Debug.New(_err, debug.FSError, debug.ErrNewFileFailed)
+		}
+
+		TheDebugMode.LogFile = logFile
+
+		multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
+		log.Logger = zerolog.New(multi).With().Timestamp().Logger()
+	}
+
+	app.Data.ColorMode = guigui.ColorModeLight
+	app.Data.AppScale = 2
+	return app.Debug.New(nil, debug.UnknownError, debug.ErrUnknown)
+}

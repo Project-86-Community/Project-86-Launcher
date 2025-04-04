@@ -19,19 +19,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package configs
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2025 Hajime Hoshi
 
-var (
-	CompanyName = "Project-86-Community"
-	AppName     = "Project-86-Launcher"
+package widget
 
-	RepoOwner = "Taliayaya"
-	RepoName  = "Project-86"
-
-	Data          = "data"
-	ColorModeFile = "colormode.data"
-	AppScaleFile  = "appscale.data"
-
-	Cache         = "cache"
-	ChangelogFile = "changelog.json"
+import (
+	"github.com/hajimehoshi/guigui"
+	"github.com/hajimehoshi/guigui/basicwidget"
 )
+
+func formItemPadding(context *guigui.Context) (int, int) {
+	return basicwidget.UnitSize(context) / 2, basicwidget.UnitSize(context) / 4
+}
+
+func defaultFormWidth(context *guigui.Context) int {
+	return 6 * basicwidget.UnitSize(context)
+}
+
+func minFormItemHeight(context *guigui.Context) int {
+	return basicwidget.UnitSize(context)
+}

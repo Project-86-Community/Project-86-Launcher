@@ -19,19 +19,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package configs
+package p86l
 
-var (
-	CompanyName = "Project-86-Community"
-	AppName     = "Project-86-Launcher"
+import "strings"
 
-	RepoOwner = "Taliayaya"
-	RepoName  = "Project-86"
-
-	Data          = "data"
-	ColorModeFile = "colormode.data"
-	AppScaleFile  = "appscale.data"
-
-	Cache         = "cache"
-	ChangelogFile = "changelog.json"
-)
+func RemoveLineBreaks(input string) string {
+	input = strings.ReplaceAll(input, "\n", "")
+	input = strings.ReplaceAll(input, "\r", "")
+	return input
+}
