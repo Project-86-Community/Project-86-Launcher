@@ -1,8 +1,9 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
+ * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,264 +19,79 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package eightysix
+package p86l
 
 import (
-	"eightysix/content"
-	"eightysix/internal"
-	"encoding/json"
-	"fmt"
 	"image"
-	"os"
-	"sync"
-	"time"
+	"p86l/assets"
+	"p86l/internal/debug"
+	"p86l/internal/widget"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/pkg/browser"
 )
 
 type Home struct {
 	guigui.DefaultWidget
 
-	initOnce sync.Once
+	vLayout         widget.VerticalLayout
+	smLayoutForm    widget.Form
+	smLayoutVLayout widget.VerticalLayout
+	mdLayoutForm    widget.Form
+	mdLayoutVLayout widget.VerticalLayout
 
-	gameStatus string
-	gamePanel  basicwidget.ScrollablePanel
-	gameLayout internal.VerticalLayout
+	bannerImage basicwidget.Image
+	titleText   basicwidget.Text
+	gameButton  basicwidget.TextButton
 
-	vLayout       internal.VerticalLayout
-	banner        basicwidget.Image
-	titleText     basicwidget.Text
 	form          basicwidget.Form
-	gameInfoText  basicwidget.Text
-	gameButton    basicwidget.TextButton
 	websiteButton basicwidget.TextButton
 	githubButton  basicwidget.TextButton
 	discordButton basicwidget.TextButton
 	patreonButton basicwidget.TextButton
 
-	err error
-}
-
-func (h *Home) requestGame(gameFileData *content.GameFile) {
-	release, _, err := content.GithubClient.Repositories.GetLatestRelease(content.GithubContext, content.RepoOwner, content.RepoName)
-	if err != nil {
-		h.gameInfoText.SetText(err.Error())
-		guigui.Disable(&h.gameButton)
-	} else {
-		if len(release.Assets) == 0 {
-			h.gameInfoText.SetText(err.Error())
-			guigui.Disable(&h.gameButton)
-		} else {
-			*gameFileData = content.GameFile{
-				Tag:       release.GetTagName(),
-				Timestamp: time.Now(),
-				ExpiresIn: time.Hour,
-			}
-
-			for _, asset := range release.Assets {
-				if internal.IsValidGameFile(asset.GetName()) {
-					gameFileData.URL = asset.GetBrowserDownloadURL()
-				}
-			}
-
-			cachedJSON, err := json.Marshal(gameFileData)
-			if err != nil {
-				h.err = err
-				return
-			}
-			if err := content.Mgdata.SaveObjectProp("game", "game.json", cachedJSON); err != nil {
-				h.err = err
-				return
-			}
-		}
-	}
-}
-
-func (h *Home) requestUpdate(newGameFileData *content.GameFile) {
-	release, _, err := content.GithubClient.Repositories.GetLatestRelease(content.GithubContext, content.RepoOwner, content.RepoName)
-	if err != nil {
-		h.gameInfoText.SetText(err.Error())
-		guigui.Disable(&h.gameButton)
-	} else {
-		if len(release.Assets) == 0 {
-			h.gameInfoText.SetText(err.Error())
-			guigui.Disable(&h.gameButton)
-		} else {
-			*newGameFileData = content.GameFile{
-				Tag:       release.GetTagName(),
-				Timestamp: time.Now(),
-				ExpiresIn: time.Hour,
-			}
-
-			for _, asset := range release.Assets {
-				if internal.IsValidGameFile(asset.GetName()) {
-					newGameFileData.URL = asset.GetBrowserDownloadURL()
-				}
-			}
-
-			oldGameFileJSON, err := content.Mgdata.LoadObjectProp("game", "game.json")
-			if err != nil {
-				h.err = err
-				return
-			}
-			oldGameFileData := &content.GameFile{}
-			err = json.Unmarshal(oldGameFileJSON, &oldGameFileData)
-			if err != nil {
-				h.err = err
-				return
-			}
-
-			// Check if new
-			isNewer, err := internal.CheckNewerVersion(oldGameFileData.Tag, newGameFileData.Tag)
-			if err != nil {
-				h.err = err
-				return
-			}
-
-			// FIX update spam
-			cachedJSON, err := json.Marshal(newGameFileData)
-			if err != nil {
-				h.err = err
-				return
-			}
-			if err := content.Mgdata.SaveObjectProp("game", "game.json", cachedJSON); err != nil {
-				h.err = err
-				return
-			}
-
-			if isNewer {
-				content.UpdateGame = true
-			}
-		}
-	}
-}
-
-func (h *Home) gameInstall() {
-	if content.Mgdata.ObjectPropExists("game", "game.json") && content.DownloadStatus == -1 {
-		content.DownloadStatus = 0
-
-		gameFileJSON, err := content.Mgdata.LoadObjectProp("game", "game.json")
-		if err != nil {
-			h.err = err
-			return
-		}
-		gameFileData := &content.GameFile{}
-		err = json.Unmarshal(gameFileJSON, &gameFileData)
-		if err != nil {
-			h.err = err
-			return
-		}
-
-		folderPath := content.Mgdata.ObjectPropPath("darkmode", "darkmode.data")
-		folderPath = internal.TrimDarkModePath(folderPath)
-
-		go func() {
-			err = internal.DownloadFile(gameFileData.URL, folderPath+"game.zip")
-			if err != nil {
-				h.err = err
-				return
-			}
-			internal.ExtractZip(folderPath+"game.zip", folderPath+"run")
-			content.DownloadStatus = -1
-		}()
-	}
-}
-
-func (h *Home) gamePlay() {
-	folderPath := content.Mgdata.ObjectPropPath("darkmode", "darkmode.data")
-	folderPath = internal.TrimDarkModePath(folderPath)
-
-	exePath, err := internal.FindExecutable(folderPath+"run", "Project-86.exe")
-	if err != nil {
-		h.err = err
-		return
-	}
-
-	err = internal.RunExecutable(exePath)
-	if err != nil {
-		h.err = err
-		return
-	}
-
-	os.Exit(1)
+	err *debug.Error
 }
 
 func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	img, err := content.TheImageCache.Get("banner", context.ColorMode())
+	img, err := assets.TheImageCache.Get("banner")
 	if err != nil {
-		h.err = err
+		h.err = app.Debug.New(err, debug.FSError, debug.ErrFileNotFound)
 		return
 	}
-	h.banner.SetImage(img)
-	h.gameInfoText.SetText("")
+	h.bannerImage.SetImage(img)
 
-	if content.Mgdata.ObjectPropExists("game", "game.json") {
-		gameFileJSON, err := content.Mgdata.LoadObjectProp("game", "game.json")
-		if err != nil {
-			h.err = err
-			return
-		}
-		gameFileData := &content.GameFile{}
-		err = json.Unmarshal(gameFileJSON, &gameFileData)
-		if err != nil {
-			h.err = err
-			return
-		}
-
-		folderPath := content.Mgdata.ObjectPropPath("darkmode", "darkmode.data")
-		folderPath = internal.TrimDarkModePath(folderPath)
-
-		if internal.FolderExists(folderPath + "run") {
-			h.gameButton.SetText("Play")
-			guigui.Enable(&h.gameButton)
-			h.gameStatus = "play"
-		} else {
-			h.gameButton.SetText("Install")
-			guigui.Enable(&h.gameButton)
-			h.gameStatus = "install"
-		}
-
-		if content.IsInternet {
-			if time.Since(gameFileData.Timestamp) > gameFileData.ExpiresIn {
-				h.requestUpdate(gameFileData)
-			}
-			if content.UpdateGame {
-				h.gameButton.SetText("Update")
-				guigui.Enable(&h.gameButton)
-				h.gameStatus = "update"
-			}
-			if content.DownloadStatus != -1 {
-				if content.DownloadStatus >= 99.99 {
-					h.gameInfoText.SetText("Extracting zip file...")
-				} else {
-					h.gameInfoText.SetText(fmt.Sprintf("%.1f%% - ETA: %s", content.DownloadStatus, content.DownloadETA))
-				}
-				h.gameButton.SetText("Downloading...")
-				guigui.Disable(&h.gameButton)
-			}
-		}
-	} else {
-		if content.IsInternet {
-			gameFileData := content.GameFile{}
-			h.requestGame(&gameFileData)
-
-			h.gameButton.SetText("Install")
-			guigui.Disable(&h.gameButton)
-		} else {
-			h.gameButton.SetText("NO INTERNET")
-			guigui.Disable(&h.gameButton)
-		}
-	}
-
-	h.initOnce.Do(func() {
-		gameFileData := &content.GameFile{}
-		h.requestUpdate(gameFileData)
+	h.websiteButton.SetOnDown(func() {
+		// go func() {
+		// 	if err := browser.OpenURL("https://taliayaya.github.io/Project-86-Website/"); err != nil {
+		// 		app.PopError(errors.New(err.Error()))
+		// 	}
+		// }()
+	})
+	h.githubButton.SetOnDown(func() {
+		// go func() {
+		// 	if err := browser.OpenURL("https://github.com/Taliayaya/Project-86"); err != nil {
+		// 		app.PopError(errors.New(err.Error()))
+		// 	}
+		// }()
+	})
+	h.discordButton.SetOnDown(func() {
+		// go func() {
+		// 	if err := browser.OpenURL("https://discord.gg/Yh2TQH97yA"); err != nil {
+		// 		app.PopError(errors.New(err.Error()))
+		// 	}
+		// }()
+	})
+	h.patreonButton.SetOnDown(func() {
+		// go func() {
+		// 	if err := browser.OpenURL("https://patreon.com/project86"); err != nil {
+		// 		app.PopError(errors.New(err.Error()))
+		// 	}
+		// }()
 	})
 
 	u := float64(basicwidget.UnitSize(context))
-	w, _ := h.Size(context)
+	w, _h := h.Size(context)
 	pt := guigui.Position(h).Add(image.Pt(int(0.5*u), int(0.5*u)))
 
 	{
@@ -286,50 +102,26 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		newWidth := w - int(u)
 		newHeight := int(float64(newWidth) * aspectRatio)
 
-		h.banner.SetSize(context, newWidth, newHeight)
+		h.bannerImage.SetSize(context, newWidth+1, newHeight+1)
 	}
 
 	h.titleText.SetBold(true)
-	h.titleText.SetScale(2)
 	h.titleText.SetText("Welcome to Project 86")
 	h.titleText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 
-	_, gameTextHeight := h.gameInfoText.Size(context)
-	h.gamePanel.SetSize(context, w, gameTextHeight+int(2*u))
-	h.gameButton.SetWidth(240)
-
-	h.gamePanel.SetContent(func(context *guigui.Context, childAppender *basicwidget.ContainerChildWidgetAppender, offsetX, offsetY float64) {
-		p := guigui.Position(&h.gamePanel).Add(image.Pt(int(offsetX), int(offsetY)))
-
-		h.gameLayout.SetHorizontalAlign(internal.HorizontalAlignCenter)
-		h.gameLayout.DisableBackground(true)
-		h.gameLayout.DisableLineBreak(true)
-		h.gameLayout.DisableBorder(true)
-
-		h.gameLayout.SetWidth(context, w-int(1*u))
-		guigui.SetPosition(&h.gameLayout, image.Pt(p.X+int(u), p.Y+int(u)))
-
-		h.gameLayout.SetItems([]*internal.LayoutItem{
-			{Widget: &h.gameInfoText},
-		})
-		childAppender.AppendChildWidget(&h.gameLayout)
-	})
-	h.gamePanel.SetPadding(int(2*u), 0)
-
 	h.websiteButton.SetText("Website")
-	h.websiteButton.SetWidth(110)
+	h.websiteButton.SetWidth(int(float64(w)/4) - int(1*u))
 
 	h.githubButton.SetText("Github")
-	h.githubButton.SetWidth(110)
+	h.githubButton.SetWidth(int(float64(w)/4) - int(1*u))
 
 	h.discordButton.SetText("Discord")
-	h.discordButton.SetWidth(110)
+	h.discordButton.SetWidth(int(float64(w)/4) - int(1*u))
 
 	h.patreonButton.SetText("Patreon")
-	h.patreonButton.SetWidth(110)
+	h.patreonButton.SetWidth(int(float64(w)/4) - int(1*u))
 
-	titleTextWidth, _ := h.titleText.Size(context)
-	h.form.SetWidth(context, titleTextWidth/2)
+	h.form.SetWidth(context, int(float64(w)/2)-int(0.5*u))
 	h.form.SetItems([]*basicwidget.FormItem{
 		{
 			PrimaryWidget:   &h.websiteButton,
@@ -341,53 +133,116 @@ func (h *Home) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		},
 	})
 
-	h.vLayout.SetHorizontalAlign(internal.HorizontalAlignCenter)
-	h.vLayout.DisableBackground(true)
-	h.vLayout.DisableLineBreak(true)
-	h.vLayout.DisableBorder(true)
+	h.vLayout.SetHorizontalAlign(widget.HorizontalAlignCenter)
+	h.vLayout.SetBackground(false)
+	h.vLayout.SetLineBreak(false)
+	h.vLayout.SetBorder(false)
 
 	h.vLayout.SetWidth(context, w-int(1*u))
 	guigui.SetPosition(&h.vLayout, pt)
 
-	h.vLayout.SetItems([]*internal.LayoutItem{
-		{Widget: &h.banner},
-		{Widget: &h.titleText},
-		{Widget: &h.gamePanel},
-		{Widget: &h.gameButton},
-		{Widget: &h.form},
-	})
-	appender.AppendChildWidget(&h.vLayout)
+	if app.IsInternet() {
+		h.gameButton.SetText("Install")
+		guigui.Enable(&h.gameButton)
+	} else {
+		h.gameButton.SetText("NO INTERNET")
+		guigui.Disable(&h.gameButton)
+	}
 
-	h.gameButton.SetOnDown(func() {
-		switch h.gameStatus {
-		case "install":
-			h.gameInstall()
-		case "update":
-			content.UpdateGame = false
-			gameFileData := content.GameFile{}
-			h.requestGame(&gameFileData)
-			h.gameInstall()
-		case "play":
-			h.gamePlay()
+	if w >= int(940*context.AppScale()) {
+		{
+			imgWidth := img.Bounds().Dx()
+			imgHeight := img.Bounds().Dy()
+			aspectRatio := float64(imgHeight) / float64(imgWidth)
+
+			newWidth := w - int(u)
+			newHeight := int(float64(newWidth) * aspectRatio)
+
+			h.bannerImage.SetSize(context, int(float64(newWidth)/1.8), int(float64(newHeight)/1.8))
 		}
-	})
-	h.websiteButton.SetOnDown(func() {
-		go browser.OpenURL("https://taliayaya.github.io/Project-86-Website/")
-	})
-	h.githubButton.SetOnDown(func() {
-		go browser.OpenURL("https://github.com/Taliayaya/Project-86")
-	})
-	h.discordButton.SetOnDown(func() {
-		go browser.OpenURL("https://discord.gg/Yh2TQH97yA")
-	})
-	h.patreonButton.SetOnDown(func() {
-		go browser.OpenURL("https://patreon.com/project86")
-	})
+		h.gameButton.SetWidth(int(float64(w)/2.5) - int(1*u))
+		h.titleText.ResetSize()
+		h.titleText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+
+		h.titleText.SetScale(2.8)
+
+		h.websiteButton.SetWidth(int(float64(w)/5) - int(1*u))
+		h.githubButton.SetWidth(int(float64(w)/5) - int(1*u))
+		h.discordButton.SetWidth(int(float64(w)/5) - int(1*u))
+		h.patreonButton.SetWidth(int(float64(w)/5) - int(1*u))
+		h.form.SetWidth(context, int(float64(w)/2.5)-int(0.5*u))
+
+		h.mdLayoutVLayout.SetHorizontalAlign(widget.HorizontalAlignCenter)
+		h.mdLayoutVLayout.SetBackground(false)
+		h.mdLayoutVLayout.SetLineBreak(false)
+		h.mdLayoutVLayout.SetBorder(false)
+
+		h.mdLayoutVLayout.SetWidth(context, int(float64(w)/2.2)-int(2*u))
+		h.mdLayoutVLayout.SetItems([]*widget.LayoutItem{
+			{Widget: &h.titleText},
+			{Widget: &h.gameButton},
+			{Widget: &h.form},
+		})
+
+		h.mdLayoutForm.SetWidth(context, w-int(1*u))
+		h.mdLayoutForm.SetItems([]*widget.FormItem{
+			{PrimaryWidget: &h.bannerImage, SecondaryWidget: &h.mdLayoutVLayout},
+		})
+
+		_, mdLayoutFormHeight := h.mdLayoutForm.Size(context)
+		guigui.SetPosition(&h.vLayout, image.Pt(pt.X, pt.Y+(_h/2-int(float64(mdLayoutFormHeight)/1.5))))
+		h.vLayout.SetItems([]*widget.LayoutItem{
+			{Widget: &h.mdLayoutForm},
+		})
+	} else if w >= int(640*context.AppScale()) {
+		h.gameButton.SetWidth(int(float64(w)/2.3) - int(1*u))
+		h.titleText.SetWidth(int(float64(w)/2.3) - int(1*u))
+		h.titleText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+
+		h.titleText.SetScale(1.8)
+		h.smLayoutVLayout.SetHorizontalAlign(widget.HorizontalAlignStart)
+		h.smLayoutVLayout.SetBackground(false)
+		h.smLayoutVLayout.SetLineBreak(false)
+		h.smLayoutVLayout.SetBorder(false)
+
+		h.smLayoutVLayout.SetWidth(context, w/2-int(2*u))
+		h.smLayoutVLayout.SetItems([]*widget.LayoutItem{
+			{Widget: &h.titleText},
+			{Widget: &h.gameButton},
+		})
+
+		h.smLayoutForm.SetWidth(context, w-int(1*u))
+		h.smLayoutForm.SetItems([]*widget.FormItem{
+			{
+				PrimaryWidget:   &h.smLayoutVLayout,
+				SecondaryWidget: &h.form,
+			},
+		})
+
+		h.vLayout.SetItems([]*widget.LayoutItem{
+			{Widget: &h.bannerImage},
+			{Widget: &h.smLayoutForm},
+		})
+	} else {
+		h.gameButton.SetWidth(int(float64(w)/1.5) - int(1*u))
+		h.titleText.ResetSize()
+
+		h.titleText.SetScale(2)
+
+		h.vLayout.SetItems([]*widget.LayoutItem{
+			{Widget: &h.bannerImage},
+			{Widget: &h.titleText},
+			{Widget: &h.gameButton},
+			{Widget: &h.form},
+		})
+	}
+	appender.AppendChildWidget(&h.vLayout)
 }
 
 func (h *Home) Update(context *guigui.Context) error {
-	if h.err != nil {
-		return h.err
+	if h.err != nil && h.err.Err != nil {
+		AppErr = h.err
+		return h.err.Err
 	}
 	return nil
 }

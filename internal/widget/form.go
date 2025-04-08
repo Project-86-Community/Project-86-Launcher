@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2024 Hajime Hoshi
 
-// Changed for eightysix by realskyquest
+// Changed for p86l by realskyquest
 
-package internal
+package widget
 
 import (
 	"image"
@@ -60,7 +60,7 @@ func (f *Form) calcItemBounds(context *guigui.Context) {
 	f.primaryBounds = slices.Delete(f.primaryBounds, 0, len(f.primaryBounds))
 	f.secondaryBounds = slices.Delete(f.secondaryBounds, 0, len(f.secondaryBounds))
 
-	paddingX, paddingY := formItemPadding(context)
+	//paddingX, paddingY := formItemPadding(context)
 
 	var y int
 	for i, item := range f.items {
@@ -84,8 +84,8 @@ func (f *Form) calcItemBounds(context *guigui.Context) {
 		}
 		h := max(primaryH, secondaryH, minFormItemHeight(context))
 		baseBounds := guigui.Bounds(f)
-		baseBounds.Min.X += paddingX
-		baseBounds.Max.X -= paddingX
+		//baseBounds.Min.X += paddingX
+		//baseBounds.Max.X -= paddingX
 		baseBounds.Min.Y += y
 		baseBounds.Max.Y = baseBounds.Min.Y + h
 
@@ -93,9 +93,9 @@ func (f *Form) calcItemBounds(context *guigui.Context) {
 			bounds := baseBounds
 			ww, wh := item.PrimaryWidget.Size(context)
 			bounds.Max.X = bounds.Min.X + ww
-			pY := (h + 2*paddingY - wh) / 2
-			if wh < basicwidget.UnitSize(context)+2*paddingY {
-				pY = min(pY, max(0, (basicwidget.UnitSize(context)+2*paddingY-wh)/2))
+			pY := (h + 2 - wh) / 2
+			if wh < basicwidget.UnitSize(context)+2 {
+				pY = min(pY, max(0, (basicwidget.UnitSize(context)+2-wh)/2))
 			}
 			bounds.Min.Y += pY
 			bounds.Max.Y += pY
@@ -105,16 +105,16 @@ func (f *Form) calcItemBounds(context *guigui.Context) {
 			bounds := baseBounds
 			ww, wh := item.SecondaryWidget.Size(context)
 			bounds.Min.X = bounds.Max.X - ww
-			pY := (h + 2*paddingY - wh) / 2
-			if wh < basicwidget.UnitSize(context)+2*paddingY {
-				pY = min(pY, (basicwidget.UnitSize(context)+2*paddingY-wh)/2)
+			pY := (h + 2 - wh) / 2
+			if wh < basicwidget.UnitSize(context)+2 {
+				pY = min(pY, (basicwidget.UnitSize(context)+2-wh)/2)
 			}
 			bounds.Min.Y += pY
 			bounds.Max.Y += pY
 			f.secondaryBounds[i] = bounds
 		}
 
-		y += h + 2*paddingY
+		y += h + 2 //*paddingY
 	}
 }
 
@@ -159,7 +159,7 @@ func (f *Form) Size(context *guigui.Context) (int, int) {
 }
 
 func (f *Form) height(context *guigui.Context) int {
-	_, paddingY := formItemPadding(context)
+	//_, paddingY := formItemPadding(context)
 
 	var y int
 	for _, item := range f.items {
@@ -176,7 +176,7 @@ func (f *Form) height(context *guigui.Context) int {
 			_, secondaryH = item.SecondaryWidget.Size(context)
 		}
 		h := max(primaryH, secondaryH, minFormItemHeight(context))
-		y += h + 2*paddingY
+		y += h + 2 //*paddingY
 	}
 	return y
 }

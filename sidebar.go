@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
+ * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package eightysix
+package p86l
 
 import (
 	"image"
@@ -61,6 +61,7 @@ func (s *Sidebar) Layout(context *guigui.Context, appender *guigui.ChildWidgetAp
 			t.SetScale(1.2)
 			t.SetText("Home")
 			t.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+			t.SetWidth(sidebarWidth(context))
 			t.SetHeight((basicwidget.UnitSize(context) / 2) + basicwidget.UnitSize(context))
 			s.listItemWidgets = append(s.listItemWidgets, basicwidget.ListItem{
 				Content:    &t,
@@ -73,6 +74,7 @@ func (s *Sidebar) Layout(context *guigui.Context, appender *guigui.ChildWidgetAp
 			t.SetScale(1.2)
 			t.SetText("Settings")
 			t.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+			t.SetWidth(sidebarWidth(context))
 			t.SetHeight((basicwidget.UnitSize(context) / 2) + basicwidget.UnitSize(context))
 			s.listItemWidgets = append(s.listItemWidgets, basicwidget.ListItem{
 				Content:    &t,
@@ -85,6 +87,7 @@ func (s *Sidebar) Layout(context *guigui.Context, appender *guigui.ChildWidgetAp
 			t.SetScale(1.2)
 			t.SetText("Instances")
 			t.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+			t.SetWidth(sidebarWidth(context))
 			t.SetHeight((basicwidget.UnitSize(context) / 2) + basicwidget.UnitSize(context))
 			s.listItemWidgets = append(s.listItemWidgets, basicwidget.ListItem{
 				Content:    &t,
@@ -97,6 +100,7 @@ func (s *Sidebar) Layout(context *guigui.Context, appender *guigui.ChildWidgetAp
 			t.SetScale(1.2)
 			t.SetText("Changelog")
 			t.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+			t.SetWidth(sidebarWidth(context))
 			t.SetHeight((basicwidget.UnitSize(context) / 2) + basicwidget.UnitSize(context))
 			s.listItemWidgets = append(s.listItemWidgets, basicwidget.ListItem{
 				Content:    &t,
@@ -109,6 +113,7 @@ func (s *Sidebar) Layout(context *guigui.Context, appender *guigui.ChildWidgetAp
 			t.SetScale(1.2)
 			t.SetText("About")
 			t.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+			t.SetWidth(sidebarWidth(context))
 			t.SetHeight((basicwidget.UnitSize(context) / 2) + basicwidget.UnitSize(context))
 			s.listItemWidgets = append(s.listItemWidgets, basicwidget.ListItem{
 				Content:    &t,

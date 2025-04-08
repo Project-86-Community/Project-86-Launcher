@@ -1,29 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2025 Hajime Hoshi
 
-package content
+// Changed for p86l by realskyquest
+
+package assets
 
 import (
 	"embed"
-	// eightysix Change Start
 	"image/jpeg"
-	// eightysix Change End
 
 	"github.com/hajimehoshi/ebiten/v2"
-
-	"github.com/hajimehoshi/guigui"
 )
-
-// eightysix Change Start
 
 //go:embed *.jpg
 var jngImages embed.FS
 
-// eightysix Change End
-
 type imageCacheKey struct {
-	name      string
-	colorMode guigui.ColorMode
+	name string
 }
 
 type imageCache struct {
@@ -32,30 +25,23 @@ type imageCache struct {
 
 var TheImageCache = &imageCache{}
 
-func (i *imageCache) Get(name string, colorMode guigui.ColorMode) (*ebiten.Image, error) {
+func (i *imageCache) Get(name string) (*ebiten.Image, error) {
 	key := imageCacheKey{
-		name:      name,
-		colorMode: colorMode,
+		name: name,
 	}
 	if img, ok := i.m[key]; ok {
 		return img, nil
 	}
 
-	// eightysix Change Start
 	f, err := jngImages.Open(name + ".jpg")
-	// eightysix Change End
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	// eightysix Change Start
 	pImg, err := jpeg.Decode(f)
-	// eightysix Change End
 	if err != nil {
 		return nil, err
 	}
-
-	// eightysix Change Start
 
 	// if colorMode == guigui.ColorModeDark {
 	// 	// Create a white image for dark mode.
@@ -71,8 +57,6 @@ func (i *imageCache) Get(name string, colorMode guigui.ColorMode) (*ebiten.Image
 	// 	}
 	// 	pImg = rgbaImg
 	// }
-
-	// eightysix Change End
 
 	img := ebiten.NewImageFromImage(pImg)
 	if i.m == nil {

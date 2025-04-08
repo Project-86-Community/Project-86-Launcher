@@ -1,8 +1,9 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
+ * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,143 +19,159 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package eightysix
+package p86l
 
 import (
-	"eightysix/content"
-	"eightysix/internal"
-	"fmt"
 	"image"
-	"os"
-	"strconv"
+	"p86l/configs"
+	"p86l/internal/debug"
+	"p86l/internal/widget"
+	"sync"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/rs/zerolog/log"
 )
 
 type Settings struct {
 	guigui.DefaultWidget
 
-	vLayout          internal.VerticalLayout
-	hLayout          internal.Form
-	cacheButton      basicwidget.TextButton
-	toggleButtonText basicwidget.Text
-	toggleButton     basicwidget.ToggleButton
-	repairButton     basicwidget.TextButton
-	openButton       basicwidget.TextButton
-	deleteButton     basicwidget.TextButton
+	vLayout       widget.VerticalLayout
+	colorModeForm widget.Form
 
-	err error
+	colorModeText        basicwidget.Text
+	colorModeToggle      basicwidget.ToggleButton
+	appScaleText         basicwidget.Text
+	appScaleDropdownList basicwidget.DropdownList
+	openFolderButton     basicwidget.TextButton
+	repairButton         basicwidget.TextButton
+	clearCacheButton     basicwidget.TextButton
+	clearDataButton      basicwidget.TextButton
+	deleteFilesButton    basicwidget.TextButton
+
+	initOnce sync.Once
+	err      *debug.Error
 }
 
 func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	if content.Mgdata.ObjectPropExists("darkmode", "darkmode.data") {
-		darkModeByte, err := content.Mgdata.LoadObjectProp("darkmode", "darkmode.data")
-		if err != nil {
-			s.err = err
-			return
+	s.appScaleDropdownList.SetItemsByStrings([]string{"50%", "75%", "100%", "125%", "150%"})
+	s.initOnce.Do(func() {
+		if app.Data.ColorMode == guigui.ColorModeDark {
+			s.colorModeToggle.SetValue(true)
 		}
-		darkModeData, err := strconv.Atoi(string(darkModeByte))
-		if err != nil {
-			s.err = err
-			return
+
+		s.appScaleDropdownList.SetSelectedItemIndex(app.Data.AppScale)
+	})
+
+	s.colorModeToggle.SetOnValueChanged(func(value bool) {
+		if value {
+			app.Data.ColorMode = guigui.ColorModeDark
+		} else {
+			app.Data.ColorMode = guigui.ColorModeLight
 		}
-		if darkModeData == 1 {
-			s.toggleButton.SetValue(true)
+	})
+
+	s.appScaleDropdownList.SetOnValueChanged(func(value int) {
+		app.Data.AppScale = value
+	})
+
+	s.openFolderButton.SetOnDown(func() {
+		if app.FS.IsDir() {
+			if dir, err := app.FS.LauncherDir(app.Debug); err.Err != nil {
+				app.Debug.SetToast(err)
+			} else {
+				go func() {
+					if err := app.FS.OpenFileManager(app.Debug, dir); err.Err != nil {
+						app.Debug.SetToast(err)
+					}
+				}()
+			}
 		}
-	}
+	})
+
+	s.clearCacheButton.SetOnDown(func() {
+		if app.FS.IsDir() {
+			if err := GDataM.DeleteObject(configs.Cache); err != nil {
+				s.err = app.Debug.New(err, debug.DataError, debug.ErrColorModeClear)
+				return
+			}
+			log.Info().Msg("Clear cache")
+		}
+	})
+
+	s.clearDataButton.SetOnDown(func() {
+		if app.FS.IsDir() {
+			if err := GDataM.DeleteObject(configs.Data); err != nil {
+				s.err = app.Debug.New(err, debug.DataError, debug.ErrAppScaleClear)
+				return
+			}
+			log.Info().Msg("Clear data")
+
+			s.colorModeToggle.SetValue(false)
+			s.appScaleDropdownList.SetSelectedItemIndex(2)
+		}
+	})
+
+	s.deleteFilesButton.SetOnDown(func() {
+		if app.FS.IsDir() {
+			if dir, err := app.FS.LauncherDir(app.Debug); err.Err != nil {
+				app.Debug.SetToast(err)
+			} else {
+				log.Info().Msg("Delete all files")
+
+				s.colorModeToggle.SetValue(false)
+				s.appScaleDropdownList.SetSelectedItemIndex(2)
+
+				go func() {
+					if err := app.FS.ClearFolder(dir, app.Debug); err.Err != nil {
+						app.Debug.SetToast(err)
+					}
+				}()
+			}
+		}
+	})
 
 	u := float64(basicwidget.UnitSize(context))
 	w, _ := s.Size(context)
 	pt := guigui.Position(s).Add(image.Pt(int(0.5*u), int(0.5*u)))
 
-	s.cacheButton.SetText("Reset cache")
-	s.toggleButtonText.SetText("Dark mode")
+	s.colorModeText.SetText("Dark Mode")
+	s.appScaleText.SetText("App Scale")
+	s.openFolderButton.SetText("Open folder")
 	s.repairButton.SetText("Repair")
-	s.openButton.SetText("Open folder")
-	s.deleteButton.SetText("Delete all files")
+	s.clearCacheButton.SetText("Clear cache")
+	s.clearDataButton.SetText("Clear data")
+	s.deleteFilesButton.SetText("Delete all files")
 
-	s.hLayout.SetItems([]*internal.FormItem{
-		{PrimaryWidget: &s.toggleButtonText, SecondaryWidget: &s.toggleButton},
+	s.colorModeForm.SetItems([]*widget.FormItem{
+		{PrimaryWidget: &s.colorModeText, SecondaryWidget: &s.colorModeToggle},
 	})
 
-	s.vLayout.SetHorizontalAlign(internal.HorizontalAlignCenter)
-	s.vLayout.DisableBackground(true)
+	s.vLayout.SetHorizontalAlign(widget.HorizontalAlignCenter)
+	s.vLayout.SetBackground(true)
+	s.vLayout.SetLineBreak(false)
+	s.vLayout.SetBorder(true)
 
 	s.vLayout.SetWidth(context, w-int(1*u))
 	guigui.SetPosition(&s.vLayout, pt)
 
-	s.vLayout.SetItems([]*internal.LayoutItem{
-		{Widget: &s.hLayout},
-		{Widget: &s.cacheButton},
+	s.vLayout.SetItems([]*widget.LayoutItem{
+		{Widget: &s.colorModeForm},
+		{Widget: &s.appScaleText},
+		{Widget: &s.appScaleDropdownList},
+		{Widget: &s.openFolderButton},
 		{Widget: &s.repairButton},
-		{Widget: &s.openButton},
-		{Widget: &s.deleteButton},
+		{Widget: &s.clearCacheButton},
+		{Widget: &s.clearDataButton},
+		{Widget: &s.deleteFilesButton},
 	})
 	appender.AppendChildWidget(&s.vLayout)
-
-	s.cacheButton.SetOnDown(func() {
-		content.Mgdata.DeleteObject("game")
-		content.Mgdata.DeleteObject("changelog")
-	})
-	s.toggleButton.SetOnValueChanged(func(value bool) {
-		if value {
-			context.SetColorMode(guigui.ColorModeDark)
-		} else {
-			context.SetColorMode(guigui.ColorModeLight)
-		}
-		darkModeData := context.ColorMode()
-		if err := content.Mgdata.SaveObjectProp("darkmode", "darkmode.data", []byte(fmt.Sprintf("%v", darkModeData))); err != nil {
-			s.err = err
-			return
-		}
-	})
-	s.openButton.SetOnDown(func() {
-		if content.Mgdata.ObjectPropExists("darkmode", "darkmode.data") {
-			folderPath := content.Mgdata.ObjectPropPath("darkmode", "darkmode.data")
-			folderPath = internal.TrimDarkModePath(folderPath)
-
-			go func() {
-				err := internal.OpenFileManager(folderPath)
-				if err != nil {
-					fmt.Println(err)
-				}
-			}()
-		}
-	})
-	s.deleteButton.SetOnDown(func() {
-		if content.Mgdata.ObjectPropExists("darkmode", "darkmode.data") {
-			folderPath := content.Mgdata.ObjectPropPath("darkmode", "darkmode.data")
-			folderPath = internal.TrimDarkModePath(folderPath)
-
-			_, err := os.Stat(folderPath + "run")
-			if err == nil || !os.IsNotExist(err) {
-				err = os.RemoveAll(folderPath + "run")
-				if err != nil {
-					s.err = err
-					return
-				}
-			}
-			_, err = os.Stat(folderPath + "game.zip")
-			if err == nil || !os.IsNotExist(err) {
-				err = os.Remove(folderPath + "game.zip")
-				if err != nil {
-					s.err = err
-					return
-				}
-			}
-
-			s.toggleButton.SetValue(false)
-			content.Mgdata.DeleteObject("darkmode")
-			content.Mgdata.DeleteObject("game")
-			content.Mgdata.DeleteObject("changelog")
-		}
-	})
 }
 
 func (s *Settings) Update(context *guigui.Context) error {
-	if s.err != nil {
-		return s.err
+	if s.err != nil && s.err.Err != nil {
+		AppErr = s.err
+		return s.err.Err
 	}
 	return nil
 }

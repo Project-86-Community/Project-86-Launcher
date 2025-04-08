@@ -1,8 +1,9 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
+ * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,12 +19,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package eightysix
+package p86l
 
 import (
-	"eightysix/content"
-	"eightysix/internal"
 	"image"
+	"p86l/assets"
+	"p86l/internal/debug"
+	"p86l/internal/widget"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -32,26 +34,26 @@ import (
 type About struct {
 	guigui.DefaultWidget
 
-	vLayout   internal.VerticalLayout
+	vLayout   widget.VerticalLayout
 	infoText  basicwidget.Text
 	leadText  basicwidget.Text
 	leadImage basicwidget.Image
 	devText   basicwidget.Text
 	devImage  basicwidget.Image
 
-	err error
+	err *debug.Error
 }
 
 func (a *About) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	img, err := content.TheImageCache.Get("lead", context.ColorMode())
+	img, err := assets.TheImageCache.Get("lead")
 	if err != nil {
-		a.err = err
+		a.err = app.Debug.New(err, debug.FSError, debug.ErrFileNotFound)
 		return
 	}
 	a.leadImage.SetImage(img)
-	img, err = content.TheImageCache.Get("dev", context.ColorMode())
+	img, err = assets.TheImageCache.Get("dev")
 	if err != nil {
-		a.err = err
+		a.err = app.Debug.New(err, debug.FSError, debug.ErrFileNotFound)
 		return
 	}
 	a.devImage.SetImage(img)
@@ -63,20 +65,20 @@ func (a *About) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppe
 	w, _ := a.Size(context)
 	pt := guigui.Position(a).Add(image.Pt(int(0.5*u), int(0.5*u)))
 
-	a.infoText.SetText("Welcome to Project 86 - a fan game in its early stages, \n with the primary goal of delivering a functional beta swiftly. \n We invite players to actively participate and provide feedback, \n steering the game in the right direction.")
+	a.infoText.SetText(WrapText(context, "Welcome to Project 86 - a fan game in its early stages, with the primary goal of delivering a functional beta swiftly. We invite players to actively participate and provide feedback, steering the game in the right direction.", w-int(1*u)))
 	a.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 	a.infoText.SetMultiline(true)
 
-	a.leadText.SetText("Lead Developer - Taliayaya - Ilan Mayeux")
+	a.leadText.SetText(WrapText(context, "Lead Developer - Taliayaya - Ilan Mayeux", w-int(1*u)))
 
-	a.devText.SetText("Launcher Developer - realskyquest - Sky")
+	a.devText.SetText(WrapText(context, "Launcher Developer - realskyquest - Sky", w-int(1*u)))
 
-	a.vLayout.SetHorizontalAlign(internal.HorizontalAlignCenter)
+	a.vLayout.SetHorizontalAlign(widget.HorizontalAlignCenter)
 
 	a.vLayout.SetWidth(context, w-int(1*u))
 	guigui.SetPosition(&a.vLayout, pt)
 
-	a.vLayout.SetItems([]*internal.LayoutItem{
+	a.vLayout.SetItems([]*widget.LayoutItem{
 		{Widget: &a.infoText},
 		{Widget: &a.leadImage},
 		{Widget: &a.leadText},
@@ -87,8 +89,9 @@ func (a *About) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppe
 }
 
 func (a *About) Update(context *guigui.Context) error {
-	if a.err != nil {
-		return a.err
+	if a.err != nil && a.err.Err != nil {
+		AppErr = a.err
+		return a.err.Err
 	}
 	return nil
 }

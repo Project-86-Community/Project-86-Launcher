@@ -1,24 +1,9 @@
-/*
- * SPDX-License-Identifier: GPL-3.0-only
- *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2025 Hajime Hoshi
 
-package internal
+// Changed for p86l by realskyquest
+
+package widget
 
 import (
 	"image"
@@ -56,10 +41,6 @@ type VerticalLayout struct {
 	widgetBounds []image.Rectangle
 }
 
-func formItemPadding(context *guigui.Context) (int, int) {
-	return basicwidget.UnitSize(context) / 2, basicwidget.UnitSize(context) / 4
-}
-
 func (v *VerticalLayout) SetItems(items []*LayoutItem) {
 	v.items = slices.Delete(v.items, 0, len(v.items))
 	v.items = append(v.items, items...)
@@ -74,7 +55,7 @@ func (v *VerticalLayout) SetHorizontalAlign(align HorizontalAlign) {
 	guigui.RequestRedraw(v)
 }
 
-func (v *VerticalLayout) DisableBackground(value bool) {
+func (v *VerticalLayout) SetBackground(value bool) {
 	if v.background == value {
 		return
 	}
@@ -83,7 +64,7 @@ func (v *VerticalLayout) DisableBackground(value bool) {
 	guigui.RequestRedraw(v)
 }
 
-func (v *VerticalLayout) DisableLineBreak(value bool) {
+func (v *VerticalLayout) SetLineBreak(value bool) {
 	if v.lineBreak == value {
 		return
 	}
@@ -92,7 +73,7 @@ func (v *VerticalLayout) DisableLineBreak(value bool) {
 	guigui.RequestRedraw(v)
 }
 
-func (v *VerticalLayout) DisableBorder(value bool) {
+func (v *VerticalLayout) SetBorder(value bool) {
 	if v.border == value {
 		return
 	}
@@ -181,11 +162,11 @@ func (v *VerticalLayout) calcItemBounds(context *guigui.Context) {
 func (v *VerticalLayout) Draw(context *guigui.Context, dst *ebiten.Image) {
 	bounds := guigui.Bounds(v)
 	bounds.Max.Y = bounds.Min.Y + v.height(context)
-	if !v.background {
+	if v.background {
 		basicwidget.DrawRoundedRect(context, dst, bounds, basicwidget.Color(context.ColorMode(), basicwidget.ColorTypeBase, 0.925), basicwidget.RoundedCornerRadius(context))
 	}
 
-	if !v.lineBreak && len(v.items) > 0 {
+	if v.lineBreak && len(v.items) > 0 {
 		paddingX, paddingY := formItemPadding(context)
 		y := paddingY
 		for _, item := range v.items[:len(v.items)-1] {
@@ -205,7 +186,7 @@ func (v *VerticalLayout) Draw(context *guigui.Context, dst *ebiten.Image) {
 		}
 	}
 
-	if !v.border {
+	if v.border {
 		basicwidget.DrawRoundedRectBorder(context, dst, bounds, basicwidget.Color(context.ColorMode(), basicwidget.ColorTypeBase, 0.875), basicwidget.RoundedCornerRadius(context), 1*float32(context.Scale()), basicwidget.RoundedRectBorderTypeRegular)
 	}
 }
@@ -216,10 +197,6 @@ func (v *VerticalLayout) SetWidth(context *guigui.Context, width int) {
 
 func (v *VerticalLayout) Size(context *guigui.Context) (int, int) {
 	return v.widthMinusDefault + defaultFormWidth(context), v.height(context)
-}
-
-func defaultFormWidth(context *guigui.Context) int {
-	return 6 * basicwidget.UnitSize(context)
 }
 
 func (v *VerticalLayout) height(context *guigui.Context) int {
@@ -238,8 +215,4 @@ func (v *VerticalLayout) height(context *guigui.Context) int {
 		y += h + 2*paddingY
 	}
 	return y
-}
-
-func minFormItemHeight(context *guigui.Context) int {
-	return basicwidget.UnitSize(context)
 }

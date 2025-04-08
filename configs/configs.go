@@ -1,8 +1,9 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
- * Copyright (C) 2025 Ilan Mayeux
+ * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,34 +19,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icon
+package configs
 
-import (
-	"bytes"
-	_ "embed"
-	"image"
+var (
+	CompanyName = "Project-86-Community"
+	AppName     = "Project-86-Launcher"
 
-	"github.com/biessek/golang-ico"
+	RepoOwner = "Taliayaya"
+	RepoName  = "Project-86"
+
+	Data          = "data"
+	ColorModeFile = "colormode.data"
+	AppScaleFile  = "appscale.data"
+
+	Cache         = "cache"
+	ChangelogFile = "changelog.json"
 )
-
-//go:embed eightysix.ico
-var EightySixIcon []byte
-
-// GetIconImages loads the embedded icon file and returns all images inside it
-func GetIconImages() ([]image.Image, error) {
-	var IconImages []image.Image
-
-	// Create a reader from the embedded bytes
-	reader := bytes.NewReader(EightySixIcon)
-
-	// Decode the ICO file
-	icons, err := ico.DecodeAll(reader)
-	if err != nil {
-		return nil, err
-	}
-
-	// Add all images from the ICO to our slice
-	IconImages = append(IconImages, icons...)
-
-	return IconImages, nil
-}

@@ -1,14 +1,22 @@
 version: '3'
 
+vars:
+  VERSION:
+    sh: git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD
+
 tasks:
   run:
     cmds:
-      - go run ./cmd/eightysix
+      - go run ./cmd/p86l
+
+  run:debug:
+    cmds:
+      - GUIGUI_DEBUG=showrenderingregions go run ./cmd/p86l
 
   build:
     cmds:
-      - go build -o ./bin/ ./cmd/eightysix
+      - go build -ldflags "-s -w -X main.AppBuild=release" -o ./bin/ ./cmd/p86l
 
   build:windows:
     cmds:
-      - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -o ./bin/ ./cmd/eightysix/
+      - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.AppBuild=release -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -o ./bin/Project-86-Launcher-{{.VERSION}}.exe ./cmd/p86l
