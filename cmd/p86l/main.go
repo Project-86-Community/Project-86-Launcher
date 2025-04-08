@@ -77,15 +77,18 @@ func main() {
 		AppName: appName,
 	})
 	if _err != nil {
-		log.Panic().Int("Code", debug.ErrGDataOpenFailed).Str("Type", string(debug.FSError)).Err(_err).Send()
+		log.Panic().Int("Code", debug.ErrGDataOpenFailed).Str("Type", string(debug.FSError)).Err(_err).Msg("GData panic")
 	}
 
 	iconImages, _err := assets.GetIconImages()
 	if _err != nil {
-		log.Panic().Int("Code", debug.ErrIconNotFound).Str("Type", string(debug.FSError)).Err(_err).Send()
+		log.Panic().Int("Code", debug.ErrIconNotFound).Str("Type", string(debug.FSError)).Err(_err).Msg("Icons panic")
 	}
 
 	p86l.GDataM = m
+	if err := p86l.Run(); err.Err != nil {
+		log.Panic().Stack().Int("Code", p86l.AppErr.Code).Str("Type", string(p86l.AppErr.Type)).Err(p86l.AppErr.Err).Msg("Run panic")
+	}
 
 	log.Info().Str("Detected OS", runtime.GOOS).Send()
 	ebiten.SetWindowIcon(iconImages)

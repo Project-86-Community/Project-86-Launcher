@@ -35,31 +35,12 @@ import (
 
 type App struct {
 	isInternet bool
-	//Errs       []error
 
 	Debug *debug.Debug
 	FS    *file.AppFS
 	Data  *data.Data
 	Cache *cache.Cache
 }
-
-/*
-func (a *App) Error(err error) error {
-	return errors.New(err.Error())
-}
-
-func (a *App) PopupError(err error) {
-	newErr := errors.Wrap(err, "Popup error")
-
-	for _, appErr := range a.Errs {
-		if appErr.Error() == newErr.Error() {
-			return
-		}
-	}
-
-	log.Error().Stack().Err(newErr).Send()
-	a.Errs = append(a.Errs, newErr)
-}*/
 
 func (a *App) IsInternet() bool {
 	return a.isInternet
@@ -95,77 +76,3 @@ func (a *App) Update(githubClient *github.Client, context context.Context) {
 	// 	}
 	// }
 }
-
-// func RequestChangelog() (types.Changelog, error) {
-// 	changelogData := types.Changelog{}
-//
-// 	release, _, err := content.GithubClient.Repositories.GetLatestRelease(content.GithubContext, content.RepoOwner, content.RepoName)
-// 	if err != nil {
-// 		return changelogData, err
-// 	}
-//
-// 	fmt.Println("INTERNET CALL")
-//
-// 	changelogData.Body = release.GetBody()
-// 	changelogData.URL = release.GetHTMLURL()
-// 	changelogData.Timestamp = time.Now()
-// 	changelogData.ExpiresIn = time.Hour
-//
-// 	return changelogData, nil
-// }
-
-// func WrapText(context *guigui.Context, input string, maxWidth int) string {
-// 	charWidthDivisor := 6.2 * context.AppScale()
-// 	charCount := int(float64(maxWidth) / charWidthDivisor)
-// 	input = strings.ReplaceAll(input, "\r\n", "\n")
-//
-// 	lines := strings.Split(input, "\n")
-// 	var result []string
-//
-// 	for _, line := range lines {
-// 		if len(line) == 0 {
-// 			result = append(result, "")
-// 			continue
-// 		}
-//
-// 		words := strings.Fields(line)
-// 		if len(words) == 0 {
-// 			result = append(result, "")
-// 			continue
-// 		}
-//
-// 		var currentLine string
-//
-// 		for _, word := range words {
-// 			if len(word) > charCount {
-// 				if len(currentLine) > 0 {
-// 					result = append(result, currentLine)
-// 					currentLine = ""
-// 				}
-//
-// 				for i := 0; i < len(word); i += charCount {
-// 					end := i + charCount
-// 					if end > len(word) {
-// 						end = len(word)
-// 					}
-// 					result = append(result, word[i:end])
-// 				}
-// 			} else {
-// 				if len(currentLine) == 0 {
-// 					currentLine = word
-// 				} else if len(currentLine)+1+len(word) <= charCount {
-// 					currentLine += " " + word
-// 				} else {
-// 					result = append(result, currentLine)
-// 					currentLine = word
-// 				}
-// 			}
-// 		}
-//
-// 		if len(currentLine) > 0 {
-// 			result = append(result, currentLine)
-// 		}
-// 	}
-//
-// 	return strings.Join(result, "\n")
-// }

@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 	"p86l/configs"
+	"p86l/internal/debug"
 	"time"
 
 	"github.com/google/go-github/v69/github"
@@ -46,47 +47,47 @@ type Cache struct {
 	GDataM *gdata.Manager
 }
 
-func (c *Cache) saveChangelog() error {
+func (c *Cache) saveChangelog(appDebug *debug.Debug) *debug.Error {
 	if c.Changelog == nil {
-		return errors.New("Changelog not found")
+		return appDebug.New(errors.New("Changelog not found"), debug.CacheError, debug.ErrChangelogSave)
 	} else {
 		changelogBytes, err := json.Marshal(c.Changelog)
 		if err != nil {
-			return err
+			return appDebug.New(err, debug.CacheError, debug.ErrChangelogSave)
 		}
 		if err := c.GDataM.SaveObjectProp(configs.Cache, configs.ChangelogFile, changelogBytes); err != nil {
-			return err
+			return appDebug.New(err, debug.CacheError, debug.ErrChangelogSave)
 		}
-		return nil
+		return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 	}
 }
 
-func (c *Cache) InitChangelog(githubClient *github.Client, context context.Context) error {
+func (c *Cache) InitChangelog(appDebug *debug.Debug, githubClient *github.Client, context context.Context) *debug.Error {
 	if c.GDataM.ObjectPropExists(configs.Cache, configs.ChangelogFile) {
 		changelogJSON, err := c.GDataM.LoadObjectProp(configs.Cache, configs.ChangelogFile)
 		if err != nil {
-			return err
+			return appDebug.New(err, debug.CacheError, debug.ErrChangelogLoad)
 		}
 		changelogData := &Changelog{}
 		err = json.Unmarshal(changelogJSON, &changelogData)
 		if err != nil {
-			return err
+			return appDebug.New(err, debug.CacheError, debug.ErrChangelogLoad)
 		}
 		c.Changelog = changelogData
 	} else {
-		changelogData, err := c.RequestChangelog(githubClient, context)
-		if err != nil {
-			return err
+		changelogData, _err := c.RequestChangelog(githubClient, context)
+		if _err != nil {
+			return appDebug.New(_err, debug.NetworkError, debug.ErrChangelogNetwork)
 		}
 		c.Changelog = &changelogData
 
-		err = c.saveChangelog()
+		err := c.saveChangelog(appDebug)
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
 func (c *Cache) RequestChangelog(githubClient *github.Client, context context.Context) (Changelog, error) {

@@ -123,8 +123,8 @@ func (s *Settings) Layout(context *guigui.Context, appender *guigui.ChildWidgetA
 				s.appScaleDropdownList.SetSelectedItemIndex(2)
 
 				go func() {
-					if err := app.FS.RecursiveDelete(dir); err != nil {
-						app.Debug.New(err, debug.FSError, debug.ErrFolderClear)
+					if err := app.FS.ClearFolder(dir, app.Debug); err.Err != nil {
+						app.Debug.SetToast(err)
 					}
 				}()
 			}

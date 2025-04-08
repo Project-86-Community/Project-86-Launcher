@@ -65,13 +65,13 @@ func (a *About) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppe
 	w, _ := a.Size(context)
 	pt := guigui.Position(a).Add(image.Pt(int(0.5*u), int(0.5*u)))
 
-	a.infoText.SetText("Welcome to Project 86 - a fan game in its early stages, \n with the primary goal of delivering a functional beta swiftly. \n We invite players to actively participate and provide feedback, \n steering the game in the right direction.")
+	a.infoText.SetText(WrapText(context, "Welcome to Project 86 - a fan game in its early stages, with the primary goal of delivering a functional beta swiftly. We invite players to actively participate and provide feedback, steering the game in the right direction.", w-int(1*u)))
 	a.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 	a.infoText.SetMultiline(true)
 
-	a.leadText.SetText("Lead Developer - Taliayaya - Ilan Mayeux")
+	a.leadText.SetText(WrapText(context, "Lead Developer - Taliayaya - Ilan Mayeux", w-int(1*u)))
 
-	a.devText.SetText("Launcher Developer - realskyquest - Sky")
+	a.devText.SetText(WrapText(context, "Launcher Developer - realskyquest - Sky", w-int(1*u)))
 
 	a.vLayout.SetHorizontalAlign(widget.HorizontalAlignCenter)
 

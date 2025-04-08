@@ -91,5 +91,16 @@ func Run() *debug.Error {
 
 	app.Data.ColorMode = guigui.ColorModeLight
 	app.Data.AppScale = 2
+
+	go func() {
+		app.UpdateInternet()
+		if app.IsInternet() {
+			err := app.Cache.InitChangelog(app.Debug, githubClient, githubContext)
+			if err.Err != nil {
+				app.Debug.SetToast(err)
+			}
+		}
+	}()
+
 	return app.Debug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }

@@ -30,33 +30,41 @@ type ErrorType string
 
 const (
 	UnknownError ErrorType = "unknown"
-	NetworkError ErrorType = "network"
 	AppError     ErrorType = "app"
 	FSError      ErrorType = "filesystem"
-	CacheError   ErrorType = "cache"
+	NetworkError ErrorType = "network"
 	DataError    ErrorType = "data"
+	CacheError   ErrorType = "cache"
 )
 
 const (
-	// General errors (1-99)
-	ErrUnknown        = 1
-	ErrColorModeLoad  = 2
-	ErrAppScaleLoad   = 3
-	ErrColorModeSave  = 4
-	ErrAppScaleSave   = 5
-	ErrColorModeClear = 6
-	ErrAppScaleClear  = 7
-	ErrBrowserOpen    = 8
+	// App errors (1001-1999)
+	ErrUnknown int = iota + 1001
+	ErrBrowserOpen
 
-	// Filesystem errors (500-599)
-	ErrGDataOpenFailed  = 500
-	ErrIconNotFound     = 501
-	ErrDirNotFound      = 502
-	ErrNewDirFailed     = 503
-	ErrNewFileFailed    = 504
-	ErrOpenFolderFailed = 505
-	ErrFileNotFound     = 506
-	ErrFolderClear      = 507
+	// Filesystem errors (2001-2999)
+	ErrGDataOpenFailed int = iota + 2001
+	ErrIconNotFound
+	ErrDirNotFound
+	ErrNewDirFailed
+	ErrNewFileFailed
+	ErrOpenFolderFailed
+	ErrFileNotFound
+	ErrFolderClear
+
+	// Data errors (3001-3999)
+	ErrColorModeLoad int = iota + 3001
+	ErrAppScaleLoad
+	ErrColorModeSave
+	ErrAppScaleSave
+	ErrColorModeClear
+	ErrAppScaleClear
+
+	// Cache errors (4001-4999)
+	ErrChangelogLoad int = iota + 4001
+	ErrChangelogSave
+	ErrChangelogClear
+	ErrChangelogNetwork
 )
 
 type Error struct {
@@ -67,6 +75,7 @@ type Error struct {
 
 type Debug struct {
 	ToastErr *Error
+	PopupErr *Error
 }
 
 func (d *Debug) New(err error, errType ErrorType, code int) *Error {
@@ -87,6 +96,11 @@ func (d *Debug) New(err error, errType ErrorType, code int) *Error {
 func (d *Debug) SetToast(err *Error) {
 	log.Error().Stack().Int("Code", err.Code).Str("Type", string(err.Type)).Err(err.Err).Msg("Toast error")
 	d.ToastErr = err
+}
+
+func (d *Debug) SetPopup(err *Error) {
+	log.Error().Stack().Int("Code", err.Code).Str("Type", string(err.Type)).Err(err.Err).Msg("Toast error")
+	d.PopupErr = err
 }
 
 // const (

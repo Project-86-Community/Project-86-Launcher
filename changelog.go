@@ -38,8 +38,6 @@ type Changelog struct {
 	changelogText   basicwidget.Text
 	vButtonLayout   widget.VerticalLayout
 	changelogButton basicwidget.TextButton
-
-	//err error
 }
 
 func (c *Changelog) Layout(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
@@ -62,8 +60,10 @@ func (c *Changelog) Layout(context *guigui.Context, appender *guigui.ChildWidget
 	guigui.SetPosition(&c.vLayout, pt)
 
 	if app.Cache.Changelog != nil {
-		changelogTextData := app.Cache.Changelog.Body //app.WrapText(context, content.Changelog.Body, w-int(1*u))
+		changelogTextData := WrapText(context, app.Cache.Changelog.Body, w-int(1*u))
 		c.changelogText.SetText(changelogTextData)
+	} else {
+		c.changelogText.SetText("NO INTERNET")
 	}
 
 	c.changelogButton.SetText("View changelog")
@@ -82,9 +82,6 @@ func (c *Changelog) Layout(context *guigui.Context, appender *guigui.ChildWidget
 }
 
 func (c *Changelog) Update(context *guigui.Context) error {
-	// if c.err != nil {
-	// 	return c.err
-	// }
 	return nil
 }
 

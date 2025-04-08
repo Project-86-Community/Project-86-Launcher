@@ -95,55 +95,29 @@ func (afs *AppFS) LogDir(appDebug *debug.Debug) (string, *debug.Error) {
 	return "", appDebug.New(errors.New("LogDir not found"), debug.FSError, debug.ErrDirNotFound)
 }
 
-func (afs *AppFS) RecursiveDelete(path string) error {
-	info, err := os.Stat(path)
+func (afs *AppFS) ClearFolder(folderPath string, appDebug *debug.Debug) *debug.Error {
+	// Read all items in the directory
+	items, err := os.ReadDir(folderPath)
 	if err != nil {
-		return fmt.Errorf("error accessing path %s: %w", path, err)
+		return appDebug.New(fmt.Errorf("failed to read directory: %w", err), debug.FSError, debug.ErrFolderClear)
 	}
 
-	if !info.IsDir() {
-		return fmt.Errorf("%s is not a directory", path)
+	// Iterate through each item and remove it
+	for _, item := range items {
+		itemPath := filepath.Join(folderPath, item.Name())
+
+		// If it's a directory, remove all contents recursively
+		if item.IsDir() {
+			if err := os.RemoveAll(itemPath); err != nil {
+				return appDebug.New(fmt.Errorf("failed to remove directory %s: %w", itemPath, err), debug.FSError, debug.ErrFolderClear)
+			}
+		} else {
+			// If it's a file, remove it directly
+			if err := os.Remove(itemPath); err != nil {
+				return appDebug.New(fmt.Errorf("failed to remove file %s: %w", itemPath, err), debug.FSError, debug.ErrFolderClear)
+			}
+		}
 	}
 
-	err = filepath.Walk(path, func(currentPath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if currentPath == path {
-			return nil
-		}
-
-		if !info.IsDir() {
-			return os.Remove(currentPath)
-		}
-
-		entries, err := os.ReadDir(currentPath)
-		if err != nil {
-			return err
-		}
-
-		if len(entries) == 0 {
-			return os.Remove(currentPath)
-		}
-
-		return nil
-	})
-
-	err = filepath.Walk(path, func(currentPath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-
-		if currentPath == path {
-			return nil
-		}
-
-		if info.IsDir() {
-			return os.Remove(currentPath)
-		}
-		return nil
-	})
-
-	return err
+	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }

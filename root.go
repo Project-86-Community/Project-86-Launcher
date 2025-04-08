@@ -60,10 +60,10 @@ type Root struct {
 
 func (r *Root) once() {
 	r.checkInternetTimeout = time.Second
-	if err := Run(); err.Err != nil {
-		r.err = err
-		return
-	}
+	// if err := Run(); err.Err != nil {
+	// 	r.err = err
+	// 	return
+	// }
 	if err := app.Data.InitColorMode(app.Debug); err.Err != nil {
 		r.err = err
 		return
@@ -210,7 +210,7 @@ func (r *Root) Update(context *guigui.Context) error {
 		//app.PopupError(errors.New("YEAKPWOKDPWKDPOWKDPOWKDPOWKDPOKWDOWKDPOWKDOWKDPWKDOPWKDPOWKDOPWKDPOWKDPOWKDPOWKDPOWKDPOWDKPWOKDOPWDKPWODKWPODKPOWDKS"))
 	}
 
-	app.Update(githubClient, githubContext)
+	//app.Update(githubClient, githubContext)
 
 	return nil
 }
