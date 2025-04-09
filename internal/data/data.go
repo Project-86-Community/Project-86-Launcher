@@ -145,5 +145,6 @@ func (d *Data) HandleDataReset(appDebug *debug.Debug) *debug.Error {
 	if err := d.saveAppScale(appDebug); err.Err != nil {
 		return err
 	}
-	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+
+	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown, "Handle data reset")
 }

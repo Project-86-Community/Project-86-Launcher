@@ -24,6 +24,7 @@ package p86l
 import (
 	"fmt"
 	"image"
+	"p86l/configs"
 	"p86l/internal/debug"
 	"p86l/internal/widget"
 	"sync"
@@ -60,10 +61,7 @@ type Root struct {
 
 func (r *Root) once() {
 	r.checkInternetTimeout = time.Second
-	// if err := Run(); err.Err != nil {
-	// 	r.err = err
-	// 	return
-	// }
+
 	if err := app.Data.InitColorMode(app.Debug); err.Err != nil {
 		r.err = err
 		return
@@ -194,23 +192,42 @@ func (r *Root) Update(context *guigui.Context) error {
 	now := time.Now()
 
 	if now.Sub(r.lastCheckInternet) > r.checkInternetTimeout {
-		if !app.FS.IsDir() {
+		if !GDataM.ObjectExists(configs.Data) {
 			err := app.Data.HandleDataReset(app.Debug)
 			if err.Err != nil {
 				AppErr = err
 				return err.Err
 			}
-			log.Info().Msg("HandleDataReset")
+			if err.Message != "" {
+				log.Info().Msg(err.Message)
+			}
+		}
+		if !GDataM.ObjectExists(configs.Cache) {
+			err := app.Cache.HandleCacheReset(app.Debug, app.IsInternet(), githubClient, githubContext)
+			if err.Err != nil {
+				if err.Type == debug.InternetError {
+					app.Debug.SetToast(err)
+				} else {
+					AppErr = err
+					return err.Err
+				}
+			}
+			if err.Message != "" {
+				log.Info().Msg(err.Message)
+			}
 		}
 
 		go app.UpdateInternet()
 		r.lastCheckInternet = now
-
-		//app.PopupError(errors.New("YES"))
-		//app.PopupError(errors.New("YEAKPWOKDPWKDPOWKDPOWKDPOWKDPOKWDOWKDPOWKDOWKDPWKDOPWKDPOWKDOPWKDPOWKDPOWKDPOWKDPOWKDPOWDKPWOKDOPWDKPWODKWPODKPOWDKS"))
 	}
 
-	//app.Update(githubClient, githubContext)
+	err = app.Cache.UpdateCache(app.Debug, app.IsInternet(), githubClient, githubContext)
+	if err.Err != nil {
+		app.Debug.SetToast(err)
+	}
+	if err.Message != "" {
+		log.Info().Msg(err.Message)
+	}
 
 	return nil
 }

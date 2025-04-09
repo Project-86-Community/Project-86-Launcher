@@ -29,12 +29,12 @@ import (
 type ErrorType string
 
 const (
-	UnknownError ErrorType = "unknown"
-	AppError     ErrorType = "app"
-	FSError      ErrorType = "filesystem"
-	NetworkError ErrorType = "network"
-	DataError    ErrorType = "data"
-	CacheError   ErrorType = "cache"
+	UnknownError  ErrorType = "unknown"
+	AppError      ErrorType = "app"
+	FSError       ErrorType = "filesystem"
+	InternetError ErrorType = "internet"
+	DataError     ErrorType = "data"
+	CacheError    ErrorType = "cache"
 )
 
 const (
@@ -68,9 +68,10 @@ const (
 )
 
 type Error struct {
-	Err  error
-	Type ErrorType
-	Code int
+	Err     error
+	Type    ErrorType
+	Code    int
+	Message string
 }
 
 type Debug struct {
@@ -78,12 +79,20 @@ type Debug struct {
 	PopupErr *Error
 }
 
-func (d *Debug) New(err error, errType ErrorType, code int) *Error {
+func (d *Debug) New(err error, errType ErrorType, code int, message ...string) *Error {
 	if err != nil {
 		return &Error{
 			Err:  errors.New(err.Error()),
 			Type: errType,
 			Code: code,
+		}
+	}
+	if len(message) > 0 {
+		return &Error{
+			Err:     nil,
+			Type:    errType,
+			Code:    code,
+			Message: message[0],
 		}
 	}
 	return &Error{

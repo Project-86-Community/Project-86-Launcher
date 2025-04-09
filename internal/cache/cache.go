@@ -47,6 +47,24 @@ type Cache struct {
 	GDataM *gdata.Manager
 }
 
+func (c *Cache) requestChangelog(githubClient *github.Client, context context.Context) (Changelog, error) {
+	changelogData := Changelog{}
+
+	release, _, err := githubClient.Repositories.GetLatestRelease(context, configs.RepoOwner, configs.RepoName)
+	if err != nil {
+		return changelogData, err
+	}
+
+	log.Info().Str("Internet", "Changelog").Send()
+
+	changelogData.Body = release.GetBody()
+	changelogData.URL = release.GetHTMLURL()
+	changelogData.Timestamp = time.Now()
+	changelogData.ExpiresIn = time.Hour
+
+	return changelogData, nil
+}
+
 func (c *Cache) saveChangelog(appDebug *debug.Debug) *debug.Error {
 	if c.Changelog == nil {
 		return appDebug.New(errors.New("Changelog not found"), debug.CacheError, debug.ErrChangelogSave)
@@ -75,9 +93,9 @@ func (c *Cache) InitChangelog(appDebug *debug.Debug, githubClient *github.Client
 		}
 		c.Changelog = changelogData
 	} else {
-		changelogData, _err := c.RequestChangelog(githubClient, context)
+		changelogData, _err := c.requestChangelog(githubClient, context)
 		if _err != nil {
-			return appDebug.New(_err, debug.NetworkError, debug.ErrChangelogNetwork)
+			return appDebug.New(_err, debug.InternetError, debug.ErrChangelogNetwork)
 		}
 		c.Changelog = &changelogData
 
@@ -90,20 +108,41 @@ func (c *Cache) InitChangelog(appDebug *debug.Debug, githubClient *github.Client
 	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
-func (c *Cache) RequestChangelog(githubClient *github.Client, context context.Context) (Changelog, error) {
-	changelogData := Changelog{}
+func (c *Cache) UpdateCache(appDebug *debug.Debug, internet bool, githubClient *github.Client, context context.Context) *debug.Error {
+	if internet {
+		if time.Since(c.Changelog.Timestamp) > c.Changelog.ExpiresIn {
+			changelogData, _err := c.requestChangelog(githubClient, context)
+			if _err != nil {
+				return appDebug.New(_err, debug.InternetError, debug.ErrChangelogNetwork)
+			}
+			c.Changelog = &changelogData
 
-	release, _, err := githubClient.Repositories.GetLatestRelease(context, configs.RepoOwner, configs.RepoName)
-	if err != nil {
-		return changelogData, err
+			err := c.saveChangelog(appDebug)
+			if err != nil {
+				return err
+			}
+
+			return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown, "Changelog cache updated")
+		}
 	}
+	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+}
 
-	log.Info().Msg("INTERNET CALL")
+func (c *Cache) HandleCacheReset(appDebug *debug.Debug, internet bool, githubClient *github.Client, context context.Context) *debug.Error {
+	c.Changelog = nil
 
-	changelogData.Body = release.GetBody()
-	changelogData.URL = release.GetHTMLURL()
-	changelogData.Timestamp = time.Now()
-	changelogData.ExpiresIn = time.Hour
+	if internet {
+		changelogData, _err := c.requestChangelog(githubClient, context)
+		if _err != nil {
+			return appDebug.New(_err, debug.InternetError, debug.ErrChangelogNetwork)
+		}
+		c.Changelog = &changelogData
 
-	return changelogData, nil
+		err := c.saveChangelog(appDebug)
+		if err != nil {
+			return err
+		}
+
+	}
+	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown, "Handle cache reset")
 }

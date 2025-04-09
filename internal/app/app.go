@@ -22,15 +22,12 @@
 package app
 
 import (
-	"context"
 	"net/http"
 	"p86l/internal/cache"
 	"p86l/internal/data"
 	"p86l/internal/debug"
 	"p86l/internal/file"
 	"time"
-
-	"github.com/google/go-github/v69/github"
 )
 
 type App struct {
@@ -66,13 +63,4 @@ func (a *App) UpdateInternet() {
 	} else {
 		a.isInternet = false
 	}
-}
-
-func (a *App) Update(githubClient *github.Client, context context.Context) {
-	// if a.isInternet {
-	// 	err := a.Cache.InitChangelog(githubClient, context)
-	// 	if err != nil {
-	// 		a.PopupError(err)
-	// 	}
-	// }
 }
