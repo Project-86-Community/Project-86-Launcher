@@ -20,3 +20,21 @@
  */
 
 package p86l
+
+import (
+	"github.com/hajimehoshi/guigui"
+	"github.com/hajimehoshi/guigui/basicwidget"
+)
+
+type Changelog struct {
+	guigui.DefaultWidget
+
+	msg basicwidget.Text
+}
+
+func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	c.msg.SetText(l.T("changelog.title"))
+	appender.AppendChildWidgetWithBounds(&c.msg, context.Bounds(c))
+
+	return nil
+}

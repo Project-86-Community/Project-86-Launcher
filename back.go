@@ -23,18 +23,8 @@ package p86l
 
 import (
 	"github.com/hajimehoshi/guigui"
-	"github.com/hajimehoshi/guigui/basicwidget"
 )
 
-type Home struct {
+type Back struct {
 	guigui.DefaultWidget
-
-	msg basicwidget.Text
-}
-
-func (h *Home) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	h.msg.SetText(l.T("home.title"))
-	appender.AppendChildWidgetWithBounds(&h.msg, context.Bounds(h))
-
-	return nil
 }

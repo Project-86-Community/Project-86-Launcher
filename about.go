@@ -20,3 +20,16 @@
  */
 
 package p86l
+
+import (
+	"github.com/hajimehoshi/guigui"
+)
+
+type About struct {
+	guigui.DefaultWidget
+}
+
+func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+
+	return nil
+}

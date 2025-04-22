@@ -22,21 +22,62 @@
 package p86l
 
 import (
+	"fmt"
 	"os"
+	"p86l/assets/lang"
+	"p86l/internal/data"
 	"p86l/internal/debug"
+	"p86l/internal/file"
+	"path/filepath"
+	"time"
 
-	"github.com/quasilyte/gdata/v2"
+	"github.com/hajimehoshi/guigui"
+	"github.com/invopop/ctxi18n"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
-type debugMode struct {
-	IsRelease bool
-	LogFile   *os.File
-	Logs      bool
+func Run() *debug.Error {
+	e = &debug.Debug{}
+	fs = &file.AppFS{GdataM: GDataM}
+	d = &data.Data{GDataM: GDataM}
+
+	if TheDebugMode.IsRelease {
+		logDir, err := fs.LogDir(e)
+		if err.Err != nil {
+			return err
+		}
+
+		if _err := os.MkdirAll(logDir, 0755); _err != nil {
+			return e.New(_err, debug.FSError, debug.ErrNewDirFailed)
+		}
+
+		timestamp := time.Now().Unix()
+		logFileName := fmt.Sprintf("log_%d.log", timestamp)
+		logFilePath := filepath.Join(logDir, logFileName)
+
+		logFile, _err := os.Create(logFilePath)
+		if _err != nil {
+			return e.New(_err, debug.FSError, debug.ErrNewFileFailed)
+		}
+
+		TheDebugMode.LogFile = logFile
+
+		multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
+		log.Logger = zerolog.New(multi).With().Timestamp().Logger()
+	}
+
+	d.ColorMode = guigui.ColorModeLight
+	d.AppScale = 2
+
+	if err := lang.GetLangs(); err != nil {
+		return e.New(err, debug.FSError, debug.ErrFileNotFound)
+	}
+	ctx, err := ctxi18n.WithLocale(ctx, "en")
+	if err != nil {
+		panic(err)
+	}
+	l = ctxi18n.Locale(ctx)
+
+	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
-
-var (
-	TheDebugMode debugMode
-	GDataM       *gdata.Manager
-
-	AppErr *debug.Error
-)

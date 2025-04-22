@@ -20,3 +20,34 @@
  */
 
 package p86l
+
+import (
+	"context"
+	"os"
+	"p86l/internal/data"
+	"p86l/internal/debug"
+	"p86l/internal/file"
+
+	"github.com/invopop/ctxi18n/i18n"
+	"github.com/quasilyte/gdata/v2"
+)
+
+type debugMode struct {
+	IsRelease bool
+	LogFile   *os.File
+	Logs      bool
+}
+
+var (
+	ctx = context.Background()
+
+	TheDebugMode debugMode
+	GDataM       *gdata.Manager
+	l            *i18n.Locale
+
+	e  *debug.Debug
+	fs *file.AppFS
+	d  *data.Data
+
+	AppErr *debug.Error
+)

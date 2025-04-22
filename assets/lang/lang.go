@@ -19,22 +19,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package p86l
+package lang
 
 import (
-	"github.com/hajimehoshi/guigui"
-	"github.com/hajimehoshi/guigui/basicwidget"
+	"embed"
+
+	"github.com/invopop/ctxi18n"
 )
 
-type Home struct {
-	guigui.DefaultWidget
+//go:embed *.yml
+var langYamlFS embed.FS
 
-	msg basicwidget.Text
-}
-
-func (h *Home) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	h.msg.SetText(l.T("home.title"))
-	appender.AppendChildWidgetWithBounds(&h.msg, context.Bounds(h))
-
+func GetLangs() error {
+	if err := ctxi18n.LoadWithDefault(langYamlFS, "en"); err != nil {
+		return err
+	}
 	return nil
 }

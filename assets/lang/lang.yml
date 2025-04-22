@@ -1,0 +1,22 @@
+en:
+    home:
+        title: "Home"
+    changelog:
+        title: "Changelog"
+    settings:
+        title: "Settings"
+    about:
+        title: "About"
+    back:
+        title: "Back"
+es:
+    home:
+        title: "Homo"
+    changelog:
+        title: "ChaChalog"
+    settings:
+        title: "Set"
+    about:
+        title: "Abu"
+    back:
+        title: "Bk"
