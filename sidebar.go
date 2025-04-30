@@ -1,5 +1,6 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
  * Copyright (C) 2025 Project 86 Community
@@ -38,6 +39,7 @@ func (s *Sidebar) SetModel(model *Model) {
 
 func (s *Sidebar) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	context.SetSize(&s.sidebarContent, context.Size(s))
+	context.SetOpacity(&s.sidebar, 0.7)
 	s.sidebar.SetContent(&s.sidebarContent)
 
 	appender.AppendChildWidgetWithBounds(&s.sidebar, context.Bounds(s))
@@ -66,6 +68,10 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 			Tag:  "home",
 		},
 		{
+			Text: l.T("play.title"),
+			Tag:  "play",
+		},
+		{
 			Text: l.T("changelog.title"),
 			Tag:  "changelog",
 		},
@@ -76,10 +82,6 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 		{
 			Text: l.T("about.title"),
 			Tag:  "about",
-		},
-		{
-			Text: l.T("back.title"),
-			Tag:  "back",
 		},
 	}
 

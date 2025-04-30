@@ -21,17 +21,29 @@
 
 package configs
 
+import "image"
+
 var (
-	CompanyName = "Project-86-Community"
-	AppName     = "Project-86-Launcher"
+	InternetServer = "https://clients3.google.com/generate_204"
+
+	CompanyName      = "Project-86-Community"
+	AppName          = "Project-86-Launcher"
+	AppTitle         = "Project 86 Launcher"
+	AppWindowMinSize = image.Pt(600, 300)
 
 	RepoOwner = "Taliayaya"
 	RepoName  = "Project-86"
 
 	Data          = "data"
+	LocaleFile    = "locale.data"
 	ColorModeFile = "colormode.data"
 	AppScaleFile  = "appscale.data"
 
 	Cache         = "cache"
 	ChangelogFile = "changelog.json"
+
+	Website = "https://project-86-community.github.io/Project-86-Website/"
+	Github  = "https://github.com/Taliayaya/Project-86"
+	Discord = "https://discord.gg/A8Fr6yEsUn"
+	Patreon = "https://www.patreon.com/project86"
 )

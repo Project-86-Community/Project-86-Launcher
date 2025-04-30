@@ -22,38 +22,263 @@
 package p86l
 
 import (
+	"bytes"
+	"encoding/gob"
+	"fmt"
 	"image"
+	"net/http"
+	"os"
 	"p86l/assets"
+	"p86l/assets/lang"
+	"p86l/configs"
 	"p86l/internal/debug"
+	"p86l/internal/file"
+	"path/filepath"
+	"sync"
+	"time"
 
+	"github.com/google/go-github/v71/github"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/hajimehoshi/guigui/basicwidget/cjkfont"
 	"github.com/hajimehoshi/guigui/layout"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"golang.org/x/text/language"
 )
 
 type Root struct {
 	guigui.RootWidget
 
-	background basicwidget.Background
-	bgImage    basicwidget.Image
-	sidebar    Sidebar
-	home       Home
-	changelog  Changelog
-	back       Back
+	border    basicwidget.Background
+	bgImage   basicwidget.Image
+	sidebar   Sidebar
+	play      Play
+	changelog Changelog
+	settings  Settings
+	about     About
 
+	lastInternetCheckTick int64
+	debounceChangelog     bool
+
+	sync  sync.Once
 	model Model
+	dErr  *debug.Error
+}
+
+func (r *Root) RunApp() *debug.Error {
+	e = &debug.Debug{}
+
+	companyPath, dErr := file.GetCompanyPath(e)
+	if dErr.Err != nil {
+		return dErr
+	}
+	root, err := os.OpenRoot(companyPath)
+	if err != nil {
+		return e.New(err, debug.FSError, debug.ErrDirNotFound)
+	}
+	fs = file.NewFS(root, companyPath, configs.AppName)
+
+	if TheDebugMode.IsRelease {
+		logDir, dErr := fs.LogDir(e)
+		if dErr.Err != nil {
+			return dErr
+		}
+
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			return e.New(err, debug.FSError, debug.ErrNewDirFailed)
+		}
+
+		timestamp := time.Now().Unix()
+		logFileName := fmt.Sprintf("log_%d.log", timestamp)
+		logFilePath := filepath.Join(logDir, logFileName)
+
+		logFile, err := os.Create(logFilePath)
+		if err != nil {
+			return e.New(err, debug.FSError, debug.ErrNewFileFailed)
+		}
+
+		TheDebugMode.LogFile = logFile
+
+		multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
+		log.Logger = zerolog.New(multi).With().Timestamp().Logger()
+	}
+
+	if err := lang.GetLangs(); err != nil {
+		return e.New(err, debug.FSError, debug.ErrFileNotFound)
+	}
+
+	r.CheckInternet()
+	r.model.githubClient = github.NewClient(nil)
+
+	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+}
+
+func (r *Root) Init(context *guigui.Context) *debug.Error {
+	{
+		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Data, configs.LocaleFile))
+		if value.Err != nil {
+			dErr := r.model.data.SetLocale(context, language.English)
+			if dErr.Err != nil {
+				return dErr
+			}
+		}
+
+		b, dErr := fs.Load(e, configs.Data, configs.LocaleFile)
+		if dErr.Err != nil {
+			return dErr
+		}
+		locale, err := language.Parse(string(b))
+		if err != nil {
+			return e.New(err, debug.FSError, debug.ErrLocaleLoad)
+		}
+		r.dErr = r.model.data.SetLocale(context, locale)
+	}
+	{
+		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Data, configs.ColorModeFile))
+		if value.Err != nil {
+			dErr := r.model.data.SetColorMode(context, guigui.ColorModeLight)
+			if dErr.Err != nil {
+				return dErr
+			}
+		}
+
+		b, dErr := fs.Load(e, configs.Data, configs.ColorModeFile)
+		if dErr.Err != nil {
+			return dErr
+		}
+		var colorMode guigui.ColorMode
+		decoder := gob.NewDecoder(bytes.NewReader(b))
+		err := decoder.Decode(&colorMode)
+		if err != nil {
+			return e.New(err, debug.FSError, debug.ErrColorModeLoad)
+		}
+		r.dErr = r.model.data.SetColorMode(context, colorMode)
+	}
+	{
+		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Data, configs.AppScaleFile))
+		if value.Err != nil {
+			dErr := r.model.data.SetAppScale(context, 2)
+			if dErr.Err != nil {
+				return dErr
+			}
+		}
+
+		b, dErr := fs.Load(e, configs.Data, configs.AppScaleFile)
+		if dErr.Err != nil {
+			return dErr
+		}
+		var appScale int
+		decoder := gob.NewDecoder(bytes.NewReader(b))
+		err := decoder.Decode(&appScale)
+		if err != nil {
+			return e.New(err, debug.FSError, debug.ErrAppScaleLoad)
+		}
+		r.dErr = r.model.data.SetAppScale(context, appScale)
+	}
+
+	{
+		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.ChangelogFile))
+		if value.Err == nil {
+			b, dErr := fs.Load(e, configs.Cache, configs.ChangelogFile)
+			if dErr.Err != nil {
+				return dErr
+			}
+			var changelog ChangelogT
+			decoder := gob.NewDecoder(bytes.NewReader(b))
+			err := decoder.Decode(&changelog)
+			if err != nil {
+				return e.New(err, debug.FSError, debug.ErrChangelogLoad)
+			}
+			r.dErr = r.model.cache.SetChangelog(changelog)
+		}
+	}
+
+	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+}
+
+func (r *Root) CheckInternet() {
+	check := func() bool {
+		client := http.Client{
+			Timeout: 2 * time.Second,
+		}
+
+		resp, err := client.Get(configs.InternetServer)
+		if err != nil {
+			return false
+		}
+		defer resp.Body.Close()
+
+		return resp.StatusCode == 204
+	}
+
+	r.model.isInternet = check()
+}
+
+func (r *Root) FetchRateLimitStatus() *debug.Error {
+	rate, _, err := r.model.githubClient.RateLimit.Get(ctx)
+	if err != nil {
+		return e.New(err, debug.InternetError, debug.ErrRateLimit)
+	}
+	r.model.rateLimitTracker.Update(rate.Core.Remaining, rate.Core.Reset.Time)
+	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+}
+
+func (r *Root) FetchChangelog() *debug.Error {
+	if r.model.rateLimitTracker.Valid() == true {
+		repo, _, err := r.model.githubClient.Repositories.GetLatestRelease(ctx, configs.RepoOwner, configs.RepoName)
+		if err != nil {
+			return e.New(err, debug.InternetError, debug.ErrChangelogNetwork)
+		}
+		log.Info().Msg("FetchChangelog")
+		newChangelog := ChangelogT{
+			Body:      repo.GetBody(),
+			URL:       repo.GetHTMLURL(),
+			Timestamp: time.Now(),
+			ExpiresIn: time.Hour,
+		}
+		r.dErr = r.model.cache.SetChangelog(newChangelog)
+	}
+
+	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
 func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	appender.AppendChildWidgetWithBounds(&r.background, context.Bounds(r))
+	r.sync.Do(func() {
+		r.dErr = r.RunApp()
+		r.dErr = r.Init(context)
+	})
+
+	if r.dErr != nil && r.dErr.Err != nil {
+		aErr = r.dErr
+		return aErr.Err
+	}
+
+	faceSources := []*text.GoTextFaceSource{
+		basicwidget.DefaultFaceSource(),
+	}
+	for _, locale := range context.AppendLocales(nil) {
+		fs := cjkfont.FaceSourceFromLocale(locale)
+		if fs != nil {
+			faceSources = append(faceSources, fs)
+			break
+		}
+	}
+	basicwidget.SetFaceSources(faceSources)
+
+	borderBounds := context.Bounds(r)
+	borderBounds.Min.X = context.Size(&r.sidebar).X - (basicwidget.UnitSize(context) / 12)
+	borderBounds.Max.X = context.Size(&r.sidebar).X
+	context.SetOpacity(&r.border, 0.7)
 
 	img, err := assets.TheImageCache.Get("banner")
 	if err != nil {
-		AppErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
+		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
 		return err
 	}
 	r.bgImage.SetImage(img)
-
 	imgWidth := img.Bounds().Dx()
 	imgHeight := img.Bounds().Dy()
 	aspectRatio := float64(imgHeight) / float64(imgWidth)
@@ -76,6 +301,9 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	}
 	appender.AppendChildWidgetWithPosition(&r.bgImage, image.Pt(00, yOffset))
 
+	r.play.SetModel(&r.model)
+	r.changelog.SetModel(&r.model)
+	r.settings.SetModel(&r.model)
 	r.sidebar.SetModel(&r.model)
 
 	for i, bounds := range (layout.GridLayout{
@@ -87,16 +315,67 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	}).CellBounds() {
 		switch i {
 		case 0:
-			context.SetOpacity(&r.sidebar, 0.7)
 			appender.AppendChildWidgetWithBounds(&r.sidebar, bounds)
 		case 1:
 			switch r.model.Mode() {
-			case "home":
-				appender.AppendChildWidgetWithBounds(&r.home, bounds)
+			case "play":
+				appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
+				appender.AppendChildWidgetWithBounds(&r.play, bounds)
 			case "changelog":
+				appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
 				appender.AppendChildWidgetWithBounds(&r.changelog, bounds)
-			default:
-				appender.AppendChildWidgetWithBounds(&r.back, bounds)
+			case "settings":
+				appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
+				appender.AppendChildWidgetWithBounds(&r.settings, bounds)
+			case "about":
+				appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
+				appender.AppendChildWidgetWithBounds(&r.about, bounds)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (r *Root) Update(context *guigui.Context) error {
+	if ebiten.Tick()-r.lastInternetCheckTick >= int64(ebiten.TPS()) {
+		if r.model.isInternet {
+			go func() {
+				dErr := r.FetchRateLimitStatus()
+				if dErr.Err != nil {
+					e.SetToast(dErr)
+				}
+			}()
+		}
+		go r.CheckInternet()
+		r.lastInternetCheckTick = ebiten.Tick()
+	}
+
+	if r.model.isInternet == true {
+		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.ChangelogFile))
+		if value.Err != nil {
+			if r.model.isInternet == true && r.debounceChangelog == false {
+				r.debounceChangelog = true
+				go func() {
+					dErr := r.FetchChangelog()
+					if dErr.Err != nil {
+						e.SetToast(dErr)
+					}
+					r.debounceChangelog = false
+				}()
+			}
+		}
+
+		if r.model.cache.changelog.Body != "" {
+			if time.Since(r.model.cache.changelog.Timestamp) > r.model.cache.changelog.ExpiresIn && r.debounceChangelog == false {
+				r.debounceChangelog = true
+				go func() {
+					dErr := r.FetchChangelog()
+					if dErr.Err != nil {
+						e.SetToast(dErr)
+					}
+					r.debounceChangelog = false
+				}()
 			}
 		}
 	}

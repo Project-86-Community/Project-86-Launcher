@@ -22,14 +22,98 @@
 package p86l
 
 import (
+	"p86l/assets"
+	"p86l/internal/debug"
+
 	"github.com/hajimehoshi/guigui"
+	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/hajimehoshi/guigui/layout"
 )
 
 type About struct {
 	guigui.DefaultWidget
+
+	background basicwidget.Background
+	leadImg    basicwidget.Image
+	devImg     basicwidget.Image
+	leadText   basicwidget.Text
+	devText    basicwidget.Text
+	infoText   basicwidget.Text
 }
 
 func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	context.SetOpacity(&a.background, 0.7)
+	appender.AppendChildWidgetWithBounds(&a.background, context.Bounds(a))
+
+	img, err := assets.TheImageCache.Get("lead")
+	if err != nil {
+		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
+		return err
+	}
+	a.leadImg.SetImage(img)
+	img, err = assets.TheImageCache.Get("dev")
+	if err != nil {
+		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
+		return err
+	}
+	a.devImg.SetImage(img)
+
+	a.infoText.SetAutoWrap(true)
+	a.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+	a.infoText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+	a.leadText.SetScale(1.2)
+	a.devText.SetScale(1.2)
+	a.leadText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+	a.devText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+
+	a.leadText.SetText(l.T("about.lead"))
+	a.devText.SetText(l.T("about.dev"))
+	a.infoText.SetText(l.T("about.info"))
+
+	u := basicwidget.UnitSize(context)
+	for i, bounds := range (layout.GridLayout{
+		Bounds: context.Bounds(a).Inset(u / 2),
+		Heights: []layout.Size{
+			layout.FlexibleSize(1),
+			layout.FlexibleSize(1),
+		},
+		RowGap: u / 2,
+	}).CellBounds() {
+		switch i {
+		case 0:
+			for j, innerBounds := range (layout.GridLayout{
+				Bounds: bounds,
+				Widths: []layout.Size{
+					layout.MaxContentSize(func(index int) int {
+						return max(
+							a.leadText.DefaultSize(context).X,
+							a.devText.DefaultSize(context).X,
+						)
+					}),
+					layout.FlexibleSize(1),
+				},
+				Heights: []layout.Size{
+					layout.FlexibleSize(1),
+					layout.FlexibleSize(1),
+				},
+				RowGap:    u / 2,
+				ColumnGap: u / 2,
+			}).CellBounds() {
+				switch j {
+				case 0:
+					appender.AppendChildWidgetWithBounds(&a.leadText, innerBounds)
+				case 1:
+					appender.AppendChildWidgetWithBounds(&a.leadImg, innerBounds)
+				case 2:
+					appender.AppendChildWidgetWithBounds(&a.devText, innerBounds)
+				case 3:
+					appender.AppendChildWidgetWithBounds(&a.devImg, innerBounds)
+				}
+			}
+		case 1:
+			appender.AppendChildWidgetWithBounds(&a.infoText, bounds)
+		}
+	}
 
 	return nil
 }

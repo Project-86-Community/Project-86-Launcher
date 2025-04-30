@@ -24,12 +24,12 @@ package p86l
 import (
 	"context"
 	"os"
-	"p86l/internal/data"
 	"p86l/internal/debug"
 	"p86l/internal/file"
+	"time"
 
+	translator "github.com/Conight/go-googletrans"
 	"github.com/invopop/ctxi18n/i18n"
-	"github.com/quasilyte/gdata/v2"
 )
 
 type debugMode struct {
@@ -38,16 +38,26 @@ type debugMode struct {
 	Logs      bool
 }
 
+type ChangelogT struct {
+	Body      string
+	URL       string
+	Timestamp time.Time
+	ExpiresIn time.Duration
+}
+
 var (
 	ctx = context.Background()
 
 	TheDebugMode debugMode
-	GDataM       *gdata.Manager
 	l            *i18n.Locale
+	t            = translator.New()
 
-	e  *debug.Debug
-	fs *file.AppFS
-	d  *data.Data
+	e  *debug.Debug // Debugger
+	fs *file.AppFS  // Filesystem
 
-	AppErr *debug.Error
+	aErr *debug.Error
 )
+
+func GetAppError() *debug.Error {
+	return aErr
+}

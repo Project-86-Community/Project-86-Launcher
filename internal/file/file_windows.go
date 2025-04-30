@@ -19,48 +19,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package app
+package file
 
 import (
-	"net/http"
-	"p86l/internal/cache"
-	"p86l/internal/data"
+	"fmt"
+	"os"
+	"p86l/configs"
 	"p86l/internal/debug"
-	"p86l/internal/file"
-	"time"
+	"path/filepath"
+
+	"github.com/pkg/errors"
 )
 
-type App struct {
-	isInternet bool
-
-	Debug *debug.Debug
-	FS    *file.AppFS
-	Data  *data.Data
-	Cache *cache.Cache
-}
-
-func (a *App) IsInternet() bool {
-	return a.isInternet
-}
-
-func (a *App) isInternetReachable() bool {
-	client := http.Client{
-		Timeout: 5 * time.Second,
+func GetCompanyPath(appDebug *debug.Debug, extra ...string) (string, *debug.Error) {
+	appData := os.Getenv("AppData")
+	if appData == "" {
+		return "", appDebug.New(errors.New("AppData env var in undefined"), debug.FSError, debug.ErrDirNotFound)
 	}
-
-	resp, err := client.Get("https://clients3.google.com/generate_204")
-	if err != nil {
-		return false
+	dataPath := filepath.Join(appData, configs.CompanyName)
+	// Used for testing only!
+	if len(extra) == 1 && extra[0] != "" {
+		dataPath = fmt.Sprintf("%s_%s", dataPath, extra[0])
 	}
-	defer resp.Body.Close()
-
-	return resp.StatusCode == 204
-}
-
-func (a *App) UpdateInternet() {
-	if a.isInternetReachable() {
-		a.isInternet = true
-	} else {
-		a.isInternet = false
+	if dErr := mkdirAll(appDebug, dataPath); dErr != nil {
+		return "", dErr
 	}
+	return dataPath, appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }

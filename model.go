@@ -1,5 +1,6 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
  * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
  * Copyright (C) 2025 Project 86 Community
@@ -20,103 +21,156 @@
 
 package p86l
 
-import "github.com/hajimehoshi/guigui/basicwidget"
+import (
+	"bytes"
+	"encoding/gob"
+	"p86l/configs"
+	"p86l/internal/debug"
+
+	"github.com/google/go-github/v71/github"
+	"github.com/hajimehoshi/guigui"
+	"github.com/invopop/ctxi18n"
+	"github.com/rs/zerolog/log"
+	"golang.org/x/text/language"
+)
 
 type Model struct {
-	mode string
-
-	texts TextsModel
+	mode             string
+	isInternet       bool
+	githubClient     *github.Client
+	rateLimitTracker RateLimitTracker
+	data             DataModel
+	cache            CacheModel
 }
 
 func (m *Model) Mode() string {
 	if m.mode == "" {
-		return "settings"
+		return "home"
 	}
 	return m.mode
 }
 
 func (m *Model) SetMode(mode string) {
+	log.Info().Str("Page", mode).Msg("Sidebar")
 	m.mode = mode
 }
 
-func (m *Model) Texts() *TextsModel {
-	return &m.texts
+type DataModel struct {
+	locale    language.Tag
+	colorMode guigui.ColorMode
+	appScale  int
 }
 
-type TextsModel struct {
-	horizontalAlign basicwidget.HorizontalAlign
-	verticalAlign   basicwidget.VerticalAlign
-	noWrap          bool
-	bold            bool
-	selectable      bool
-	editable        bool
-	text            string
-	textSet         bool
-}
+func (d *DataModel) SetLocale(context *guigui.Context, locale language.Tag) *debug.Error {
+	log.Info().Str("Locale", locale.String()).Msg("SetLocale")
+	d.locale = locale
 
-func (t *TextsModel) HorizontalAlign() basicwidget.HorizontalAlign {
-	return t.horizontalAlign
-}
-
-func (t *TextsModel) SetHorizontalAlign(align basicwidget.HorizontalAlign) {
-	t.horizontalAlign = align
-}
-
-func (t *TextsModel) VerticalAlign() basicwidget.VerticalAlign {
-	return t.verticalAlign
-}
-
-func (t *TextsModel) SetVerticalAlign(align basicwidget.VerticalAlign) {
-	t.verticalAlign = align
-}
-
-func (t *TextsModel) AutoWrap() bool {
-	return !t.noWrap
-}
-
-func (t *TextsModel) SetAutoWrap(autoWrap bool) {
-	t.noWrap = !autoWrap
-}
-
-func (t *TextsModel) Bold() bool {
-	return t.bold
-}
-
-func (t *TextsModel) SetBold(bold bool) {
-	t.bold = bold
-}
-
-func (t *TextsModel) Selectable() bool {
-	return t.selectable
-}
-
-func (t *TextsModel) SetSelectable(selectable bool) {
-	t.selectable = selectable
-	if !selectable {
-		t.editable = false
+	context.SetAppLocales([]language.Tag{d.locale})
+	ctx, err := ctxi18n.WithLocale(ctx, d.locale.String())
+	if err != nil {
+		return e.New(err, debug.FSError, debug.ErrFileNotFound)
 	}
-}
+	l = ctxi18n.Locale(ctx)
 
-func (t *TextsModel) Editable() bool {
-	return t.editable
-}
-
-func (t *TextsModel) SetEditable(editable bool) {
-	t.editable = editable
-	if editable {
-		t.selectable = true
+	dErr := fs.Save(e, configs.Data, configs.LocaleFile, []byte(locale.String()))
+	if dErr.Err != nil {
+		return dErr
 	}
+
+	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
-func (t *TextsModel) Text() string {
-	if !t.textSet {
-		return `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-		隴西の李徴は博学才穎、天宝の末年、若くして名を虎榜に連ね、ついで江南尉に補せられたが、性、狷介、自ら恃むところ頗る厚く、賤吏に甘んずるを潔しとしなかった。`
+func (d *DataModel) SetColorMode(context *guigui.Context, colorMode guigui.ColorMode) *debug.Error {
+	log.Info().Int("guigui.ColorMode", int(colorMode)).Msg("SetColorMode")
+	d.colorMode = colorMode
+	context.SetColorMode(d.colorMode)
+
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(colorMode); err != nil {
+		return e.New(err, debug.FSError, debug.ErrColorModeSave)
 	}
-	return t.text
+
+	dErr := fs.Save(e, configs.Data, configs.ColorModeFile, buf.Bytes())
+	if dErr.Err != nil {
+		return dErr
+	}
+
+	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
-func (t *TextsModel) SetText(text string) {
-	t.text = text
-	t.textSet = true
+func (d *DataModel) SetAppScale(context *guigui.Context, scale int) *debug.Error {
+	log.Info().Float64("guigui.AppScale", d.GetAppScaleF(scale)).Msg("SetAppScale")
+	d.appScale = scale
+	context.SetAppScale(d.GetAppScaleF(d.appScale))
+
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(scale); err != nil {
+		return e.New(err, debug.FSError, debug.ErrAppScaleSave)
+	}
+
+	dErr := fs.Save(e, configs.Data, configs.AppScaleFile, buf.Bytes())
+	if dErr.Err != nil {
+		return dErr
+	}
+
+	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+}
+
+func (d *DataModel) GetAppScale(scale float64) int {
+	switch scale {
+	case 0.5: // 50%
+		return 0
+	case 0.75: // 75%
+		return 1
+	case 1.0: // 100%
+		return 2
+	case 1.25: // 125%
+		return 3
+	case 1.50: // 150%
+		return 4
+	}
+
+	return -1
+}
+
+func (d *DataModel) GetAppScaleF(scale int) float64 {
+	switch scale {
+	case 0: // 50%
+		return 0.5
+	case 1: // 75%
+		return 0.75
+	case 2: // 100%
+		return 1.0
+	case 3: // 125%
+		return 1.25
+	case 4: // 150%
+		return 1.50
+	}
+
+	return -1
+}
+
+type CacheModel struct {
+	changelog           ChangelogT
+	translatedChangelog string
+}
+
+func (c *CacheModel) SetChangelog(changelog ChangelogT) *debug.Error {
+	log.Info().Any("cache.changelog", changelog).Msg("SetChangelog")
+	c.changelog = changelog
+
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(changelog); err != nil {
+		return e.New(err, debug.FSError, debug.ErrChangelogSave)
+	}
+
+	dErr := fs.Save(e, configs.Cache, configs.ChangelogFile, buf.Bytes())
+	if dErr.Err != nil {
+		return dErr
+	}
+
+	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
 }

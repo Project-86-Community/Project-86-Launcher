@@ -21,20 +21,18 @@
 
 package p86l
 
-import (
-	"github.com/hajimehoshi/guigui"
-	"github.com/hajimehoshi/guigui/basicwidget"
-)
+import "time"
 
-type Home struct {
-	guigui.DefaultWidget
-
-	msg basicwidget.Text
+type RateLimitTracker struct {
+	remaining      int
+	resetTimestamp time.Time
 }
 
-func (h *Home) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	h.msg.SetText(l.T("home.title"))
-	appender.AppendChildWidgetWithBounds(&h.msg, context.Bounds(h))
+func (r *RateLimitTracker) Update(remaining int, resetTimestamp time.Time) {
+	r.remaining = remaining
+	r.resetTimestamp = resetTimestamp
+}
 
-	return nil
+func (r *RateLimitTracker) Valid() bool {
+	return r.remaining > 0 && time.Now().Before(r.resetTimestamp)
 }

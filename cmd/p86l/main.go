@@ -22,7 +22,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"p86l"
 	"p86l/assets"
@@ -33,7 +32,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
-	"github.com/quasilyte/gdata/v2"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
@@ -68,38 +66,22 @@ func init() {
 }
 
 func main() {
-	appName := fmt.Sprintf("%s/%s", configs.CompanyName, configs.AppName)
-	if runtime.GOOS == "windows" {
-		appName = fmt.Sprintf("%s\\%s", configs.CompanyName, configs.AppName)
-	}
-
-	m, _err := gdata.Open(gdata.Config{
-		AppName: appName,
-	})
-	if _err != nil {
-		log.Panic().Int("Code", debug.ErrGDataOpenFailed).Str("Type", string(debug.FSError)).Err(_err).Msg("GData panic")
-	}
-
 	iconImages, _err := assets.GetIconImages()
 	if _err != nil {
-		log.Panic().Int("Code", debug.ErrIconNotFound).Str("Type", string(debug.FSError)).Err(_err).Msg("Icons panic")
-	}
-
-	p86l.GDataM = m
-	if err := p86l.Run(); err.Err != nil {
-		log.Panic().Stack().Int("Code", p86l.AppErr.Code).Str("Type", string(p86l.AppErr.Type)).Err(p86l.AppErr.Err).Msg("Run panic")
+		log.Panic().Int("Code", debug.ErrIconNotFound).Str("Type", string(debug.FSError)).Err(_err).Msg("Icons")
 	}
 
 	log.Info().Str("Detected OS", runtime.GOOS).Send()
 	ebiten.SetWindowIcon(iconImages)
 
+	ebiten.SetVsyncEnabled(true)
 	op := &guigui.RunOptions{
-		Title:           "Project 86 Launcher",
-		WindowMinWidth:  500,
-		WindowMinHeight: 280,
+		Title:         configs.AppTitle,
+		WindowMinSize: configs.AppWindowMinSize,
 	}
 	if _err = guigui.Run(&p86l.Root{}, op); _err != nil {
-		log.Error().Stack().Int("Code", p86l.AppErr.Code).Str("Type", string(p86l.AppErr.Type)).Err(p86l.AppErr.Err).Msg("App crashed")
+		appErr := p86l.GetAppError()
+		log.Error().Stack().Int("Code", appErr.Code).Str("Type", string(appErr.Type)).Err((appErr.Err)).Msg("App crashed")
 		os.Exit(1)
 	}
 }

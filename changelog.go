@@ -24,17 +24,101 @@ package p86l
 import (
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/hajimehoshi/guigui/layout"
+	"github.com/rs/zerolog/log"
 )
 
 type Changelog struct {
 	guigui.DefaultWidget
 
-	msg basicwidget.Text
+	background basicwidget.Background
+	infoText   basicwidget.Text
+	form       basicwidget.Form
+	gtlText    basicwidget.Text
+	gtlToggle  basicwidget.Toggle
+	urlButton  basicwidget.TextButton
+
+	isTranslate bool
+	model       *Model
+}
+
+func (c *Changelog) SetModel(model *Model) {
+	c.model = model
 }
 
 func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	c.msg.SetText(l.T("changelog.title"))
-	appender.AppendChildWidgetWithBounds(&c.msg, context.Bounds(c))
+	context.SetOpacity(&c.background, 0.7)
+	appender.AppendChildWidgetWithBounds(&c.background, context.Bounds(c))
+
+	if c.model.cache.changelog.Body != "" {
+		if c.isTranslate == true && c.model.cache.translatedChangelog != "" {
+			c.infoText.SetText(c.model.cache.translatedChangelog)
+		} else {
+			c.infoText.SetText(c.model.cache.changelog.Body)
+		}
+	} else {
+		c.infoText.SetText("")
+	}
+	if c.model.cache.changelog.URL != "" {
+		context.SetEnabled(&c.urlButton, true)
+	} else {
+		context.SetEnabled(&c.urlButton, false)
+	}
+
+	c.gtlText.SetText("Translate via Google TL")
+	c.gtlToggle.SetOnValueChanged(func(value bool) {
+		if value == true {
+			go func() {
+				result, err := t.Translate(c.model.cache.changelog.Body, "auto", c.model.data.locale.String())
+				if err != nil {
+					log.Error().Err(err).Msg("SetChangelog")
+					return
+				}
+				c.model.cache.translatedChangelog = result.Text
+				log.Info().Any("translate", result).Msg("changelog.gtlToggle")
+			}()
+		}
+		c.isTranslate = value
+	})
+
+	c.infoText.SetAutoWrap(true)
+	c.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+	c.infoText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+
+	c.urlButton.SetText("Open")
+	c.urlButton.SetOnDown(func() {
+		if c.model.cache.changelog.URL != "" {
+			go OpenBrowser(c.model.cache.changelog.URL)
+		}
+	})
+
+	c.form.SetItems([]*basicwidget.FormItem{
+		{
+			PrimaryWidget:   &c.gtlText,
+			SecondaryWidget: &c.gtlToggle,
+		},
+		{
+			PrimaryWidget:   nil,
+			SecondaryWidget: &c.urlButton,
+		},
+	})
+
+	u := basicwidget.UnitSize(context)
+	for i, bounds := range (layout.GridLayout{
+		Bounds: context.Bounds(c).Inset(u / 2),
+		Heights: []layout.Size{
+			layout.FlexibleSize(1),
+			layout.FlexibleSize(1),
+		},
+		RowGap: u / 2,
+	}).CellBounds() {
+		switch i {
+		case 0:
+			appender.AppendChildWidgetWithBounds(&c.infoText, bounds)
+		case 1:
+			appender.AppendChildWidgetWithBounds(&c.form, bounds)
+		}
+	}
 
 	return nil
 }

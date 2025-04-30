@@ -30,11 +30,10 @@ type ErrorType string
 
 const (
 	UnknownError  ErrorType = "unknown"
-	AppError      ErrorType = "app"
 	FSError       ErrorType = "filesystem"
-	InternetError ErrorType = "internet"
 	DataError     ErrorType = "data"
 	CacheError    ErrorType = "cache"
+	InternetError ErrorType = "internet"
 )
 
 const (
@@ -53,18 +52,26 @@ const (
 	ErrFolderClear
 
 	// Data errors (3001-3999)
-	ErrColorModeLoad int = iota + 3001
-	ErrAppScaleLoad
+	ErrLocaleLoad int = iota + 3001
+	ErrLocaleSave
+	ErrLocaleReset
+
+	ErrColorModeLoad
 	ErrColorModeSave
+	ErrColorModeReset
+
+	ErrAppScaleLoad
 	ErrAppScaleSave
-	ErrColorModeClear
-	ErrAppScaleClear
+	ErrAppScaleReset
 
 	// Cache errors (4001-4999)
 	ErrChangelogLoad int = iota + 4001
 	ErrChangelogSave
 	ErrChangelogClear
 	ErrChangelogNetwork
+
+	// Internet errors (5001-5999)
+	ErrRateLimit int = iota + 5001
 )
 
 type Error struct {
@@ -82,7 +89,7 @@ type Debug struct {
 func (d *Debug) New(err error, errType ErrorType, code int, message ...string) *Error {
 	if err != nil {
 		return &Error{
-			Err:  errors.New(err.Error()),
+			Err:  errors.Wrap(err, "Debug"),
 			Type: errType,
 			Code: code,
 		}
@@ -103,12 +110,12 @@ func (d *Debug) New(err error, errType ErrorType, code int, message ...string) *
 }
 
 func (d *Debug) SetToast(err *Error) {
-	log.Error().Stack().Int("Code", err.Code).Str("Type", string(err.Type)).Err(err.Err).Msg("Toast error")
+	log.Info().Stack().Int("Code", err.Code).Str("Type", string(err.Type)).Err(err.Err).Msg("SetToast")
 	d.ToastErr = err
 }
 
 func (d *Debug) SetPopup(err *Error) {
-	log.Error().Stack().Int("Code", err.Code).Str("Type", string(err.Type)).Err(err.Err).Msg("Toast error")
+	log.Info().Stack().Int("Code", err.Code).Str("Type", string(err.Type)).Err(err.Err).Msg("SetPopup")
 	d.PopupErr = err
 }
 

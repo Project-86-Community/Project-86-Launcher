@@ -1,3 +1,5 @@
+//go:build darwin || linux
+
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
@@ -19,12 +21,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package p86l
+package file
 
 import (
-	"github.com/hajimehoshi/guigui"
+	"fmt"
+	"os"
+	"p86l/configs"
+	"p86l/internal/debug"
+	"path/filepath"
 )
 
-type Back struct {
-	guigui.DefaultWidget
+func GetCompanyPath(appDebug *debug.Debug, extra ...string) (string, *debug.Error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", appDebug.New(err, debug.FSError, debug.ErrDirNotFound)
+	}
+	dataPath := filepath.Join(home, ".local", "share", configs.CompanyName)
+	// Used for testing only!
+	if len(extra) == 1 && extra[0] != "" {
+		dataPath = fmt.Sprintf("%s_%s", dataPath, extra[0])
+	}
+	if dErr := mkdirAll(appDebug, dataPath); dErr.Err != nil {
+		return "", appDebug.New(err, debug.FSError, debug.ErrUnknown)
+	}
+	return dataPath, appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
