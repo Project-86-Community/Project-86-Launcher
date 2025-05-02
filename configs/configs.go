@@ -39,8 +39,8 @@ var (
 	ColorModeFile = "colormode.data"
 	AppScaleFile  = "appscale.data"
 
-	Cache         = "cache"
-	ChangelogFile = "changelog.json"
+	Cache     = "cache"
+	CacheFile = "cache.data"
 
 	Website = "https://project-86-community.github.io/Project-86-Website/"
 	Github  = "https://github.com/Taliayaya/Project-86"

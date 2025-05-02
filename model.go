@@ -153,21 +153,21 @@ func (d *DataModel) GetAppScaleF(scale int) float64 {
 }
 
 type CacheModel struct {
-	changelog           ChangelogT
+	cache               CacheT
 	translatedChangelog string
 }
 
-func (c *CacheModel) SetChangelog(changelog ChangelogT) *debug.Error {
-	log.Info().Any("cache.changelog", changelog).Msg("SetChangelog")
-	c.changelog = changelog
+func (c *CacheModel) SetCache(cache CacheT) *debug.Error {
+	log.Info().Any("CacheModel.cache", cache).Msg("SetCache")
+	c.cache = cache
 
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(changelog); err != nil {
-		return e.New(err, debug.FSError, debug.ErrChangelogSave)
+	if err := encoder.Encode(cache); err != nil {
+		return e.New(err, debug.FSError, debug.ErrCacheSave)
 	}
 
-	dErr := fs.Save(e, configs.Cache, configs.ChangelogFile, buf.Bytes())
+	dErr := fs.Save(e, configs.Cache, configs.CacheFile, buf.Bytes())
 	if dErr.Err != nil {
 		return dErr
 	}

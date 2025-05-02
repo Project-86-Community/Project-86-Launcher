@@ -26,6 +26,7 @@ import (
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/layout"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/text/language"
 )
 
 type Changelog struct {
@@ -50,26 +51,32 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 	context.SetOpacity(&c.background, 0.7)
 	appender.AppendChildWidgetWithBounds(&c.background, context.Bounds(c))
 
-	if c.model.cache.changelog.Body != "" {
+	if c.model.cache.cache.Repo.GetBody() != "" {
 		if c.isTranslate == true && c.model.cache.translatedChangelog != "" {
 			c.infoText.SetText(c.model.cache.translatedChangelog)
 		} else {
-			c.infoText.SetText(c.model.cache.changelog.Body)
+			c.infoText.SetText(c.model.cache.cache.Repo.GetBody())
 		}
 	} else {
 		c.infoText.SetText("")
 	}
-	if c.model.cache.changelog.URL != "" {
+	if c.model.cache.cache.Repo.GetHTMLURL() != "" {
 		context.SetEnabled(&c.urlButton, true)
 	} else {
 		context.SetEnabled(&c.urlButton, false)
+	}
+	if c.model.data.locale == language.English {
+		context.SetEnabled(&c.gtlToggle, false)
+		c.gtlToggle.SetValue(false)
+	} else {
+		context.SetEnabled(&c.gtlToggle, true)
 	}
 
 	c.gtlText.SetText("Translate via Google TL")
 	c.gtlToggle.SetOnValueChanged(func(value bool) {
 		if value == true {
 			go func() {
-				result, err := t.Translate(c.model.cache.changelog.Body, "auto", c.model.data.locale.String())
+				result, err := t.Translate(c.model.cache.cache.Repo.GetBody(), "auto", c.model.data.locale.String())
 				if err != nil {
 					log.Error().Err(err).Msg("SetChangelog")
 					return
@@ -87,8 +94,8 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 
 	c.urlButton.SetText("Open")
 	c.urlButton.SetOnDown(func() {
-		if c.model.cache.changelog.URL != "" {
-			go OpenBrowser(c.model.cache.changelog.URL)
+		if c.model.cache.cache.Repo.GetBody() != "" {
+			go OpenBrowser(c.model.cache.cache.Repo.GetBody())
 		}
 	})
 
@@ -104,14 +111,15 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 	})
 
 	u := basicwidget.UnitSize(context)
-	for i, bounds := range (layout.GridLayout{
+	gl := layout.GridLayout{
 		Bounds: context.Bounds(c).Inset(u / 2),
 		Heights: []layout.Size{
 			layout.FlexibleSize(1),
 			layout.FlexibleSize(1),
 		},
 		RowGap: u / 2,
-	}).CellBounds() {
+	}
+	for i, bounds := range gl.CellBounds() {
 		switch i {
 		case 0:
 			appender.AppendChildWidgetWithBounds(&c.infoText, bounds)

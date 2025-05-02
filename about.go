@@ -71,25 +71,21 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	a.infoText.SetText(l.T("about.info"))
 
 	u := basicwidget.UnitSize(context)
-	for i, bounds := range (layout.GridLayout{
+	gl := layout.GridLayout{
 		Bounds: context.Bounds(a).Inset(u / 2),
 		Heights: []layout.Size{
 			layout.FlexibleSize(1),
 			layout.FlexibleSize(1),
 		},
 		RowGap: u / 2,
-	}).CellBounds() {
+	}
+	for i, bounds := range gl.CellBounds() {
 		switch i {
 		case 0:
-			for j, innerBounds := range (layout.GridLayout{
+			gl := layout.GridLayout{
 				Bounds: bounds,
 				Widths: []layout.Size{
-					layout.MaxContentSize(func(index int) int {
-						return max(
-							a.leadText.DefaultSize(context).X,
-							a.devText.DefaultSize(context).X,
-						)
-					}),
+					layout.FlexibleSize(2),
 					layout.FlexibleSize(1),
 				},
 				Heights: []layout.Size{
@@ -98,7 +94,8 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 				},
 				RowGap:    u / 2,
 				ColumnGap: u / 2,
-			}).CellBounds() {
+			}
+			for j, innerBounds := range gl.CellBounds() {
 				switch j {
 				case 0:
 					appender.AppendChildWidgetWithBounds(&a.leadText, innerBounds)

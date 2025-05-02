@@ -23,7 +23,6 @@ package p86l
 
 import (
 	"p86l/internal/debug"
-	"strings"
 
 	"github.com/pkg/browser"
 	"github.com/rs/zerolog/log"
@@ -34,10 +33,4 @@ func OpenBrowser(url string) {
 	if err := browser.OpenURL(url); err != nil {
 		e.SetPopup(e.New(err, debug.InternetError, debug.ErrBrowserOpen))
 	}
-}
-
-func CleanString(text string) string {
-	text = strings.ReplaceAll(text, "\n", "")
-	text = strings.ReplaceAll(text, "\r", "")
-	return text
 }

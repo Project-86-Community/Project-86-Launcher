@@ -30,7 +30,6 @@ import (
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/layout"
-	"github.com/rs/zerolog/log"
 )
 
 type Play struct {
@@ -112,23 +111,24 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	p.patreonButton.SetText("Patreon - Donate to the devs?")
 
 	p.actionButton.SetOnDown(func() {
-		log.Info()
+
 	})
 
 	p.Buttons()
 
 	u := basicwidget.UnitSize(context)
-	for i, bounds := range (layout.GridLayout{
+	gl := layout.GridLayout{
 		Bounds: context.Bounds(p).Inset(u / 2),
 		Heights: []layout.Size{
 			layout.FixedSize(u * 4),
 			layout.FlexibleSize(1),
 		},
 		RowGap: u / 2,
-	}).CellBounds() {
+	}
+	for i, bounds := range gl.CellBounds() {
 		switch i {
 		case 0:
-			for j, innerBounds := range (layout.GridLayout{
+			gl := layout.GridLayout{
 				Bounds: bounds,
 				Widths: []layout.Size{
 					layout.FlexibleSize(1),
@@ -140,7 +140,8 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 				},
 				RowGap:    u / 2,
 				ColumnGap: u / 2,
-			}).CellBounds() {
+			}
+			for j, innerBounds := range gl.CellBounds() {
 				switch j {
 				case 0:
 					appender.AppendChildWidgetWithBounds(&p.websiteButton, innerBounds)

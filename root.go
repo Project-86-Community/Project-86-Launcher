@@ -61,7 +61,7 @@ type Root struct {
 	about     About
 
 	lastInternetCheckTick int64
-	debounceChangelog     bool
+	debounceCache         bool
 
 	sync  sync.Once
 	model Model
@@ -180,19 +180,20 @@ func (r *Root) Init(context *guigui.Context) *debug.Error {
 	}
 
 	{
-		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.ChangelogFile))
+		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.CacheFile))
 		if value.Err == nil {
-			b, dErr := fs.Load(e, configs.Cache, configs.ChangelogFile)
+			log.Info().Str("Cache", "cache found, loading cache...").Msg("Root.Init")
+			b, dErr := fs.Load(e, configs.Cache, configs.CacheFile)
 			if dErr.Err != nil {
 				return dErr
 			}
-			var changelog ChangelogT
+			var cache CacheT
 			decoder := gob.NewDecoder(bytes.NewReader(b))
-			err := decoder.Decode(&changelog)
+			err := decoder.Decode(&cache)
 			if err != nil {
-				return e.New(err, debug.FSError, debug.ErrChangelogLoad)
+				return e.New(err, debug.FSError, debug.ErrCacheLoad)
 			}
-			r.dErr = r.model.cache.SetChangelog(changelog)
+			r.dErr = r.model.cache.SetCache(cache)
 		}
 	}
 
@@ -226,20 +227,20 @@ func (r *Root) FetchRateLimitStatus() *debug.Error {
 	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
-func (r *Root) FetchChangelog() *debug.Error {
+func (r *Root) FetchCache() *debug.Error {
 	if r.model.rateLimitTracker.Valid() == true {
 		repo, _, err := r.model.githubClient.Repositories.GetLatestRelease(ctx, configs.RepoOwner, configs.RepoName)
 		if err != nil {
-			return e.New(err, debug.InternetError, debug.ErrChangelogNetwork)
+			return e.New(err, debug.InternetError, debug.ErrCacheInternet)
 		}
-		log.Info().Msg("FetchChangelog")
-		newChangelog := ChangelogT{
-			Body:      repo.GetBody(),
-			URL:       repo.GetHTMLURL(),
+		log.Info().Msg("Root.FetchCache")
+
+		newCache := CacheT{
+			Repo:      repo,
 			Timestamp: time.Now(),
 			ExpiresIn: time.Hour,
 		}
-		r.dErr = r.model.cache.SetChangelog(newChangelog)
+		r.dErr = r.model.cache.SetCache(newCache)
 	}
 
 	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
@@ -306,13 +307,14 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	r.settings.SetModel(&r.model)
 	r.sidebar.SetModel(&r.model)
 
-	for i, bounds := range (layout.GridLayout{
+	gl := layout.GridLayout{
 		Bounds: context.Bounds(r),
 		Widths: []layout.Size{
 			layout.FixedSize(8 * basicwidget.UnitSize(context)),
 			layout.FlexibleSize(1),
 		},
-	}).CellBounds() {
+	}
+	for i, bounds := range gl.CellBounds() {
 		switch i {
 		case 0:
 			appender.AppendChildWidgetWithBounds(&r.sidebar, bounds)
@@ -352,29 +354,33 @@ func (r *Root) Update(context *guigui.Context) error {
 	}
 
 	if r.model.isInternet == true {
-		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.ChangelogFile))
+		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.CacheFile))
 		if value.Err != nil {
-			if r.model.isInternet == true && r.debounceChangelog == false {
-				r.debounceChangelog = true
+			if r.model.isInternet == true && r.debounceCache == false {
+				r.debounceCache = true
 				go func() {
-					dErr := r.FetchChangelog()
+					log.Info().Str("Cache", "cache not found, downloading cache...").Msg("Root.Update")
+
+					dErr := r.FetchCache()
 					if dErr.Err != nil {
 						e.SetToast(dErr)
 					}
-					r.debounceChangelog = false
+					r.debounceCache = false
 				}()
 			}
 		}
 
-		if r.model.cache.changelog.Body != "" {
-			if time.Since(r.model.cache.changelog.Timestamp) > r.model.cache.changelog.ExpiresIn && r.debounceChangelog == false {
-				r.debounceChangelog = true
+		if r.model.cache.cache.Repo.GetBody() != "" {
+			if time.Since(r.model.cache.cache.Timestamp) > r.model.cache.cache.ExpiresIn && r.debounceCache == false {
+				r.debounceCache = true
 				go func() {
-					dErr := r.FetchChangelog()
+					log.Info().Str("Cache", "outdated, updating...").Msg("Root.Update")
+
+					dErr := r.FetchCache()
 					if dErr.Err != nil {
 						e.SetToast(dErr)
 					}
-					r.debounceChangelog = false
+					r.debounceCache = false
 				}()
 			}
 		}

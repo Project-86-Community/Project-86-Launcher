@@ -65,10 +65,10 @@ const (
 	ErrAppScaleReset
 
 	// Cache errors (4001-4999)
-	ErrChangelogLoad int = iota + 4001
-	ErrChangelogSave
-	ErrChangelogClear
-	ErrChangelogNetwork
+	ErrCacheLoad int = iota + 4001
+	ErrCacheSave
+	ErrCacheReset
+	ErrCacheInternet
 
 	// Internet errors (5001-5999)
 	ErrRateLimit int = iota + 5001

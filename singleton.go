@@ -29,6 +29,7 @@ import (
 	"time"
 
 	translator "github.com/Conight/go-googletrans"
+	"github.com/google/go-github/v71/github"
 	"github.com/invopop/ctxi18n/i18n"
 )
 
@@ -38,9 +39,8 @@ type debugMode struct {
 	Logs      bool
 }
 
-type ChangelogT struct {
-	Body      string
-	URL       string
+type CacheT struct {
+	Repo      *github.RepositoryRelease
 	Timestamp time.Time
 	ExpiresIn time.Duration
 }
