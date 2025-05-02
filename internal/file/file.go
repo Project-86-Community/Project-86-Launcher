@@ -34,7 +34,7 @@ import (
 
 func mkdirAll(appDebug *debug.Debug, path string) *debug.Error {
 	_, err := os.Stat(path)
-	if !errors.Is(err, fs.ErrNotExist) {
+	if !errors.Is(err, fs.ErrNotExist) && err != nil {
 		return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 	}
 	err = os.MkdirAll(path, 0755)
@@ -74,7 +74,7 @@ func (a *AppFS) OpenFileManager(appDebug *debug.Debug, path string) *debug.Error
 
 func (a *AppFS) IsDir(appDebug *debug.Debug, path string) *debug.Error {
 	_, err := os.Stat(path)
-	if errors.Is(err, fs.ErrNotExist) {
+	if errors.Is(err, fs.ErrNotExist) && err != nil {
 		return appDebug.New(err, debug.FSError, debug.ErrDirNotFound)
 	}
 	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)

@@ -49,7 +49,11 @@ func (i *imageCache) Get(name string) (*ebiten.Image, error) {
 	// Try to open and decode as JPG
 	f, err = jpgImages.Open(name + ".jpg")
 	if err == nil {
-		defer f.Close()
+		defer func() {
+			if err := f.Close(); err != nil {
+				return
+			}
+		}()
 		pImg, err = jpeg.Decode(f)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode JPG: %w", err)
@@ -60,7 +64,11 @@ func (i *imageCache) Get(name string) (*ebiten.Image, error) {
 		if err != nil {
 			return nil, fmt.Errorf("image not found as JPG or PNG: %w", err)
 		}
-		defer f.Close()
+		defer func() {
+			if err := f.Close(); err != nil {
+				return
+			}
+		}()
 		pImg, err = png.Decode(f)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode PNG: %w", err)

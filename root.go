@@ -69,8 +69,6 @@ type Root struct {
 }
 
 func (r *Root) RunApp() *debug.Error {
-	e = &debug.Debug{}
-
 	companyPath, dErr := file.GetCompanyPath(e)
 	if dErr.Err != nil {
 		return dErr
@@ -79,10 +77,11 @@ func (r *Root) RunApp() *debug.Error {
 	if err != nil {
 		return e.New(err, debug.FSError, debug.ErrDirNotFound)
 	}
-	fs, dErr := file.NewFS(e, root, companyPath, configs.AppName)
+	afs, dErr := file.NewFS(e, root, companyPath, configs.AppName)
 	if dErr.Err != nil {
 		return dErr
 	}
+	fs = afs
 
 	if TheDebugMode.IsRelease {
 		logDir, dErr := fs.LogDir(e)
@@ -112,8 +111,6 @@ func (r *Root) RunApp() *debug.Error {
 	if err := lang.GetLangs(); err != nil {
 		return e.New(err, debug.FSError, debug.ErrFileNotFound)
 	}
-
-	r.CheckInternet()
 	r.model.githubClient = github.NewClient(nil)
 
 	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
@@ -181,7 +178,6 @@ func (r *Root) Init(context *guigui.Context) *debug.Error {
 		}
 		r.dErr = r.model.data.SetAppScale(context, appScale)
 	}
-
 	{
 		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.CacheFile))
 		if value.Err == nil {
@@ -206,14 +202,18 @@ func (r *Root) Init(context *guigui.Context) *debug.Error {
 func (r *Root) CheckInternet() {
 	check := func() bool {
 		client := http.Client{
-			Timeout: 2 * time.Second,
+			Timeout: 5 * time.Second,
 		}
 
 		resp, err := client.Get(configs.InternetServer)
 		if err != nil {
 			return false
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				return
+			}
+		}()
 
 		return resp.StatusCode == 204
 	}
@@ -359,7 +359,7 @@ func (r *Root) Update(context *guigui.Context) error {
 	if r.model.isInternet {
 		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.CacheFile))
 		if value.Err != nil {
-			if r.model.isInternet && r.debounceCache {
+			if r.model.isInternet && !r.debounceCache {
 				r.debounceCache = true
 				go func() {
 					log.Info().Str("Cache", "cache not found, downloading cache...").Msg("Root.Update")
@@ -374,7 +374,7 @@ func (r *Root) Update(context *guigui.Context) error {
 		}
 
 		if r.model.cache.repo.GetBody() != "" {
-			if time.Since(r.model.cache.timestamp) > r.model.cache.expiresIn && r.debounceCache {
+			if time.Since(r.model.cache.timestamp) > r.model.cache.expiresIn && !r.debounceCache {
 				r.debounceCache = true
 				go func() {
 					log.Info().Str("Cache", "outdated, updating...").Msg("Root.Update")

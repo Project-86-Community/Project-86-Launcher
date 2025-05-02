@@ -73,6 +73,8 @@ const (
 
 	// Internet errors (5001-5999)
 	ErrRateLimit int = iota + 5001
+	ErrConnection
+	ErrStatusCode
 )
 
 type Error struct {

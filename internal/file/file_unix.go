@@ -42,7 +42,7 @@ func GetCompanyPath(appDebug *debug.Debug, extra ...string) (string, *debug.Erro
 		dataPath = fmt.Sprintf("%s_%s", dataPath, extra[0])
 	}
 	if dErr := mkdirAll(appDebug, dataPath); dErr.Err != nil {
-		return "", appDebug.New(err, debug.FSError, debug.ErrUnknown)
+		return "", dErr
 	}
 	return dataPath, appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }

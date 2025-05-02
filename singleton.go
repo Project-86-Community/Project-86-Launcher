@@ -52,8 +52,8 @@ var (
 	l            *i18n.Locale
 	t            = translator.New()
 
-	e  *debug.Debug // Debugger
-	fs *file.AppFS  // Filesystem
+	e  = &debug.Debug{} // Debugger
+	fs *file.AppFS      // Filesystem
 
 	aErr *debug.Error
 )
