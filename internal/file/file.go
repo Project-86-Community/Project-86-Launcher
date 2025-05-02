@@ -49,17 +49,20 @@ type AppFS struct {
 	CompanyDirPath string
 }
 
-func NewFS(root *os.Root, companyPath, appDirPath string) *AppFS {
+func NewFS(appDebug *debug.Debug, root *os.Root, companyPath, appDirPath string) (*AppFS, *debug.Error) {
 	if _, err := root.Stat(appDirPath); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			root.Mkdir(appDirPath, 0755)
+			err := root.Mkdir(appDirPath, 0755)
+			if err != nil {
+				return nil, appDebug.New(err, debug.FSError, debug.ErrFSOpenFailed)
+			}
 		}
 	}
 
 	return &AppFS{
 		Root:           root,
 		CompanyDirPath: companyPath,
-	}
+	}, appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
 func (a *AppFS) OpenFileManager(appDebug *debug.Debug, path string) *debug.Error {
@@ -81,7 +84,10 @@ func (a *AppFS) Save(appDebug *debug.Debug, key, saveFile string, bytes []byte) 
 	savePath := filepath.Join(a.CompanyDirPath, configs.AppName, key)
 	if _, err := os.Stat(savePath); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			os.Mkdir(savePath, 0755)
+			err := os.Mkdir(savePath, 0755)
+			if err != nil {
+				return appDebug.New(err, debug.FSError, debug.ErrNewFileFailed)
+			}
 		}
 	}
 	root, err := os.OpenRoot(savePath)

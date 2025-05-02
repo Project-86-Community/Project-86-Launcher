@@ -31,6 +31,8 @@ github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250421152323-6badd1230d6a h1
 github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250421152323-6badd1230d6a/go.mod h1:V9tkZ/t0vlXJhrN3hfgjfdlx9A65vRYxXafVNiWU3Is=
 github.com/hajimehoshi/guigui v0.0.0-20250501175937-23dffe6df476 h1:JC5DJuc5Gh3EyOr9WbPCOjisFFokij3IvbF6w0v6tZE=
 github.com/hajimehoshi/guigui v0.0.0-20250501175937-23dffe6df476/go.mod h1:0RDW2GMruE05x6X7U4t6rE8gR5D1z8QsZnuUs748CTM=
+github.com/hajimehoshi/guigui v0.0.0-20250502095010-bd1b40036781 h1:9G2OfU1I2nfZofvrHNvKxZ3102iNEIED2H+lbipK32g=
+github.com/hajimehoshi/guigui v0.0.0-20250502095010-bd1b40036781/go.mod h1:0RDW2GMruE05x6X7U4t6rE8gR5D1z8QsZnuUs748CTM=
 github.com/hajimehoshi/oklab v0.1.0 h1:+ApSswl9LlB+8AYIC9ZaRO/r1emGtTF52YQleB3bW7w=
 github.com/hajimehoshi/oklab v0.1.0/go.mod h1:PQQ2H7nXuDlAr4pkdDRTfXp5tXdfIUKQpZbpZE7ugT4=
 github.com/invopop/ctxi18n v0.9.0 h1:BIia4u4OngaHVn/7gvK0w6lccOXVtad8xU0KgJ+mnVA=

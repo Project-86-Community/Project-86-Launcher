@@ -42,7 +42,12 @@ func setup(t *testing.T) (*debug.Debug, *file.AppFS) {
 		t.Fatalf("Code: %d, Type: %s, Err: %v", debug.ErrDirNotFound, string(debug.FSError), err)
 	}
 
-	return e, file.NewFS(root, companyPath, configs.AppName)
+	a, dErr := file.NewFS(e, root, companyPath, configs.AppName)
+	if dErr.Err != nil {
+		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
+	}
+
+	return e, a
 }
 
 func TestDirs(t *testing.T) {

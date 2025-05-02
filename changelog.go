@@ -51,16 +51,16 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 	context.SetOpacity(&c.background, 0.7)
 	appender.AppendChildWidgetWithBounds(&c.background, context.Bounds(c))
 
-	if c.model.cache.cache.Repo.GetBody() != "" {
-		if c.isTranslate == true && c.model.cache.translatedChangelog != "" {
+	if c.model.cache.repo.GetBody() != "" {
+		if c.isTranslate && c.model.cache.translatedChangelog != "" {
 			c.infoText.SetText(c.model.cache.translatedChangelog)
 		} else {
-			c.infoText.SetText(c.model.cache.cache.Repo.GetBody())
+			c.infoText.SetText(c.model.cache.repo.GetBody())
 		}
 	} else {
 		c.infoText.SetText("")
 	}
-	if c.model.cache.cache.Repo.GetHTMLURL() != "" {
+	if c.model.cache.repo.GetHTMLURL() != "" {
 		context.SetEnabled(&c.urlButton, true)
 	} else {
 		context.SetEnabled(&c.urlButton, false)
@@ -74,9 +74,9 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 
 	c.gtlText.SetText("Translate via Google TL")
 	c.gtlToggle.SetOnValueChanged(func(value bool) {
-		if value == true {
+		if value {
 			go func() {
-				result, err := t.Translate(c.model.cache.cache.Repo.GetBody(), "auto", c.model.data.locale.String())
+				result, err := t.Translate(c.model.cache.repo.GetBody(), "auto", c.model.data.locale.String())
 				if err != nil {
 					log.Error().Err(err).Msg("SetChangelog")
 					return
@@ -94,8 +94,8 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 
 	c.urlButton.SetText("Open")
 	c.urlButton.SetOnDown(func() {
-		if c.model.cache.cache.Repo.GetBody() != "" {
-			go OpenBrowser(c.model.cache.cache.Repo.GetBody())
+		if c.model.cache.repo.GetBody() != "" {
+			go OpenBrowser(c.model.cache.repo.GetBody())
 		}
 	})
 

@@ -96,7 +96,7 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 
 	s.colorModeText.SetText(l.T("settings.colormode"))
 	s.colorModeToggle.SetOnValueChanged(func(value bool) {
-		if value == true {
+		if value {
 			s.dErr = s.model.data.SetColorMode(context, guigui.ColorModeDark)
 		} else {
 			s.dErr = s.model.data.SetColorMode(context, guigui.ColorModeLight)

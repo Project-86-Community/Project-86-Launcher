@@ -37,7 +37,6 @@ type Play struct {
 
 	background    basicwidget.Background
 	actionButton  basicwidget.TextButton
-	form          basicwidget.Form
 	websiteButton basicwidget.TextButton
 	githubButton  basicwidget.TextButton
 	discordButton basicwidget.TextButton
@@ -97,7 +96,7 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	}
 	p.patreonButton.SetImage(img)
 
-	if p.model.isInternet == true {
+	if p.model.isInternet {
 		context.SetEnabled(&p.actionButton, true)
 		p.actionButton.SetText("Play")
 	} else {

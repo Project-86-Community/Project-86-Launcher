@@ -26,6 +26,7 @@ import (
 	"encoding/gob"
 	"p86l/configs"
 	"p86l/internal/debug"
+	"time"
 
 	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/guigui"
@@ -153,13 +154,17 @@ func (d *DataModel) GetAppScaleF(scale int) float64 {
 }
 
 type CacheModel struct {
-	cache               CacheT
+	repo                *github.RepositoryRelease
+	timestamp           time.Time
+	expiresIn           time.Duration
 	translatedChangelog string
 }
 
 func (c *CacheModel) SetCache(cache CacheT) *debug.Error {
 	log.Info().Any("CacheModel.cache", cache).Msg("SetCache")
-	c.cache = cache
+	c.repo = cache.Repo
+	c.timestamp = cache.Timestamp
+	c.expiresIn = cache.ExpiresIn
 
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)

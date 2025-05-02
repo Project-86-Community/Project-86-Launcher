@@ -42,11 +42,12 @@ const (
 	ErrBrowserOpen
 
 	// Filesystem errors (2001-2999)
-	ErrGDataOpenFailed int = iota + 2001
+	ErrFSOpenFailed int = iota + 2001
 	ErrIconNotFound
 	ErrDirNotFound
 	ErrNewDirFailed
 	ErrNewFileFailed
+	ErrNewFolderFailed
 	ErrOpenFolderFailed
 	ErrFileNotFound
 	ErrFolderClear

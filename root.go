@@ -79,7 +79,10 @@ func (r *Root) RunApp() *debug.Error {
 	if err != nil {
 		return e.New(err, debug.FSError, debug.ErrDirNotFound)
 	}
-	fs = file.NewFS(root, companyPath, configs.AppName)
+	fs, dErr := file.NewFS(e, root, companyPath, configs.AppName)
+	if dErr.Err != nil {
+		return dErr
+	}
 
 	if TheDebugMode.IsRelease {
 		logDir, dErr := fs.LogDir(e)
@@ -228,7 +231,7 @@ func (r *Root) FetchRateLimitStatus() *debug.Error {
 }
 
 func (r *Root) FetchCache() *debug.Error {
-	if r.model.rateLimitTracker.Valid() == true {
+	if r.model.rateLimitTracker.Valid() {
 		repo, _, err := r.model.githubClient.Repositories.GetLatestRelease(ctx, configs.RepoOwner, configs.RepoName)
 		if err != nil {
 			return e.New(err, debug.InternetError, debug.ErrCacheInternet)
@@ -353,10 +356,10 @@ func (r *Root) Update(context *guigui.Context) error {
 		r.lastInternetCheckTick = ebiten.Tick()
 	}
 
-	if r.model.isInternet == true {
+	if r.model.isInternet {
 		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.CacheFile))
 		if value.Err != nil {
-			if r.model.isInternet == true && r.debounceCache == false {
+			if r.model.isInternet && r.debounceCache {
 				r.debounceCache = true
 				go func() {
 					log.Info().Str("Cache", "cache not found, downloading cache...").Msg("Root.Update")
@@ -370,8 +373,8 @@ func (r *Root) Update(context *guigui.Context) error {
 			}
 		}
 
-		if r.model.cache.cache.Repo.GetBody() != "" {
-			if time.Since(r.model.cache.cache.Timestamp) > r.model.cache.cache.ExpiresIn && r.debounceCache == false {
+		if r.model.cache.repo.GetBody() != "" {
+			if time.Since(r.model.cache.timestamp) > r.model.cache.expiresIn && r.debounceCache {
 				r.debounceCache = true
 				go func() {
 					log.Info().Str("Cache", "outdated, updating...").Msg("Root.Update")

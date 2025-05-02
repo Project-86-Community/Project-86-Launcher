@@ -7,7 +7,7 @@ require (
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/google/go-github/v71 v71.0.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250421152323-6badd1230d6a
-	github.com/hajimehoshi/guigui v0.0.0-20250501175937-23dffe6df476
+	github.com/hajimehoshi/guigui v0.0.0-20250502095010-bd1b40036781
 	github.com/invopop/ctxi18n v0.9.0
 	github.com/kisielk/errcheck v1.9.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
