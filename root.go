@@ -29,7 +29,6 @@ import (
 	"net/http"
 	"os"
 	"p86l/assets"
-	"p86l/assets/lang"
 	"p86l/configs"
 	"p86l/internal/debug"
 	"p86l/internal/file"
@@ -37,7 +36,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/guigui"
@@ -107,11 +105,10 @@ func (r *Root) RunApp() *debug.Error {
 		multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
 		log.Logger = zerolog.New(multi).With().Timestamp().Logger()
 	}
-
-	if err := lang.GetLangs(); err != nil {
-		return e.New(err, debug.FSError, debug.ErrFileNotFound)
-	}
-	r.model.githubClient = github.NewClient(nil)
+	/*
+		if err := lang.GetLangs(); err != nil {
+			return e.New(err, debug.FSError, debug.ErrFileNotFound)
+		}*/
 
 	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
@@ -222,7 +219,7 @@ func (r *Root) CheckInternet() {
 }
 
 func (r *Root) FetchRateLimitStatus() *debug.Error {
-	rate, _, err := r.model.githubClient.RateLimit.Get(ctx)
+	rate, _, err := githubClient.RateLimit.Get(ctx)
 	if err != nil {
 		return e.New(err, debug.InternetError, debug.ErrRateLimit)
 	}
@@ -232,7 +229,7 @@ func (r *Root) FetchRateLimitStatus() *debug.Error {
 
 func (r *Root) FetchCache() *debug.Error {
 	if r.model.rateLimitTracker.Valid() {
-		repo, _, err := r.model.githubClient.Repositories.GetLatestRelease(ctx, configs.RepoOwner, configs.RepoName)
+		repo, _, err := githubClient.Repositories.GetLatestRelease(ctx, configs.RepoOwner, configs.RepoName)
 		if err != nil {
 			return e.New(err, debug.InternetError, debug.ErrCacheInternet)
 		}
@@ -317,25 +314,21 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 			layout.FlexibleSize(1),
 		},
 	}
-	for i, bounds := range gl.CellBounds() {
-		switch i {
-		case 0:
-			appender.AppendChildWidgetWithBounds(&r.sidebar, bounds)
-		case 1:
-			switch r.model.Mode() {
-			case "play":
-				appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
-				appender.AppendChildWidgetWithBounds(&r.play, bounds)
-			case "changelog":
-				appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
-				appender.AppendChildWidgetWithBounds(&r.changelog, bounds)
-			case "settings":
-				appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
-				appender.AppendChildWidgetWithBounds(&r.settings, bounds)
-			case "about":
-				appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
-				appender.AppendChildWidgetWithBounds(&r.about, bounds)
-			}
+	appender.AppendChildWidgetWithBounds(&r.sidebar, gl.CellBounds(0, 0))
+	{
+		switch r.model.Mode() {
+		case "play":
+			appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
+			appender.AppendChildWidgetWithBounds(&r.play, gl.CellBounds(1, 0))
+		case "changelog":
+			appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
+			appender.AppendChildWidgetWithBounds(&r.changelog, gl.CellBounds(1, 0))
+		case "settings":
+			appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
+			appender.AppendChildWidgetWithBounds(&r.settings, gl.CellBounds(1, 0))
+		case "about":
+			appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
+			appender.AppendChildWidgetWithBounds(&r.about, gl.CellBounds(1, 0))
 		}
 	}
 

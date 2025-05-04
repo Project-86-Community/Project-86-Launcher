@@ -7,8 +7,7 @@ require (
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/google/go-github/v71 v71.0.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250421152323-6badd1230d6a
-	github.com/hajimehoshi/guigui v0.0.0-20250502095010-bd1b40036781
-	github.com/invopop/ctxi18n v0.9.0
+	github.com/hajimehoshi/guigui v0.0.0-20250504163845-53569a476270
 	github.com/kisielk/errcheck v1.9.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
@@ -26,7 +25,6 @@ require (
 	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hajimehoshi/oklab v0.1.0 // indirect
-	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20250421151639-a9d6ed1b3d45 // indirect
 	github.com/jezek/xgb v1.1.1 // indirect
 	github.com/jsummers/gobmp v0.0.0-20230614200233-a9de23ed2e25 // indirect
@@ -37,6 +35,5 @@ require (
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	howett.net/plist v1.0.1 // indirect
 )

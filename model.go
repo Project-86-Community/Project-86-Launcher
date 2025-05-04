@@ -30,7 +30,6 @@ import (
 
 	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/guigui"
-	"github.com/invopop/ctxi18n"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/text/language"
 )
@@ -38,7 +37,6 @@ import (
 type Model struct {
 	mode             string
 	isInternet       bool
-	githubClient     *github.Client
 	rateLimitTracker RateLimitTracker
 	data             DataModel
 	cache            CacheModel
@@ -67,11 +65,11 @@ func (d *DataModel) SetLocale(context *guigui.Context, locale language.Tag) *deb
 	d.locale = locale
 
 	context.SetAppLocales([]language.Tag{d.locale})
-	ctx, err := ctxi18n.WithLocale(ctx, d.locale.String())
-	if err != nil {
-		return e.New(err, debug.FSError, debug.ErrFileNotFound)
-	}
-	l = ctxi18n.Locale(ctx)
+	// ctx, err := ctxi18n.WithLocale(ctx, d.locale.String())
+	// if err != nil {
+	// 	return e.New(err, debug.FSError, debug.ErrFileNotFound)
+	// }
+	// l = ctxi18n.Locale(ctx)
 
 	dErr := fs.Save(e, configs.Data, configs.LocaleFile, []byte(locale.String()))
 	if dErr.Err != nil {

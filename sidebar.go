@@ -64,23 +64,23 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 
 	items := []basicwidget.TextListItem[string]{
 		{
-			Text: l.T("home.title"),
+			Text: "home.title",
 			Tag:  "home",
 		},
 		{
-			Text: l.T("play.title"),
+			Text: "play.title",
 			Tag:  "play",
 		},
 		{
-			Text: l.T("changelog.title"),
+			Text: "changelog.title",
 			Tag:  "changelog",
 		},
 		{
-			Text: l.T("settings.title"),
+			Text: "settings.title",
 			Tag:  "settings",
 		},
 		{
-			Text: l.T("about.title"),
+			Text: "about.title",
 			Tag:  "about",
 		},
 	}

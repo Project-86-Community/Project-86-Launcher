@@ -21,18 +21,18 @@
 
 package lang
 
-import (
-	"embed"
-
-	"github.com/invopop/ctxi18n"
-)
-
-//go:embed *.yml
-var langYamlFS embed.FS
-
-func GetLangs() error {
-	if err := ctxi18n.LoadWithDefault(langYamlFS, "en"); err != nil {
-		return err
-	}
-	return nil
-}
+// import (
+// 	"embed"
+//
+// 	"github.com/invopop/ctxi18n"
+// )
+//
+// //go:embed *.yml
+// var langYamlFS embed.FS
+//
+// func GetLangs() error {
+// 	if err := ctxi18n.LoadWithDefault(langYamlFS, "en"); err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }

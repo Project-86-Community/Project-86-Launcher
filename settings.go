@@ -66,7 +66,14 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 	context.SetOpacity(&s.background, 0.7)
 	appender.AppendChildWidgetWithBounds(&s.background, context.Bounds(s))
 
-	s.localeText.SetText(l.T("settings.locale"))
+	s.localeText.SetValue("settings.locale")
+	s.colorModeText.SetValue("settings.colormode")
+	s.appScaleText.SetValue("settings.appscale")
+	s.openFolderText.SetValue("settings.openfoldertext")
+	s.clearDataText.SetValue("settings.cleardatatext")
+	s.clearCacheText.SetValue("settings.clearcachetext")
+	s.resetText.SetValue("settings.resettext")
+
 	s.localeDropdownList.SetItems([]basicwidget.DropdownListItem[language.Tag]{
 		{
 			Text: "English",
@@ -94,7 +101,6 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		s.dErr = s.model.data.SetLocale(context, item.Tag)
 	})
 
-	s.colorModeText.SetText(l.T("settings.colormode"))
 	s.colorModeToggle.SetOnValueChanged(func(value bool) {
 		if value {
 			s.dErr = s.model.data.SetColorMode(context, guigui.ColorModeDark)
@@ -103,7 +109,6 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		}
 	})
 
-	s.appScaleText.SetText(l.T("settings.appscale"))
 	s.appScaleDropdownList.SetItems([]basicwidget.DropdownListItem[int]{
 		{
 			Text: "50%",
@@ -135,27 +140,23 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		s.dErr = s.model.data.SetAppScale(context, item.Tag)
 	})
 
-	s.openFolderText.SetText(l.T("settings.openfoldertext"))
-	s.openFolderButton.SetText(l.T("settings.openfolder"))
+	s.openFolderButton.SetText("settings.openfolder")
 	s.openFolderButton.SetOnDown(func() {
 		dErr := fs.OpenFileManager(e, filepath.Join(fs.CompanyDirPath, configs.AppName))
 		e.SetToast(dErr)
 	})
 
-	s.clearDataText.SetText(l.T("settings.cleardatatext"))
-	s.clearDataButton.SetText(l.T("settings.clear"))
+	s.clearDataButton.SetText("settings.clear")
 	s.clearDataButton.SetOnDown(func() {
 
 	})
 
-	s.clearCacheText.SetText(l.T("settings.clearcachetext"))
-	s.clearCacheButton.SetText(l.T("settings.clear"))
+	s.clearCacheButton.SetText("settings.clear")
 	s.clearCacheButton.SetOnDown(func() {
 
 	})
 
-	s.resetText.SetText(l.T("settings.resettext"))
-	s.resetButton.SetText(l.T("settings.reset"))
+	s.resetButton.SetText("settings.reset")
 	s.resetButton.SetOnDown(func() {
 
 	})
@@ -215,12 +216,7 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		},
 		RowGap: u / 2,
 	}
-	for i, bounds := range gl.RepeatingCellBounds() {
-		if i >= 1 {
-			break
-		}
-		appender.AppendChildWidgetWithBounds(&s.form, bounds)
-	}
+	appender.AppendChildWidgetWithBounds(&s.form, gl.CellBounds(0, 0))
 
 	return nil
 }

@@ -53,12 +53,12 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 
 	if c.model.cache.repo.GetBody() != "" {
 		if c.isTranslate && c.model.cache.translatedChangelog != "" {
-			c.infoText.SetText(c.model.cache.translatedChangelog)
+			c.infoText.SetValue(c.model.cache.translatedChangelog)
 		} else {
-			c.infoText.SetText(c.model.cache.repo.GetBody())
+			c.infoText.SetValue(c.model.cache.repo.GetBody())
 		}
 	} else {
-		c.infoText.SetText("")
+		c.infoText.SetValue("")
 	}
 	if c.model.cache.repo.GetHTMLURL() != "" {
 		context.SetEnabled(&c.urlButton, true)
@@ -72,7 +72,7 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 		context.SetEnabled(&c.gtlToggle, true)
 	}
 
-	c.gtlText.SetText("Translate via Google TL")
+	c.gtlText.SetValue("Translate via Google TL")
 	c.gtlToggle.SetOnValueChanged(func(value bool) {
 		if value {
 			go func() {
@@ -119,14 +119,8 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 		},
 		RowGap: u / 2,
 	}
-	for i, bounds := range gl.CellBounds() {
-		switch i {
-		case 0:
-			appender.AppendChildWidgetWithBounds(&c.infoText, bounds)
-		case 1:
-			appender.AppendChildWidgetWithBounds(&c.form, bounds)
-		}
-	}
+	appender.AppendChildWidgetWithBounds(&c.infoText, gl.CellBounds(0, 0))
+	appender.AppendChildWidgetWithBounds(&c.form, gl.CellBounds(0, 1))
 
 	return nil
 }

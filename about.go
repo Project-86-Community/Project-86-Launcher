@@ -66,9 +66,9 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	a.leadText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 	a.devText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 
-	a.leadText.SetText(l.T("about.lead"))
-	a.devText.SetText(l.T("about.dev"))
-	a.infoText.SetText(l.T("about.info"))
+	a.leadText.SetValue("about.lead")
+	a.devText.SetValue("about.dev")
+	a.infoText.SetValue("about.info")
 
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
@@ -79,38 +79,26 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		},
 		RowGap: u / 2,
 	}
-	for i, bounds := range gl.CellBounds() {
-		switch i {
-		case 0:
-			gl := layout.GridLayout{
-				Bounds: bounds,
-				Widths: []layout.Size{
-					layout.FlexibleSize(2),
-					layout.FlexibleSize(1),
-				},
-				Heights: []layout.Size{
-					layout.FlexibleSize(1),
-					layout.FlexibleSize(1),
-				},
-				RowGap:    u / 2,
-				ColumnGap: u / 2,
-			}
-			for j, innerBounds := range gl.CellBounds() {
-				switch j {
-				case 0:
-					appender.AppendChildWidgetWithBounds(&a.leadText, innerBounds)
-				case 1:
-					appender.AppendChildWidgetWithBounds(&a.leadImg, innerBounds)
-				case 2:
-					appender.AppendChildWidgetWithBounds(&a.devText, innerBounds)
-				case 3:
-					appender.AppendChildWidgetWithBounds(&a.devImg, innerBounds)
-				}
-			}
-		case 1:
-			appender.AppendChildWidgetWithBounds(&a.infoText, bounds)
+	{
+		gl := layout.GridLayout{
+			Bounds: gl.CellBounds(0, 0),
+			Widths: []layout.Size{
+				layout.FlexibleSize(2),
+				layout.FlexibleSize(1),
+			},
+			Heights: []layout.Size{
+				layout.FlexibleSize(1),
+				layout.FlexibleSize(1),
+			},
+			RowGap:    u / 2,
+			ColumnGap: u / 2,
 		}
+		appender.AppendChildWidgetWithBounds(&a.leadText, gl.CellBounds(0, 0))
+		appender.AppendChildWidgetWithBounds(&a.leadImg, gl.CellBounds(1, 0))
+		appender.AppendChildWidgetWithBounds(&a.devText, gl.CellBounds(0, 1))
+		appender.AppendChildWidgetWithBounds(&a.devImg, gl.CellBounds(1, 1))
 	}
+	appender.AppendChildWidgetWithBounds(&a.infoText, gl.CellBounds(0, 1))
 
 	return nil
 }

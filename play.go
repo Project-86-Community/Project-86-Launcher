@@ -124,44 +124,35 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		},
 		RowGap: u / 2,
 	}
-	for i, bounds := range gl.CellBounds() {
-		switch i {
-		case 0:
-			gl := layout.GridLayout{
-				Bounds: bounds,
-				Widths: []layout.Size{
-					layout.FlexibleSize(1),
-					layout.FlexibleSize(1),
-				},
-				Heights: []layout.Size{
-					layout.FixedSize(u * 2),
-					layout.FixedSize(u * 2),
-				},
-				RowGap:    u / 2,
-				ColumnGap: u / 2,
-			}
-			for j, innerBounds := range gl.CellBounds() {
-				switch j {
-				case 0:
-					appender.AppendChildWidgetWithBounds(&p.websiteButton, innerBounds)
-				case 1:
-					appender.AppendChildWidgetWithBounds(&p.githubButton, innerBounds)
-				case 2:
-					appender.AppendChildWidgetWithBounds(&p.discordButton, innerBounds)
-				case 3:
-					appender.AppendChildWidgetWithBounds(&p.patreonButton, innerBounds)
-				}
-			}
-		case 1:
-			pt := bounds.Min
-			s := p.actionButton.DefaultSize(context)
-			pt.X += (bounds.Dx() - s.X) / 2
-			pt.Y += (bounds.Dy() - s.Y) / 2
-			appender.AppendChildWidgetWithBounds(&p.actionButton, image.Rectangle{
-				Min: pt.Add(image.Pt(-u*2, -u/2)),
-				Max: pt.Add(s.Add(image.Pt(u*2, u/2))),
-			})
+	{
+		gl := layout.GridLayout{
+			Bounds: gl.CellBounds(0, 0),
+			Widths: []layout.Size{
+				layout.FlexibleSize(1),
+				layout.FlexibleSize(1),
+			},
+			Heights: []layout.Size{
+				layout.FixedSize(u * 2),
+				layout.FixedSize(u * 2),
+			},
+			RowGap:    u / 2,
+			ColumnGap: u / 2,
 		}
+		appender.AppendChildWidgetWithBounds(&p.websiteButton, gl.CellBounds(0, 0))
+		appender.AppendChildWidgetWithBounds(&p.githubButton, gl.CellBounds(1, 0))
+		appender.AppendChildWidgetWithBounds(&p.discordButton, gl.CellBounds(0, 1))
+		appender.AppendChildWidgetWithBounds(&p.patreonButton, gl.CellBounds(1, 1))
+
+	}
+	{
+		pt := gl.Bounds.Min
+		s := p.actionButton.DefaultSize(context)
+		pt.X += (gl.Bounds.Dx() - s.X) / 2
+		pt.Y += (gl.Bounds.Dy() - s.Y) / 2
+		appender.AppendChildWidgetWithBounds(&p.actionButton, image.Rectangle{
+			Min: pt.Add(image.Pt(-u*2, -u/2)),
+			Max: pt.Add(s.Add(image.Pt(u*2, u/2))),
+		})
 	}
 
 	return nil
