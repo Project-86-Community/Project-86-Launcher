@@ -69,7 +69,7 @@ func (a *AppFS) OpenFileManager(appDebug *debug.Debug, path string) *debug.Error
 	if err := open.Run(path); err != nil {
 		return appDebug.New(err, debug.FSError, debug.ErrOpenFolderFailed)
 	}
-	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+	return nil
 }
 
 func (a *AppFS) IsDir(appDebug *debug.Debug, path string) *debug.Error {
@@ -121,48 +121,39 @@ func (a *AppFS) Load(appDebug *debug.Debug, key, loadFile string) ([]byte, *debu
 	return bytes, appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
 }
 
-func (a *AppFS) LogDir(appDebug *debug.Debug) (string, *debug.Error) {
-	logsPath := filepath.Join(a.CompanyDirPath, configs.AppName, "logs")
-	if dErr := a.IsDir(appDebug, logsPath); dErr.Err != nil {
-		return "", dErr
+func (a *AppFS) ResetData(appDebug *debug.Debug) *debug.Error {
+	if dErr := a.IsDir(appDebug, filepath.Join(a.CompanyDirPath, configs.AppName, configs.Data)); dErr.Err != nil {
+		return dErr
 	}
-	return logsPath, appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+	if err := os.RemoveAll(filepath.Join(a.CompanyDirPath, configs.AppName, configs.Data)); err != nil {
+		return appDebug.New(err, debug.FSError, debug.ErrFolderClear)
+	}
+	return nil
 }
 
-//
-// func (a *AppFS) ResetData(appDebug *debug.Debug) *debug.Error {
-// 	if dErr := a.IsDir(appDebug, filepath.Join(a.AppDirPath, configs.Data)); dErr.Err != nil {
-// 		return dErr
-// 	}
-// 	if err := os.RemoveAll(filepath.Join(a.AppDirPath, configs.Data)); err != nil {
-// 		return appDebug.New(err, debug.FSError, debug.ErrFolderClear)
-// 	}
-// 	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
-// }
-//
-// func (a *AppFS) ResetCache(appDebug *debug.Debug) *debug.Error {
-// 	if dErr := a.IsDir(appDebug, filepath.Join(a.AppDirPath, configs.Cache)); dErr.Err != nil {
-// 		return dErr
-// 	}
-// 	if err := os.RemoveAll(filepath.Join(a.AppDirPath, configs.Cache)); err != nil {
-// 		return appDebug.New(err, debug.FSError, debug.ErrFolderClear)
-// 	}
-// 	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
-// }
-//
-// func (a *AppFS) ResetAll(appDebug *debug.Debug) *debug.Error {
-// 	if err := a.ResetData(appDebug); err.Err != nil {
-// 		return err
-// 	}
-// 	if err := a.ResetCache(appDebug); err.Err != nil {
-// 		return err
-// 	}
-// 	if dErr := a.IsDir(appDebug, filepath.Join(a.AppDirPath, "logs")); dErr.Err != nil {
-// 		return dErr
-// 	}
-// 	if err := os.RemoveAll(filepath.Join(a.AppDirPath, "logs")); err != nil {
-// 		return appDebug.New(err, debug.FSError, debug.ErrFolderClear)
-// 	}
-//
-// 	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
-// }
+func (a *AppFS) ResetCache(appDebug *debug.Debug) *debug.Error {
+	if dErr := a.IsDir(appDebug, filepath.Join(a.CompanyDirPath, configs.AppName, configs.Cache)); dErr.Err != nil {
+		return dErr
+	}
+	if err := os.RemoveAll(filepath.Join(a.CompanyDirPath, configs.AppName, configs.Cache)); err != nil {
+		return appDebug.New(err, debug.FSError, debug.ErrFolderClear)
+	}
+	return nil
+}
+
+func (a *AppFS) ResetAll(appDebug *debug.Debug) *debug.Error {
+	if dErr := a.ResetData(appDebug); dErr != nil {
+		return dErr
+	}
+	if dErr := a.ResetCache(appDebug); dErr != nil {
+		return dErr
+	}
+	// if dErr := a.IsDir(appDebug, filepath.Join(a.CompanyDirPath, "logs")); dErr.Err != nil {
+	// 	return dErr
+	// }
+	// if err := os.RemoveAll(filepath.Join(a.AppDirPath, "logs")); err != nil {
+	// 	return appDebug.New(err, debug.FSError, debug.ErrFolderClear)
+	// }
+
+	return nil
+}

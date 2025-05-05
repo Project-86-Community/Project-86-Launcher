@@ -78,3 +78,11 @@ func TestStatAppDir(t *testing.T) {
 		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
 	}
 }
+
+func TestDataFiles(t *testing.T) {
+	e, fs := setup(t)
+	dErr := fs.ResetData(e)
+	if dErr != nil {
+		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
+	}
+}

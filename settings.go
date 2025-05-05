@@ -137,27 +137,35 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 	})
 
 	s.openFolderButton.SetOnDown(func() {
-		dErr := fs.OpenFileManager(e, filepath.Join(fs.CompanyDirPath, configs.AppName))
-		e.SetToast(dErr)
+		if dErr := fs.OpenFileManager(e, filepath.Join(fs.CompanyDirPath, configs.AppName)); dErr != nil {
+			e.SetToast(dErr)
+		}
 	})
 
 	s.clearDataButton.SetOnDown(func() {
-
+		if dErr := fs.ResetData(e); dErr != nil {
+			e.SetToast(dErr)
+		}
+		s.colorModeToggle.SetValue(false)
+		s.localeDropdownList.SelectItemByTag(language.English)
+		s.appScaleDropdownList.SelectItemByTag(2)
 	})
 	s.clearCacheButton.SetOnDown(func() {
-
+		if dErr := fs.ResetCache(e); dErr != nil {
+			e.SetToast(dErr)
+		}
 	})
 	s.resetButton.SetOnDown(func() {
 
 	})
 
 	s.sync.Do(func() {
-		s.localeDropdownList.SelectItemByTag(s.model.data.locale)
 		if context.ColorMode() == guigui.ColorModeDark {
 			s.colorModeToggle.SetValue(true)
 		} else {
 			s.colorModeToggle.SetValue(false)
 		}
+		s.localeDropdownList.SelectItemByTag(s.model.data.locale)
 		s.appScaleDropdownList.SelectItemByTag(s.model.data.GetAppScale(context.AppScale()))
 	})
 
