@@ -98,16 +98,16 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 
 	if p.model.isInternet {
 		context.SetEnabled(&p.actionButton, true)
-		p.actionButton.SetText("Play")
+		p.actionButton.SetText(T("play.play"))
 	} else {
 		context.SetEnabled(&p.actionButton, false)
-		p.actionButton.SetText("No connection!")
+		p.actionButton.SetText(T("play.nointernet"))
 	}
 
-	p.websiteButton.SetText("Website - Offical website!")
-	p.githubButton.SetText("Github - Help develop the game?")
-	p.discordButton.SetText("Discord - Meet the community!")
-	p.patreonButton.SetText("Patreon - Donate to the devs?")
+	p.websiteButton.SetText(T("play.website"))
+	p.githubButton.SetText(T("play.github"))
+	p.discordButton.SetText(T("play.discord"))
+	p.patreonButton.SetText(T("play.patreon"))
 
 	p.actionButton.SetOnDown(func() {
 

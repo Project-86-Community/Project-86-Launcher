@@ -3,6 +3,14 @@ title = "Home"
 
 [play]
 title = "Play"
+install = "Install"
+update = "Update"
+play = "Play"
+nointernet = "No connection!"
+website = "Website - Offical website!"
+github = "Github - Help develop the game?"
+discord = "Discord - Meet the community!"
+patreon = "Patreon - Donate to the devs?"
 
 [changelog]
 title = "Changelog"

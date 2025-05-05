@@ -22,6 +22,7 @@
 package p86l
 
 import (
+	"fmt"
 	"p86l/internal/debug"
 
 	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
@@ -34,9 +35,14 @@ func SetLanguage(lang string) {
 }
 
 func T(key string) string {
-	return lLocalizer.MustLocalize(&i18n.LocalizeConfig{
+	lMsg, err := lLocalizer.Localize(&i18n.LocalizeConfig{
 		MessageID: key,
 	})
+	if err != nil {
+		return fmt.Sprintf("!{%s}", key)
+	}
+
+	return lMsg
 }
 
 func OpenBrowser(url string) {
