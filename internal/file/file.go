@@ -98,6 +98,12 @@ func (a *AppFS) Save(appDebug *debug.Debug, key, saveFile string, bytes []byte) 
 	if err != nil {
 		return appDebug.New(err, debug.FSError, debug.ErrOpenFolderFailed)
 	}
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			appDebug.SetToast(appDebug.New(err, debug.FSError, debug.ErrFileOpen))
+		}
+	}()
 	_, err = file.Write(bytes)
 	if err != nil {
 		return appDebug.New(err, debug.FSError, debug.ErrNewFileFailed)
@@ -148,12 +154,5 @@ func (a *AppFS) ResetAll(appDebug *debug.Debug) *debug.Error {
 	if dErr := a.ResetCache(appDebug); dErr != nil {
 		return dErr
 	}
-	// if dErr := a.IsDir(appDebug, filepath.Join(a.CompanyDirPath, "logs")); dErr.Err != nil {
-	// 	return dErr
-	// }
-	// if err := os.RemoveAll(filepath.Join(a.AppDirPath, "logs")); err != nil {
-	// 	return appDebug.New(err, debug.FSError, debug.ErrFolderClear)
-	// }
-
 	return nil
 }

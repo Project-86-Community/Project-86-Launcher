@@ -48,6 +48,7 @@ const (
 	ErrNewDirFailed
 	ErrNewFileFailed
 	ErrNewFolderFailed
+	ErrFileOpen
 	ErrOpenFolderFailed
 	ErrFileNotFound
 	ErrFolderClear
