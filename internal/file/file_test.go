@@ -28,7 +28,6 @@ import (
 	"p86l/internal/file"
 	"path/filepath"
 	"testing"
-	"time"
 )
 
 func setup(t *testing.T) (*debug.Debug, *file.AppFS) {
@@ -82,7 +81,7 @@ func TestStatAppDir(t *testing.T) {
 
 func TestDataFiles(t *testing.T) {
 	e, fs := setup(t)
-	time.Sleep(time.Duration(2 * time.Second))
+	//time.Sleep(time.Duration(2 * time.Second))
 	dErr := fs.ResetData(e)
 	if dErr != nil {
 		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)

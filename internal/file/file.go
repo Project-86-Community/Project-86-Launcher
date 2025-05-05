@@ -84,20 +84,15 @@ func (a *AppFS) Save(appDebug *debug.Debug, key, saveFile string, bytes []byte) 
 	savePath := filepath.Join(a.CompanyDirPath, configs.AppName, key)
 	if _, err := os.Stat(savePath); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			err := os.Mkdir(savePath, 0755)
+			err := os.Mkdir(savePath, os.ModePerm)
 			if err != nil {
 				return appDebug.New(err, debug.FSError, debug.ErrNewFileFailed)
 			}
+		} else {
+			return appDebug.New(err, debug.FSError, debug.ErrNewFileFailed)
 		}
 	}
-	root, err := os.OpenRoot(savePath)
-	if err != nil {
-		return appDebug.New(err, debug.FSError, debug.ErrOpenFolderFailed)
-	}
-	if _, err := root.Stat(saveFile); err != nil {
-		return appDebug.New(err, debug.FSError, debug.ErrFileNotFound)
-	}
-	err = os.WriteFile(filepath.Join(savePath, saveFile), bytes, 0644)
+	err := os.WriteFile(filepath.Join(savePath, saveFile), bytes, 0o666)
 	if err != nil {
 		return appDebug.New(err, debug.FSError, debug.ErrNewFileFailed)
 	}
