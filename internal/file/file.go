@@ -92,19 +92,12 @@ func (a *AppFS) Save(appDebug *debug.Debug, key, saveFile string, bytes []byte) 
 	}
 	root, err := os.OpenRoot(savePath)
 	if err != nil {
-		return appDebug.New(err, debug.FSError, debug.ErrFileNotFound)
-	}
-	file, err := root.Create(saveFile)
-	if err != nil {
 		return appDebug.New(err, debug.FSError, debug.ErrOpenFolderFailed)
 	}
-	defer func() {
-		err := file.Close()
-		if err != nil {
-			appDebug.SetToast(appDebug.New(err, debug.FSError, debug.ErrFileOpen))
-		}
-	}()
-	_, err = file.Write(bytes)
+	if _, err := root.Stat(saveFile); err != nil {
+		return appDebug.New(err, debug.FSError, debug.ErrFileNotFound)
+	}
+	err = os.WriteFile(filepath.Join(savePath, saveFile), bytes, 0644)
 	if err != nil {
 		return appDebug.New(err, debug.FSError, debug.ErrNewFileFailed)
 	}
