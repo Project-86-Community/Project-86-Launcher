@@ -170,6 +170,7 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		{
 			PrimaryWidget:   &s.localeText,
 			SecondaryWidget: &s.localeDropdownList,
+		},
 		{
 			PrimaryWidget:   &s.colorModeText,
 			SecondaryWidget: &s.colorModeToggle,
@@ -179,7 +180,7 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 			SecondaryWidget: &s.appScaleDropdownList,
 		},
 		{
-			PrimaryWidget: &s.openFolderText,
+			PrimaryWidget:   &s.openFolderText,
 			SecondaryWidget: &s.openFolderButton,
 		},
 		{
