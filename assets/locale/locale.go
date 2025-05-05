@@ -19,29 +19,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package p86l
+package locale
 
 import (
-	"p86l/internal/debug"
+	"embed"
 
+	"github.com/BurntSushi/toml"
 	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
-	"github.com/pkg/browser"
-	"github.com/rs/zerolog/log"
+	"golang.org/x/text/language"
 )
 
-func SetLanguage(lang string) {
-	lLocalizer = i18n.NewLocalizer(lBundle, lang)
-}
+//go:embed locale.*.toml
+var localeFS embed.FS
 
-func T(key string) string {
-	return lLocalizer.MustLocalize(&i18n.LocalizeConfig{
-		MessageID: key,
-	})
-}
+func GetLocales(locale language.Tag) (*i18n.Bundle, error) {
+	bundle := i18n.NewBundle(locale)
+	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
 
-func OpenBrowser(url string) {
-	log.Info().Str("Url", url).Msg("OpenBrowser")
-	if err := browser.OpenURL(url); err != nil {
-		e.SetPopup(e.New(err, debug.InternetError, debug.ErrBrowserOpen))
+	_, err := bundle.LoadMessageFileFS(localeFS, "locale.en.toml")
+	if err != nil {
+		return nil, err
 	}
+	_, err = bundle.LoadMessageFileFS(localeFS, "locale.fr.toml")
+	if err != nil {
+		return nil, err
+	}
+	_, err = bundle.LoadMessageFileFS(localeFS, "locale.ja.toml")
+	if err != nil {
+		return nil, err
+	}
+
+	return bundle, nil
 }

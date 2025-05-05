@@ -25,10 +25,10 @@ import (
 	"os"
 	"p86l"
 	"p86l/assets"
+	"p86l/cmd/p86l/p86li"
 	"p86l/configs"
 	"p86l/internal/debug"
 	"runtime"
-	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
@@ -37,28 +37,11 @@ import (
 	"github.com/rs/zerolog/pkgerrors"
 )
 
-var AppBuild string
-
 func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 
-	if AppBuild == "release" {
-		p86l.TheDebugMode.IsRelease = true
-		p86l.TheDebugMode.Logs = true
-	} else {
-		for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
-			switch token {
-			case "logs":
-				log.Logger = log.Output(zerolog.ConsoleWriter{
-					Out:        os.Stderr,
-					TimeFormat: "2006/01/02 15:04:05",
-				})
-				p86l.TheDebugMode.IsRelease = false
-				p86l.TheDebugMode.Logs = true
-			}
-		}
-	}
+	p86li.Run()
 
 	if !p86l.TheDebugMode.Logs {
 		zerolog.SetGlobalLevel(zerolog.Disabled)

@@ -1,3 +1,5 @@
+//go:build release
+
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
@@ -19,20 +21,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package lang
+package p86li
 
-// import (
-// 	"embed"
-//
-// 	"github.com/invopop/ctxi18n"
-// )
-//
-// //go:embed *.yml
-// var langYamlFS embed.FS
-//
-// func GetLangs() error {
-// 	if err := ctxi18n.LoadWithDefault(langYamlFS, "en"); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
+import (
+	"os"
+	"p86l"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+)
+
+func Run() {
+	log.Logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
+	p86l.TheDebugMode.Logs = true
+}

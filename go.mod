@@ -3,12 +3,14 @@ module p86l
 go 1.24.2
 
 require (
+	github.com/BurntSushi/toml v1.5.0
 	github.com/Conight/go-googletrans v0.2.4
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/google/go-github/v71 v71.0.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250421152323-6badd1230d6a
 	github.com/hajimehoshi/guigui v0.0.0-20250504163845-53569a476270
 	github.com/kisielk/errcheck v1.9.0
+	github.com/nicksnyder/go-i18n/v2 v2.6.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.34.0

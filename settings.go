@@ -46,11 +46,8 @@ type Settings struct {
 	appScaleDropdownList basicwidget.DropdownList[int]
 	openFolderText       basicwidget.Text
 	openFolderButton     basicwidget.TextButton
-	clearDataText        basicwidget.Text
 	clearDataButton      basicwidget.TextButton
-	clearCacheText       basicwidget.Text
 	clearCacheButton     basicwidget.TextButton
-	resetText            basicwidget.Text
 	resetButton          basicwidget.TextButton
 
 	sync  sync.Once
@@ -66,13 +63,16 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 	context.SetOpacity(&s.background, 0.7)
 	appender.AppendChildWidgetWithBounds(&s.background, context.Bounds(s))
 
-	s.localeText.SetValue("settings.locale")
-	s.colorModeText.SetValue("settings.colormode")
-	s.appScaleText.SetValue("settings.appscale")
-	s.openFolderText.SetValue("settings.openfoldertext")
-	s.clearDataText.SetValue("settings.cleardatatext")
-	s.clearCacheText.SetValue("settings.clearcachetext")
-	s.resetText.SetValue("settings.resettext")
+	s.localeText.SetValue(T("settings.locale"))
+	s.colorModeText.SetValue(T("settings.colormode"))
+	s.appScaleText.SetValue(T("settings.appscale"))
+
+	s.openFolderText.SetValue(T("settings.openfoldertext"))
+	s.openFolderButton.SetText(T("settings.openfolder"))
+
+	s.clearDataButton.SetText(T("settings.resetdata"))
+	s.clearCacheButton.SetText(T("settings.resetcache"))
+	s.resetButton.SetText(T("settings.reset"))
 
 	s.localeDropdownList.SetItems([]basicwidget.DropdownListItem[language.Tag]{
 		{
@@ -86,10 +86,6 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		{
 			Text: "Japanese",
 			Tag:  language.Japanese,
-		},
-		{
-			Text: "Korean",
-			Tag:  language.Korean,
 		},
 	})
 	s.localeDropdownList.SetOnItemSelected(func(index int) {
@@ -140,23 +136,17 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		s.dErr = s.model.data.SetAppScale(context, item.Tag)
 	})
 
-	s.openFolderButton.SetText("settings.openfolder")
 	s.openFolderButton.SetOnDown(func() {
 		dErr := fs.OpenFileManager(e, filepath.Join(fs.CompanyDirPath, configs.AppName))
 		e.SetToast(dErr)
 	})
 
-	s.clearDataButton.SetText("settings.clear")
 	s.clearDataButton.SetOnDown(func() {
 
 	})
-
-	s.clearCacheButton.SetText("settings.clear")
 	s.clearCacheButton.SetOnDown(func() {
 
 	})
-
-	s.resetButton.SetText("settings.reset")
 	s.resetButton.SetOnDown(func() {
 
 	})
@@ -180,7 +170,6 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		{
 			PrimaryWidget:   &s.localeText,
 			SecondaryWidget: &s.localeDropdownList,
-		},
 		{
 			PrimaryWidget:   &s.colorModeText,
 			SecondaryWidget: &s.colorModeToggle,
@@ -190,15 +179,19 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 			SecondaryWidget: &s.appScaleDropdownList,
 		},
 		{
-			PrimaryWidget:   &s.clearDataText,
+			PrimaryWidget: &s.openFolderText,
+			SecondaryWidget: &s.openFolderButton,
+		},
+		{
+			PrimaryWidget:   nil,
 			SecondaryWidget: &s.clearDataButton,
 		},
 		{
-			PrimaryWidget:   &s.clearCacheText,
+			PrimaryWidget:   nil,
 			SecondaryWidget: &s.clearCacheButton,
 		},
 		{
-			PrimaryWidget:   &s.resetText,
+			PrimaryWidget:   nil,
 			SecondaryWidget: &s.resetButton,
 		},
 	})

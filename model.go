@@ -65,11 +65,7 @@ func (d *DataModel) SetLocale(context *guigui.Context, locale language.Tag) *deb
 	d.locale = locale
 
 	context.SetAppLocales([]language.Tag{d.locale})
-	// ctx, err := ctxi18n.WithLocale(ctx, d.locale.String())
-	// if err != nil {
-	// 	return e.New(err, debug.FSError, debug.ErrFileNotFound)
-	// }
-	// l = ctxi18n.Locale(ctx)
+	SetLanguage(locale.String())
 
 	dErr := fs.Save(e, configs.Data, configs.LocaleFile, []byte(locale.String()))
 	if dErr.Err != nil {

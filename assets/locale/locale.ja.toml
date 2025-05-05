@@ -1,0 +1,27 @@
+[home]
+title = "ホーム"
+
+[play]
+title = "プレー"
+
+[changelog]
+title = "変更履歴"
+gtl = "グーグルTLで翻訳"
+open = "オープン"
+
+[settings]
+title = "設定"
+locale = "ロケール"
+colormode = "ランチャーをダークモードに変更"
+appscale = "ランチャーのスケールを変更する"
+openfoldertext = "Launcherディレクトリを開く"
+openfolder = "オープン"
+resetdata = "リセットデータ"
+resetcache = "キャッシュのリセット"
+reset = "リセットアプリ"
+
+[about]
+title = "について"
+lead = "リード開発者 - Taliayaya"
+dev = "ランチャー開発者 - Sky"
+info = "Project86へようこそ - 機能的なベータ版を迅速に提供することを第一の目標とした、初期段階のファンゲームです。プレイヤーの皆さんには、積極的な参加とフィードバックの提供をお願いし、ゲームを正しい方向へと導きます。"

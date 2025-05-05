@@ -24,11 +24,11 @@ package p86l
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"image"
 	"net/http"
 	"os"
 	"p86l/assets"
+	p86lLocale "p86l/assets/locale"
 	"p86l/configs"
 	"p86l/internal/debug"
 	"p86l/internal/file"
@@ -42,7 +42,7 @@ import (
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/basicwidget/cjkfont"
 	"github.com/hajimehoshi/guigui/layout"
-	"github.com/rs/zerolog"
+	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/text/language"
 )
@@ -81,34 +81,37 @@ func (r *Root) RunApp() *debug.Error {
 	}
 	fs = afs
 
-	if TheDebugMode.IsRelease {
-		logDir, dErr := fs.LogDir(e)
-		if dErr.Err != nil {
-			return dErr
-		}
+	// if TheDebugMode.IsRelease {
+	// 	logDir, dErr := fs.LogDir(e)
+	// 	if dErr.Err != nil {
+	// 		return dErr
+	// 	}
+	//
+	// 	if err := os.MkdirAll(logDir, 0755); err != nil {
+	// 		return e.New(err, debug.FSError, debug.ErrNewDirFailed)
+	// 	}
+	//
+	// 	timestamp := time.Now().Unix()
+	// 	logFileName := fmt.Sprintf("log_%d.log", timestamp)
+	// 	logFilePath := filepath.Join(logDir, logFileName)
+	//
+	// 	logFile, err := os.Create(logFilePath)
+	// 	if err != nil {
+	// 		return e.New(err, debug.FSError, debug.ErrNewFileFailed)
+	// 	}
+	//
+	// 	TheDebugMode.LogFile = logFile
+	//
+	// 	multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
+	// 	log.Logger = zerolog.New(multi).With().Timestamp().Logger()
+	// }
 
-		if err := os.MkdirAll(logDir, 0755); err != nil {
-			return e.New(err, debug.FSError, debug.ErrNewDirFailed)
-		}
-
-		timestamp := time.Now().Unix()
-		logFileName := fmt.Sprintf("log_%d.log", timestamp)
-		logFilePath := filepath.Join(logDir, logFileName)
-
-		logFile, err := os.Create(logFilePath)
-		if err != nil {
-			return e.New(err, debug.FSError, debug.ErrNewFileFailed)
-		}
-
-		TheDebugMode.LogFile = logFile
-
-		multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
-		log.Logger = zerolog.New(multi).With().Timestamp().Logger()
+	bundle, err := p86lLocale.GetLocales(language.English)
+	if err != nil {
+		return e.New(err, debug.FSError, debug.ErrLocaleLoad)
 	}
-	/*
-		if err := lang.GetLangs(); err != nil {
-			return e.New(err, debug.FSError, debug.ErrFileNotFound)
-		}*/
+	lBundle = bundle
+	lLocalizer = i18n.NewLocalizer(bundle, "en")
 
 	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
 }

@@ -72,7 +72,7 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 		context.SetEnabled(&c.gtlToggle, true)
 	}
 
-	c.gtlText.SetValue("Translate via Google TL")
+	c.gtlText.SetValue(T("changelog.gtl"))
 	c.gtlToggle.SetOnValueChanged(func(value bool) {
 		if value {
 			go func() {
@@ -92,7 +92,7 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 	c.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 	c.infoText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 
-	c.urlButton.SetText("Open")
+	c.urlButton.SetText(T("changelog.open"))
 	c.urlButton.SetOnDown(func() {
 		if c.model.cache.repo.GetBody() != "" {
 			go OpenBrowser(c.model.cache.repo.GetBody())

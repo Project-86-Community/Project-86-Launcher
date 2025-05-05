@@ -1,0 +1,27 @@
+[home]
+title = "Accueil"
+
+[play]
+title = "Jouer"
+
+[changelog]
+title = "Journal des modifications"
+gtl = "Traduire via Google TL"
+open = "Ouvrir"
+
+[settings]
+title = "Paramètres"
+locale = "Lieu"
+colormode = "Passer le lanceur en mode sombre"
+appscale = "Changer l'échelle du Launcher"
+openfoldertext = "Ouvrir le répertoire du Launcher"
+openfolder = "Ouvrir"
+resetdata = "Réinitialiser les données"
+resetcache = "Réinitialiser le cache"
+reset = "Réinitialiser l'application"
+
+[about]
+title = "À propos"
+lead = "Développeur principal - Taliayaya"
+dev = "Développeur du lanceur - Sky"
+info = "Bienvenue dans Project 86 - un jeu amateur en début de développement, visant à offrir rapidement une version bêta fonctionnelle. Nous invitons les joueurs à participer activement et à fournir des retours pour orienter le jeu dans la bonne direction."

@@ -1,3 +1,5 @@
+github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
+github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/Conight/go-googletrans v0.2.4 h1:5+Iq8arEWtjJ8sfI4qGN2V8n/kwott164Zk7aUErC5Y=
 github.com/Conight/go-googletrans v0.2.4/go.mod h1:vl4tB0jWplJ1ZsEul86jXSMUrM+llD1qHK2XbjVBwvk=
 github.com/atotto/clipboard v0.1.4 h1:EH0zSVneZPSuFR11BlR9YppQTVDbh5+16AmcJi4g1z4=
@@ -29,8 +31,6 @@ github.com/hajimehoshi/bitmapfont/v3 v3.3.0-alpha.5 h1:xk7KQvJTwoKLgkKBlcG/0H7FK
 github.com/hajimehoshi/bitmapfont/v3 v3.3.0-alpha.5/go.mod h1:GsEgTraq3r5Z8JuWS3gjeCnC81cVeJd4Cojw3OSJkrg=
 github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250421152323-6badd1230d6a h1:TsoM3fRpQ8tko3LjXaCaBh9p71Y//r7xEIoGNlusws8=
 github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250421152323-6badd1230d6a/go.mod h1:V9tkZ/t0vlXJhrN3hfgjfdlx9A65vRYxXafVNiWU3Is=
-github.com/hajimehoshi/guigui v0.0.0-20250502095010-bd1b40036781 h1:9G2OfU1I2nfZofvrHNvKxZ3102iNEIED2H+lbipK32g=
-github.com/hajimehoshi/guigui v0.0.0-20250502095010-bd1b40036781/go.mod h1:0RDW2GMruE05x6X7U4t6rE8gR5D1z8QsZnuUs748CTM=
 github.com/hajimehoshi/guigui v0.0.0-20250504163845-53569a476270 h1:ZDhpZ6kTBYKepS7VXXSnETJOeXqaxHG+6x6vVO5NeA4=
 github.com/hajimehoshi/guigui v0.0.0-20250504163845-53569a476270/go.mod h1:BtKVn/aBGnJdaa7vtK4gfC6MmVfQjs/G5ynMqX/9qAA=
 github.com/hajimehoshi/oklab v0.1.0 h1:+ApSswl9LlB+8AYIC9ZaRO/r1emGtTF52YQleB3bW7w=
@@ -51,6 +51,8 @@ github.com/mattn/go-isatty v0.0.16/go.mod h1:kYGgaQfpe5nmfYZH+SKPsOc2e4SrIfOl2e/
 github.com/mattn/go-isatty v0.0.19/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
+github.com/nicksnyder/go-i18n/v2 v2.6.0 h1:C/m2NNWNiTB6SK4Ao8df5EWm3JETSTIGNXBpMJTxzxQ=
+github.com/nicksnyder/go-i18n/v2 v2.6.0/go.mod h1:88sRqr0C6OPyJn0/KRNaEz1uWorjxIKP7rUUcvycecE=
 github.com/pierrec/lz4/v4 v4.1.21 h1:yOVMLb6qSIDP67pl/5F7RepeKYu/VmTyEXvuMI5d9mQ=
 github.com/pierrec/lz4/v4 v4.1.21/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c h1:+mdjkGKdHQG3305AYmdv1U2eRNDiU2ErMBj1gwrq8eQ=

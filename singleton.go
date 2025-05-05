@@ -30,12 +30,12 @@ import (
 
 	translator "github.com/Conight/go-googletrans"
 	"github.com/google/go-github/v71/github"
+	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type debugMode struct {
-	IsRelease bool
-	LogFile   *os.File
-	Logs      bool
+	LogFile *os.File
+	Logs    bool
 }
 
 type CacheT struct {
@@ -49,8 +49,9 @@ var (
 	ctx          = context.Background()
 	githubClient = github.NewClient(nil)
 
-	//l            *i18n.Locale
-	t = translator.New()
+	lBundle    *i18n.Bundle
+	lLocalizer *i18n.Localizer
+	t          = translator.New()
 
 	e  = &debug.Debug{} // Debugger
 	fs *file.AppFS      // Filesystem

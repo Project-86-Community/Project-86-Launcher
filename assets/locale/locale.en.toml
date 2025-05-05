@@ -1,0 +1,27 @@
+[home]
+title = "Home"
+
+[play]
+title = "Play"
+
+[changelog]
+title = "Changelog"
+gtl = "Translate via Google TL"
+open = "Open"
+
+[settings]
+title = "Settings"
+locale = "Locale"
+colormode = "Change Launcher to dark-mode"
+appscale = "Change Launcher scale"
+openfoldertext = "Open Launcher directory"
+openfolder = "Open"
+resetdata = "Reset data"
+resetcache = "Reset cache"
+reset = "Reset app"
+
+[about]
+title = "About"
+lead = "Lead developer - Taliayaya"
+dev = "Launcher developer - Sky"
+info = "Welcome to Project 86 - a fan game in its early stages, with the primary goal of delivering a functional beta swiftly. We invite players to actively participate and provide feedback, steering the game in the right direction."

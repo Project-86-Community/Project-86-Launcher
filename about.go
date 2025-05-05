@@ -66,9 +66,9 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	a.leadText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 	a.devText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 
-	a.leadText.SetValue("about.lead")
-	a.devText.SetValue("about.dev")
-	a.infoText.SetValue("about.info")
+	a.leadText.SetValue(T("about.lead"))
+	a.devText.SetValue(T("about.dev"))
+	a.infoText.SetValue(T("about.info"))
 
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{

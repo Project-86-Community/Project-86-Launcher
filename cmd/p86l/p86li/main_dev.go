@@ -1,3 +1,5 @@
+//go:build !release
+
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
@@ -19,29 +21,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package p86l
+package p86li
 
 import (
-	"p86l/internal/debug"
+	"os"
+	"p86l"
+	"strings"
 
-	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
-	"github.com/pkg/browser"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-func SetLanguage(lang string) {
-	lLocalizer = i18n.NewLocalizer(lBundle, lang)
-}
-
-func T(key string) string {
-	return lLocalizer.MustLocalize(&i18n.LocalizeConfig{
-		MessageID: key,
-	})
-}
-
-func OpenBrowser(url string) {
-	log.Info().Str("Url", url).Msg("OpenBrowser")
-	if err := browser.OpenURL(url); err != nil {
-		e.SetPopup(e.New(err, debug.InternetError, debug.ErrBrowserOpen))
+func Run() {
+	for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
+		switch token {
+		case "logs":
+			log.Logger = log.Output(zerolog.ConsoleWriter{
+				Out:        os.Stderr,
+				TimeFormat: "2006/01/02 15:04:05",
+			})
+			p86l.TheDebugMode.Logs = true
+		}
 	}
 }
