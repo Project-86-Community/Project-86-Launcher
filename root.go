@@ -48,7 +48,7 @@ import (
 )
 
 type Root struct {
-	guigui.RootWidget
+	guigui.DefaultWidget
 
 	border    basicwidget.Background
 	bgImage   basicwidget.Image

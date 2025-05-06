@@ -73,28 +73,28 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
 		return err
 	}
-	p.websiteButton.SetImage(img)
+	p.websiteButton.SetIcon(img)
 
 	img, err = assets.TheImageCache.Get("github")
 	if err != nil {
 		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
 		return err
 	}
-	p.githubButton.SetImage(img)
+	p.githubButton.SetIcon(img)
 
 	img, err = assets.TheImageCache.Get("discord")
 	if err != nil {
 		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
 		return err
 	}
-	p.discordButton.SetImage(img)
+	p.discordButton.SetIcon(img)
 
 	img, err = assets.TheImageCache.Get("patreon")
 	if err != nil {
 		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
 		return err
 	}
-	p.patreonButton.SetImage(img)
+	p.patreonButton.SetIcon(img)
 
 	if p.model.isInternet {
 		context.SetEnabled(&p.actionButton, true)
