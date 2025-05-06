@@ -82,15 +82,6 @@ func (a *AppFS) IsDir(appDebug *debug.Debug, path string) *debug.Error {
 
 func (a *AppFS) Save(appDebug *debug.Debug, key, saveFile string, bytes []byte) *debug.Error {
 	savePath := filepath.Join(a.CompanyDirPath, configs.AppName, key)
-	dErr := a.IsDir(appDebug, savePath)
-	if dErr.Err != nil {
-		if errors.Is(dErr.Err, fs.ErrNotExist) {
-			err := a.Root.Mkdir(savePath, os.ModePerm)
-			if err != nil {
-				return appDebug.New(err, debug.FSError, debug.ErrNewFileFailed)
-			}
-		}
-	}
 	err := os.WriteFile(filepath.Join(savePath, saveFile), bytes, 0o666)
 	if err != nil {
 		return appDebug.New(err, debug.FSError, debug.ErrNewFileFailed)
