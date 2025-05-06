@@ -28,7 +28,6 @@ import (
 	"p86l/internal/file"
 	"path/filepath"
 	"testing"
-	"time"
 )
 
 func setup(t *testing.T) (*debug.Debug, *file.AppFS) {
@@ -76,15 +75,6 @@ func TestLoadFiles(t *testing.T) {
 func TestStatAppDir(t *testing.T) {
 	e, fs := setup(t)
 	if dErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Data, configs.ColorModeFile)); dErr.Err != nil {
-		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
-	}
-}
-
-func TestDataFiles(t *testing.T) {
-	e, fs := setup(t)
-	time.Sleep(time.Duration(2 * time.Second))
-	dErr := fs.ResetData(e)
-	if dErr != nil {
 		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
 	}
 }

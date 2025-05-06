@@ -143,17 +143,13 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 	})
 
 	s.clearDataButton.SetOnDown(func() {
-		if dErr := fs.ResetData(e); dErr != nil {
-			e.SetToast(dErr)
-		}
 		s.colorModeToggle.SetValue(false)
 		s.localeDropdownList.SelectItemByTag(language.English)
 		s.appScaleDropdownList.SelectItemByTag(2)
 	})
 	s.clearCacheButton.SetOnDown(func() {
-		if dErr := fs.ResetCache(e); dErr != nil {
-			e.SetToast(dErr)
-		}
+		s.model.cache.repo = nil
+		s.model.cache.timestamp = s.model.cache.timestamp.Add(s.model.cache.expiresIn)
 	})
 	s.resetButton.SetOnDown(func() {
 
