@@ -149,7 +149,6 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 	})
 	s.clearCacheButton.SetOnDown(func() {
 		s.model.cache.repo = nil
-		s.model.cache.timestamp = s.model.cache.timestamp.Add(s.model.cache.expiresIn)
 	})
 	s.resetButton.SetOnDown(func() {
 

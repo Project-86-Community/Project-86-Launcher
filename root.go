@@ -353,6 +353,19 @@ func (r *Root) Update(context *guigui.Context) error {
 	}
 
 	if r.model.isInternet {
+		if r.model.cache.repo == nil && !r.debounceCache {
+			r.debounceCache = true
+			go func() {
+				log.Info().Str("Cache", "cache not found, downloading cache...").Msg("Root.Update")
+
+				dErr := r.FetchCache()
+				if dErr.Err != nil {
+					e.SetToast(dErr)
+				}
+				r.debounceCache = false
+			}()
+		}
+
 		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.CacheFile))
 		if value.Err != nil {
 			if r.model.isInternet && !r.debounceCache {
