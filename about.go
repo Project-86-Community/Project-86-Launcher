@@ -23,7 +23,6 @@ package p86l
 
 import (
 	"p86l/assets"
-	"p86l/internal/debug"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -45,16 +44,16 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	context.SetOpacity(&a.background, 0.7)
 	appender.AppendChildWidgetWithBounds(&a.background, context.Bounds(a))
 
-	img, err := assets.TheImageCache.Get("lead")
-	if err != nil {
-		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
-		return err
+	img, dErr := assets.TheImageCache.Get(e, "lead")
+	if dErr != nil {
+		aErr = dErr
+		return dErr.Err
 	}
 	a.leadImg.SetImage(img)
-	img, err = assets.TheImageCache.Get("dev")
-	if err != nil {
-		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
-		return err
+	img, dErr = assets.TheImageCache.Get(e, "dev")
+	if dErr != nil {
+		aErr = dErr
+		return dErr.Err
 	}
 	a.devImg.SetImage(img)
 

@@ -24,13 +24,10 @@ package main
 import (
 	"os"
 	"p86l"
-	"p86l/assets"
 	"p86l/cmd/p86l/p86li"
 	"p86l/configs"
-	"p86l/internal/debug"
 	"runtime"
 
-	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -49,20 +46,13 @@ func init() {
 }
 
 func main() {
-	iconImages, _err := assets.GetIconImages()
-	if _err != nil {
-		log.Panic().Int("Code", debug.ErrIconNotFound).Str("Type", string(debug.FSError)).Err(_err).Msg("Icons")
-	}
-
 	log.Info().Str("Detected OS", runtime.GOOS).Send()
-	ebiten.SetWindowIcon(iconImages)
 
-	ebiten.SetVsyncEnabled(true)
 	op := &guigui.RunOptions{
 		Title:         configs.AppTitle,
 		WindowMinSize: configs.AppWindowMinSize,
 	}
-	if _err = guigui.Run(&p86l.Root{}, op); _err != nil {
+	if err := guigui.Run(&p86l.Root{}, op); err != nil {
 		appErr := p86l.GetAppError()
 		log.Error().Stack().Int("Code", appErr.Code).Str("Type", string(appErr.Type)).Err((appErr.Err)).Msg("App crashed")
 		os.Exit(1)

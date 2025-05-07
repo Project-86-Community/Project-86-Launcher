@@ -22,11 +22,8 @@
 package p86l
 
 import (
-	"bytes"
-	"encoding/gob"
 	"image"
 	"net/http"
-	"os"
 	"p86l/assets"
 	p86lLocale "p86l/assets/locale"
 	"p86l/configs"
@@ -58,145 +55,68 @@ type Root struct {
 	settings  Settings
 	about     About
 
-	lastInternetCheckTick int64
-	debounceCache         bool
-
 	sync  sync.Once
 	model Model
 	dErr  *debug.Error
 }
 
+func (r *Root) IsCache() bool {
+	cacheErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.CacheFile))
+	if r.model.isInternet && (r.model.cache.repo == nil || cacheErr != nil) {
+		return true
+	}
+
+	return false
+}
+
+func (r *Root) IsCacheOutdated() bool {
+	if r.model.isInternet && r.model.cache.repo != nil && time.Since(r.model.cache.timestamp) > r.model.cache.expiresIn {
+		return true
+	}
+	return false
+}
+
 func (r *Root) RunApp() *debug.Error {
-	companyPath, dErr := file.GetCompanyPath(e)
-	if dErr.Err != nil {
+	iconImages, dErr := assets.GetIconImages(e)
+	if dErr != nil {
 		return dErr
 	}
-	root, err := os.OpenRoot(companyPath)
-	if err != nil {
-		return e.New(err, debug.FSError, debug.ErrDirNotFound)
-	}
-	afs, dErr := file.NewFS(e, root, companyPath, configs.AppName)
+	ebiten.SetWindowIcon(iconImages)
+
+	afs, dErr := file.NewFS(e)
 	if dErr.Err != nil {
 		return dErr
 	}
 	fs = afs
 
-	// if TheDebugMode.IsRelease {
-	// 	logDir, dErr := fs.LogDir(e)
-	// 	if dErr.Err != nil {
-	// 		return dErr
-	// 	}
-	//
-	// 	if err := os.MkdirAll(logDir, 0755); err != nil {
-	// 		return e.New(err, debug.FSError, debug.ErrNewDirFailed)
-	// 	}
-	//
-	// 	timestamp := time.Now().Unix()
-	// 	logFileName := fmt.Sprintf("log_%d.log", timestamp)
-	// 	logFilePath := filepath.Join(logDir, logFileName)
-	//
-	// 	logFile, err := os.Create(logFilePath)
-	// 	if err != nil {
-	// 		return e.New(err, debug.FSError, debug.ErrNewFileFailed)
-	// 	}
-	//
-	// 	TheDebugMode.LogFile = logFile
-	//
-	// 	multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
-	// 	log.Logger = zerolog.New(multi).With().Timestamp().Logger()
-	// }
-
-	bundle, err := p86lLocale.GetLocales(language.English)
-	if err != nil {
-		return e.New(err, debug.FSError, debug.ErrLocaleLoad)
+	bundle, dErr := p86lLocale.GetLocales(e, language.English)
+	if dErr != nil {
+		return dErr
 	}
 	lBundle = bundle
 	lLocalizer = i18n.NewLocalizer(bundle, "en")
 
-	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+	return nil
 }
 
 func (r *Root) Init(context *guigui.Context) *debug.Error {
-	{
-		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Data, configs.LocaleFile))
-		if value.Err != nil {
-			dErr := r.model.data.SetLocale(context, language.English)
-			if dErr.Err != nil {
-				return dErr
-			}
-		}
-
-		b, dErr := fs.Load(e, configs.Data, configs.LocaleFile)
-		if dErr.Err != nil {
-			return dErr
-		}
-		locale, err := language.Parse(string(b))
-		if err != nil {
-			return e.New(err, debug.FSError, debug.ErrLocaleLoad)
-		}
-		r.dErr = r.model.data.SetLocale(context, locale)
-	}
-	{
-		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Data, configs.ColorModeFile))
-		if value.Err != nil {
-			dErr := r.model.data.SetColorMode(context, guigui.ColorModeLight)
-			if dErr.Err != nil {
-				return dErr
-			}
-		}
-
-		b, dErr := fs.Load(e, configs.Data, configs.ColorModeFile)
-		if dErr.Err != nil {
-			return dErr
-		}
-		var colorMode guigui.ColorMode
-		decoder := gob.NewDecoder(bytes.NewReader(b))
-		err := decoder.Decode(&colorMode)
-		if err != nil {
-			return e.New(err, debug.FSError, debug.ErrColorModeLoad)
-		}
-		r.dErr = r.model.data.SetColorMode(context, colorMode)
-	}
-	{
-		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Data, configs.AppScaleFile))
-		if value.Err != nil {
-			dErr := r.model.data.SetAppScale(context, 2)
-			if dErr.Err != nil {
-				return dErr
-			}
-		}
-
-		b, dErr := fs.Load(e, configs.Data, configs.AppScaleFile)
-		if dErr.Err != nil {
-			return dErr
-		}
-		var appScale int
-		decoder := gob.NewDecoder(bytes.NewReader(b))
-		err := decoder.Decode(&appScale)
-		if err != nil {
-			return e.New(err, debug.FSError, debug.ErrAppScaleLoad)
-		}
-		r.dErr = r.model.data.SetAppScale(context, appScale)
-	}
-	{
-		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.CacheFile))
-		if value.Err == nil {
-			log.Info().Str("Cache", "cache found, loading cache...").Msg("Root.Init")
-			b, dErr := fs.Load(e, configs.Cache, configs.CacheFile)
-			if dErr.Err != nil {
-				return dErr
-			}
-			var cache CacheT
-			decoder := gob.NewDecoder(bytes.NewReader(b))
-			err := decoder.Decode(&cache)
-			if err != nil {
-				return e.New(err, debug.FSError, debug.ErrCacheLoad)
-			}
-			r.dErr = r.model.cache.SetCache(cache)
-		}
+	if err := r.loadAndSetLocale(context); err != nil {
+		return err
 	}
 
-	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+	if err := r.loadAndSetColorMode(context); err != nil {
+		return err
+	}
+
+	if err := r.loadAndSetAppScale(context); err != nil {
+		return err
+	}
+
+	if err := r.loadAndSetCache(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *Root) CheckInternet() {
@@ -221,41 +141,47 @@ func (r *Root) CheckInternet() {
 	r.model.isInternet = check()
 }
 
-func (r *Root) FetchRateLimitStatus() *debug.Error {
-	rate, _, err := githubClient.RateLimit.Get(ctx)
-	if err != nil {
-		return e.New(err, debug.InternetError, debug.ErrRateLimit)
-	}
-	r.model.rateLimitTracker.Update(rate.Core.Remaining, rate.Core.Reset.Time)
-	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
-}
-
-func (r *Root) FetchCache() *debug.Error {
-	if r.model.rateLimitTracker.Valid() {
-		repo, _, err := githubClient.Repositories.GetLatestRelease(ctx, configs.RepoOwner, configs.RepoName)
-		if err != nil {
-			return e.New(err, debug.InternetError, debug.ErrCacheInternet)
-		}
-		log.Info().Msg("Root.FetchCache")
-
-		newCache := CacheT{
-			Repo:      repo,
-			Timestamp: time.Now(),
-			ExpiresIn: time.Hour,
-		}
-		r.dErr = r.model.cache.SetCache(newCache)
-	}
-
-	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
-}
+// func (r *Root) FetchRateLimitStatus() *debug.Error {
+// 	rate, _, err := githubClient.RateLimit.Get(ctx)
+// 	if err != nil {
+// 		return e.New(err, debug.InternetError, debug.ErrRateLimit)
+// 	}
+// 	r.model.rateLimitTracker.Update(rate.Core.Remaining, rate.Core.Reset.Time)
+// 	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+// }
+//
+// func (r *Root) FetchCache() *debug.Error {
+// 	if r.model.rateLimitTracker.Valid() {
+// 		repo, _, err := githubClient.Repositories.GetLatestRelease(ctx, configs.RepoOwner, configs.RepoName)
+// 		if err != nil {
+// 			return e.New(err, debug.InternetError, debug.ErrCacheInternet)
+// 		}
+// 		log.Info().Msg("Root.FetchCache")
+//
+// 		newCache := CacheT{
+// 			Repo:      repo,
+// 			Timestamp: time.Now(),
+// 			ExpiresIn: time.Hour,
+// 		}
+// 		r.dErr = r.model.cache.SetCache(newCache)
+// 	}
+//
+// 	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+// }
 
 func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	r.sync.Do(func() {
 		r.dErr = r.RunApp()
+		if r.dErr != nil {
+			return
+		}
 		r.dErr = r.Init(context)
+		if r.dErr != nil {
+			return
+		}
 	})
 
-	if r.dErr != nil && r.dErr.Err != nil {
+	if r.dErr != nil {
 		aErr = r.dErr
 		return aErr.Err
 	}
@@ -277,10 +203,10 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	borderBounds.Max.X = context.Size(&r.sidebar).X
 	context.SetOpacity(&r.border, 0.7)
 
-	img, err := assets.TheImageCache.Get("banner")
-	if err != nil {
-		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
-		return err
+	img, dErr := assets.TheImageCache.Get(e, "banner")
+	if dErr != nil {
+		aErr = dErr
+		return dErr.Err
 	}
 	r.bgImage.SetImage(img)
 	imgWidth := img.Bounds().Dx()
@@ -339,63 +265,38 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 }
 
 func (r *Root) Update(context *guigui.Context) error {
-	if ebiten.Tick()-r.lastInternetCheckTick >= int64(ebiten.TPS()) {
+	if ebiten.Tick()-r.model.root.lastInternetCheckTick >= int64(ebiten.TPS()) {
 		if r.model.isInternet {
-			go func() {
-				dErr := r.FetchRateLimitStatus()
-				if dErr.Err != nil {
-					e.SetToast(dErr)
-				}
-			}()
+			// go func() {
+			// 	dErr := r.FetchRateLimitStatus()
+			// 	if dErr != nil {
+			// 		e.SetToast(dErr)
+			// 	}
+			// }()
 		}
 		go r.CheckInternet()
-		r.lastInternetCheckTick = ebiten.Tick()
+		r.model.root.lastInternetCheckTick = ebiten.Tick()
 	}
 
-	if r.model.isInternet {
-		if r.model.cache.repo == nil && !r.debounceCache {
-			r.debounceCache = true
-			go func() {
-				log.Info().Str("Cache", "cache not found, downloading cache...").Msg("Root.Update")
+	if r.IsCache() {
+		r.model.root.SetCacheDebounce(func() {
+			log.Info().Str("Cache", "cache not found, downloading cache...").Msg("Root.Update")
 
-				dErr := r.FetchCache()
-				if dErr.Err != nil {
-					e.SetToast(dErr)
-				}
-				r.debounceCache = false
-			}()
-		}
+			// dErr := r.FetchCache()
+			// if dErr != nil {
+			// 	e.SetToast(dErr)
+			// }
+		})
+	}
+	if r.IsCacheOutdated() {
+		r.model.root.SetCacheDebounce(func() {
+			log.Info().Str("Cache", "outdated, updating...").Msg("Root.Update")
 
-		value := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Cache, configs.CacheFile))
-		if value.Err != nil {
-			if r.model.isInternet && !r.debounceCache {
-				r.debounceCache = true
-				go func() {
-					log.Info().Str("Cache", "cache not found, downloading cache...").Msg("Root.Update")
-
-					dErr := r.FetchCache()
-					if dErr.Err != nil {
-						e.SetToast(dErr)
-					}
-					r.debounceCache = false
-				}()
-			}
-		}
-
-		if r.model.cache.repo.GetBody() != "" {
-			if time.Since(r.model.cache.timestamp) > r.model.cache.expiresIn && !r.debounceCache {
-				r.debounceCache = true
-				go func() {
-					log.Info().Str("Cache", "outdated, updating...").Msg("Root.Update")
-
-					dErr := r.FetchCache()
-					if dErr.Err != nil {
-						e.SetToast(dErr)
-					}
-					r.debounceCache = false
-				}()
-			}
-		}
+			// dErr := r.FetchCache()
+			// if dErr != nil {
+			// 	e.SetToast(dErr)
+			// }
+		})
 	}
 
 	return nil

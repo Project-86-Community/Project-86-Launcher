@@ -40,6 +40,9 @@ type Model struct {
 	rateLimitTracker RateLimitTracker
 	data             DataModel
 	cache            CacheModel
+
+	root RootModel
+	play PlayModel
 }
 
 func (m *Model) Mode() string {
@@ -68,7 +71,7 @@ func (d *DataModel) SetLocale(context *guigui.Context, locale language.Tag) *deb
 	SetLanguage(locale.String())
 
 	dErr := fs.Save(e, configs.Data, configs.LocaleFile, []byte(locale.String()))
-	if dErr.Err != nil {
+	if dErr != nil {
 		return dErr
 	}
 
@@ -83,11 +86,11 @@ func (d *DataModel) SetColorMode(context *guigui.Context, colorMode guigui.Color
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
 	if err := encoder.Encode(colorMode); err != nil {
-		return e.New(err, debug.FSError, debug.ErrColorModeSave)
+		return e.New(err, debug.FSError, debug.ErrDataColorModeSave)
 	}
 
 	dErr := fs.Save(e, configs.Data, configs.ColorModeFile, buf.Bytes())
-	if dErr.Err != nil {
+	if dErr != nil {
 		return dErr
 	}
 
@@ -102,11 +105,11 @@ func (d *DataModel) SetAppScale(context *guigui.Context, scale int) *debug.Error
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
 	if err := encoder.Encode(scale); err != nil {
-		return e.New(err, debug.FSError, debug.ErrAppScaleSave)
+		return e.New(err, debug.FSError, debug.ErrDataAppScaleSave)
 	}
 
 	dErr := fs.Save(e, configs.Data, configs.AppScaleFile, buf.Bytes())
-	if dErr.Err != nil {
+	if dErr != nil {
 		return dErr
 	}
 
@@ -167,9 +170,42 @@ func (c *CacheModel) SetCache(cache CacheT) *debug.Error {
 	}
 
 	dErr := fs.Save(e, configs.Cache, configs.CacheFile, buf.Bytes())
-	if dErr.Err != nil {
+	if dErr != nil {
 		return dErr
 	}
 
 	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+}
+
+type RootModel struct {
+	lastInternetCheckTick int64
+	cacheDebounce         bool
+}
+
+func (r *RootModel) SetCacheDebounce(run func()) {
+	if !r.cacheDebounce {
+		go func() {
+			r.cacheDebounce = true
+			run()
+			r.cacheDebounce = false
+		}()
+	}
+}
+
+type PlayModel struct {
+	status      string
+	downloading bool
+	downloadMsg string
+}
+
+func (p *PlayModel) SetStatus(status string) {
+	p.status = status
+}
+
+func (p *PlayModel) SetDownloading(value bool) {
+	p.downloading = value
+}
+
+func (p *PlayModel) SetDownloadMsg(msg string) {
+	p.downloadMsg = msg
 }

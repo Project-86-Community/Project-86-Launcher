@@ -35,13 +35,13 @@ import (
 func mkdirAll(appDebug *debug.Debug, path string) *debug.Error {
 	_, err := os.Stat(path)
 	if !errors.Is(err, fs.ErrNotExist) && err != nil {
-		return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+		return nil
 	}
 	err = os.MkdirAll(path, 0755)
 	if err != nil {
-		return appDebug.New(err, debug.FSError, debug.ErrNewDirFailed)
+		return appDebug.New(err, debug.FSError, debug.ErrFSDirNew)
 	}
-	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+	return nil
 }
 
 type AppFS struct {
@@ -49,12 +49,32 @@ type AppFS struct {
 	CompanyDirPath string
 }
 
-func NewFS(appDebug *debug.Debug, root *os.Root, companyPath, appDirPath string) (*AppFS, *debug.Error) {
-	if _, err := root.Stat(appDirPath); err != nil {
+func NewFS(appDebug *debug.Debug, extra ...string) (*AppFS, *debug.Error) {
+	var companyPath string
+	if len(extra) == 1 && extra[0] != "" {
+		cPath, dErr := GetCompanyPath(appDebug, "test")
+		if dErr != nil {
+			return nil, dErr
+		}
+		companyPath = cPath
+	} else {
+		cPath, dErr := GetCompanyPath(appDebug)
+		if dErr != nil {
+			return nil, dErr
+		}
+		companyPath = cPath
+	}
+
+	root, err := os.OpenRoot(companyPath)
+	if err != nil {
+		return nil, appDebug.New(err, debug.FSError, debug.ErrFSRootInvalid)
+	}
+
+	if _, err := root.Stat(configs.AppName); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			err := root.Mkdir(appDirPath, 0755)
+			err := root.Mkdir(configs.AppName, 0755)
 			if err != nil {
-				return nil, appDebug.New(err, debug.FSError, debug.ErrFSOpenFailed)
+				return nil, appDebug.New(err, debug.FSError, debug.ErrFSRootDirNew)
 			}
 		}
 	}
@@ -62,12 +82,12 @@ func NewFS(appDebug *debug.Debug, root *os.Root, companyPath, appDirPath string)
 	return &AppFS{
 		Root:           root,
 		CompanyDirPath: companyPath,
-	}, appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+	}, nil
 }
 
 func (a *AppFS) OpenFileManager(appDebug *debug.Debug, path string) *debug.Error {
 	if err := open.Run(path); err != nil {
-		return appDebug.New(err, debug.FSError, debug.ErrOpenFolderFailed)
+		return appDebug.New(err, debug.FSError, debug.ErrFSOpenFileManagerInvalid)
 	}
 	return nil
 }
@@ -75,38 +95,38 @@ func (a *AppFS) OpenFileManager(appDebug *debug.Debug, path string) *debug.Error
 func (a *AppFS) IsDir(appDebug *debug.Debug, path string) *debug.Error {
 	_, err := os.Stat(path)
 	if errors.Is(err, fs.ErrNotExist) && err != nil {
-		return appDebug.New(err, debug.FSError, debug.ErrDirNotFound)
+		return appDebug.New(err, debug.FSError, debug.ErrFSDirNotExist)
 	}
-	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+	return nil
 }
 
 func (a *AppFS) Save(appDebug *debug.Debug, key, saveFile string, bytes []byte) *debug.Error {
 	savePath := filepath.Join(a.CompanyDirPath, configs.AppName, key)
 	dErr := a.IsDir(appDebug, savePath)
-	if dErr.Err != nil {
+	if dErr != nil {
 		if errors.Is(dErr.Err, fs.ErrNotExist) {
 			err := a.Root.Mkdir(filepath.Join(configs.AppName, key), os.ModePerm)
 			if err != nil {
-				return appDebug.New(err, debug.FSError, debug.ErrNewFileFailed)
+				return appDebug.New(err, debug.FSError, debug.ErrFSDirInvalid)
 			}
 		}
 	}
 	err := os.WriteFile(filepath.Join(savePath, saveFile), bytes, 0o666)
 	if err != nil {
-		return appDebug.New(err, debug.FSError, debug.ErrNewFileFailed)
+		return appDebug.New(err, debug.FSError, debug.ErrFSNewFileInvalid)
 	}
-	return appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+	return nil
 }
 
 func (a *AppFS) Load(appDebug *debug.Debug, key, loadFile string) ([]byte, *debug.Error) {
 	loadPath := filepath.Join(a.CompanyDirPath, configs.AppName, key)
 	dErr := a.IsDir(appDebug, loadPath)
-	if dErr.Err != nil {
+	if dErr != nil {
 		return nil, dErr
 	}
 	bytes, err := os.ReadFile(filepath.Join(loadPath, loadFile))
 	if err != nil {
-		return nil, appDebug.New(err, debug.FSError, debug.ErrFileNotFound)
+		return nil, appDebug.New(err, debug.FSError, debug.ErrFSDirNotExist)
 	}
-	return bytes, appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+	return bytes, nil
 }

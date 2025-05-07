@@ -32,15 +32,15 @@ import (
 func GetCompanyPath(appDebug *debug.Debug, extra ...string) (string, *debug.Error) {
 	appData := os.Getenv("APPDATA")
 	if appData == "" {
-		return "", appDebug.New(fmt.Errorf("APPDATA not set"), debug.FSError, debug.ErrDirNotFound)
+		return "", appDebug.New(fmt.Errorf("APPDATA not set"), debug.FSError, debug.ErrFSDirInvalid)
 	}
 	dataPath := filepath.Join(appData, configs.CompanyName)
 	// Used for testing only!
 	if len(extra) == 1 && extra[0] != "" {
 		dataPath = fmt.Sprintf("%s_%s", dataPath, extra[0])
 	}
-	if dErr := mkdirAll(appDebug, dataPath); dErr.Err != nil {
+	if dErr := mkdirAll(appDebug, dataPath); dErr != nil {
 		return "", dErr
 	}
-	return dataPath, appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+	return dataPath, nil
 }

@@ -34,15 +34,15 @@ import (
 func GetCompanyPath(appDebug *debug.Debug, extra ...string) (string, *debug.Error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", appDebug.New(err, debug.FSError, debug.ErrDirNotFound)
+		return "", appDebug.New(err, debug.FSError, debug.ErrFSDirInvalid)
 	}
 	dataPath := filepath.Join(home, ".local", "share", configs.CompanyName)
 	// Used for testing only!
 	if len(extra) == 1 && extra[0] != "" {
 		dataPath = fmt.Sprintf("%s_%s", dataPath, extra[0])
 	}
-	if dErr := mkdirAll(appDebug, dataPath); dErr.Err != nil {
+	if dErr := mkdirAll(appDebug, dataPath); dErr != nil {
 		return "", dErr
 	}
-	return dataPath, appDebug.New(nil, debug.UnknownError, debug.ErrUnknown)
+	return dataPath, nil
 }

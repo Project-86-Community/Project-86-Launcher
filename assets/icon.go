@@ -25,6 +25,7 @@ import (
 	"bytes"
 	_ "embed"
 	"image"
+	"p86l/internal/debug"
 
 	ico "github.com/biessek/golang-ico"
 )
@@ -32,20 +33,14 @@ import (
 //go:embed p86l.ico
 var p86lIcon []byte
 
-// GetIconImages loads the embedded icon file and returns all images inside it
-func GetIconImages() ([]image.Image, error) {
+func GetIconImages(appDebug *debug.Debug) ([]image.Image, *debug.Error) {
 	var IconImages []image.Image
 
-	// Create a reader from the embedded bytes
 	reader := bytes.NewReader(p86lIcon)
-
-	// Decode the ICO file
 	icons, err := ico.DecodeAll(reader)
 	if err != nil {
-		return nil, err
+		return nil, appDebug.New(err, debug.FSError, debug.ErrFSFileNotExist)
 	}
-
-	// Add all images from the ICO to our slice
 	IconImages = append(IconImages, icons...)
 
 	return IconImages, nil

@@ -22,7 +22,6 @@
 package file_test
 
 import (
-	"os"
 	"p86l/configs"
 	"p86l/internal/debug"
 	"p86l/internal/file"
@@ -32,18 +31,8 @@ import (
 
 func setup(t *testing.T) (*debug.Debug, *file.AppFS) {
 	e := &debug.Debug{}
-
-	companyPath, dErr := file.GetCompanyPath(e, "test")
-	if dErr.Err != nil {
-		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
-	}
-	root, err := os.OpenRoot(companyPath)
-	if err != nil {
-		t.Fatalf("Code: %d, Type: %s, Err: %v", debug.ErrDirNotFound, string(debug.FSError), err)
-	}
-
-	a, dErr := file.NewFS(e, root, companyPath, configs.AppName)
-	if dErr.Err != nil {
+	a, dErr := file.NewFS(e, "test")
+	if dErr != nil {
 		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
 	}
 
@@ -58,7 +47,7 @@ func TestDirs(t *testing.T) {
 func TestSaveFiles(t *testing.T) {
 	e, fs := setup(t)
 	dErr := fs.Save(e, configs.Data, configs.ColorModeFile, []byte("Lena"))
-	if dErr.Err != nil {
+	if dErr != nil {
 		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
 	}
 }
@@ -66,7 +55,7 @@ func TestSaveFiles(t *testing.T) {
 func TestLoadFiles(t *testing.T) {
 	e, fs := setup(t)
 	bytes, dErr := fs.Load(e, configs.Data, configs.ColorModeFile)
-	if dErr.Err != nil {
+	if dErr != nil {
 		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
 	}
 	t.Log(string(bytes))
@@ -74,7 +63,8 @@ func TestLoadFiles(t *testing.T) {
 
 func TestStatAppDir(t *testing.T) {
 	e, fs := setup(t)
-	if dErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Data, configs.ColorModeFile)); dErr.Err != nil {
+	statPath := filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Data, configs.ColorModeFile)
+	if dErr := fs.IsDir(e, statPath); dErr != nil {
 		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
 	}
 }

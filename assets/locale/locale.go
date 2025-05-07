@@ -23,6 +23,10 @@ package locale
 
 import (
 	"embed"
+	"fmt"
+	"io/fs"
+	"p86l/internal/debug"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
@@ -32,22 +36,34 @@ import (
 //go:embed locale.*.toml
 var localeFS embed.FS
 
-func GetLocales(locale language.Tag) (*i18n.Bundle, error) {
+func GetLocales(appDebug *debug.Debug, locale language.Tag) (*i18n.Bundle, *debug.Error) {
 	bundle := i18n.NewBundle(locale)
 	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
 
-	_, err := bundle.LoadMessageFileFS(localeFS, "locale.en.toml")
+	entries, err := fs.ReadDir(localeFS, ".")
 	if err != nil {
-		return nil, err
+		return nil, appDebug.New(err, debug.FSError, debug.ErrFSFileNotExist)
 	}
-	_, err = bundle.LoadMessageFileFS(localeFS, "locale.fr.toml")
-	if err != nil {
-		return nil, err
-	}
-	_, err = bundle.LoadMessageFileFS(localeFS, "locale.ja.toml")
-	if err != nil {
-		return nil, err
+
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".toml") {
+			localeTag := extractLocaleTag(entry.Name())
+			if localeTag != "" {
+				_, err := bundle.LoadMessageFileFS(localeFS, entry.Name())
+				if err != nil {
+					return nil, appDebug.New(fmt.Errorf("%s: %v", entry.Name(), err), debug.FSError, debug.ErrFSFileNotExist)
+				}
+			}
+		}
 	}
 
 	return bundle, nil
+}
+
+func extractLocaleTag(filename string) string {
+	parts := strings.Split(filename, ".")
+	if len(parts) >= 2 && parts[0] == "locale" {
+		return parts[1]
+	}
+	return ""
 }

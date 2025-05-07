@@ -11,7 +11,7 @@ tasks:
 
   run:debug:
     cmds:
-      - GUIGUI_DEBUG=showrenderingregions go run ./cmd/p86l
+      - P86L_DEBUG=logs go run ./cmd/p86l
 
   build:
     cmds:

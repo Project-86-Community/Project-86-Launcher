@@ -164,7 +164,7 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		s.appScaleDropdownList.SelectItemByTag(s.model.data.GetAppScale(context.AppScale()))
 	})
 
-	if s.dErr != nil && s.dErr.Err != nil {
+	if s.dErr != nil {
 		aErr = s.dErr
 		return aErr.Err
 	}

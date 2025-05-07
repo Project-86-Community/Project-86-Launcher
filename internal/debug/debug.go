@@ -42,40 +42,52 @@ const (
 	ErrBrowserOpen
 
 	// Filesystem errors (2001-2999)
-	ErrFSOpenFailed int = iota + 2001
-	ErrIconNotFound
-	ErrDirNotFound
-	ErrNewDirFailed
-	ErrNewFileFailed
-	ErrNewFolderFailed
-	ErrFileOpen
-	ErrOpenFolderFailed
-	ErrFileNotFound
-	ErrFolderClear
+	ErrFSFileInvalid int = iota + 2001
+
+	ErrFSDirInvalid
+	ErrFSDirNotExist
+	ErrFSDirNew
+
+	ErrFSNewFileInvalid
+	ErrFSFileNotExist
+
+	ErrFSOpenFileManagerInvalid
+
+	// - root
+
+	ErrFSRootInvalid
+
+	ErrFSRootDirInvalid
+	ErrFSRootDirNew
+
+	ErrFSRootFileNew
+
+	ErrFSRootFileNotExist
 
 	// Data errors (3001-3999)
-	ErrLocaleLoad int = iota + 3001
-	ErrLocaleSave
-	ErrLocaleReset
+	ErrDataLocaleLoad int = iota + 3001
+	ErrDataLocaleSave
+	ErrDataLocaleReset
 
-	ErrColorModeLoad
-	ErrColorModeSave
-	ErrColorModeReset
+	ErrDataColorModeLoad
+	ErrDataColorModeSave
+	ErrDataColorModeReset
 
-	ErrAppScaleLoad
-	ErrAppScaleSave
-	ErrAppScaleReset
+	ErrDataAppScaleLoad
+	ErrDataAppScaleSave
+	ErrDataAppScaleReset
 
 	// Cache errors (4001-4999)
 	ErrCacheLoad int = iota + 4001
 	ErrCacheSave
 	ErrCacheReset
-	ErrCacheInternet
 
-	// Internet errors (5001-5999)
-	ErrRateLimit int = iota + 5001
-	ErrConnection
-	ErrStatusCode
+	// // Internet errors (5001-5999)
+	// ErrRateLimit int = iota + 5001
+	// ErrConnection
+	// ErrStatusCode
+	// ErrNewRequest
+	// ErrFailedDownload
 )
 
 type Error struct {
@@ -122,89 +134,3 @@ func (d *Debug) SetPopup(err *Error) {
 	log.Info().Stack().Int("Code", err.Code).Str("Type", string(err.Type)).Err(err.Err).Msg("SetPopup")
 	d.PopupErr = err
 }
-
-// const (
-// 	// Core launcher errors (1-99)
-// 	ErrLauncherInit    = 1
-// 	ErrLauncherUpdate  = 2
-// 	ErrConfigCorrupted = 3
-//
-// 	// Authentication errors (100-199)
-// 	ErrLoginFailed       = 100
-// 	ErrSessionExpired    = 101
-// 	ErrAccountLocked     = 102
-// 	ErrTwoFactorRequired = 103
-//
-// 	// Game library errors (200-299)
-// 	ErrLibraryCorrupted  = 200
-// 	ErrGameNotFound      = 201
-// 	ErrGameMetadataFetch = 202
-// 	ErrGameArtworkFetch  = 203
-//
-// 	// Download/installation errors (300-399)
-// 	ErrDownloadFailed    = 300
-// 	ErrInsufficientSpace = 301
-// 	ErrChecksumMismatch  = 302
-// 	ErrInstallCorrupted  = 303
-// 	ErrPatchFailed       = 304
-//
-// 	// Game execution errors (400-499)
-// 	ErrGameLaunchFailed  = 400
-// 	ErrMissingDependency = 401
-// 	ErrIncompatibleOS    = 402
-// 	ErrInsufficientHW    = 403
-//
-// 	// Network errors (500-599)
-// 	ErrServerUnavailable = 500
-// 	ErrConnectionLost    = 501
-// 	ErrSlowConnection    = 502
-// 	ErrCDNFailure        = 503
-//
-// 	// User profile errors (600-699)
-// 	ErrProfileCorrupted = 600
-// 	ErrSaveGameSync     = 601
-// 	ErrAchievementSync  = 602
-// 	ErrFriendListFetch  = 603
-//
-// 	// Store/purchase errors (700-799)
-// 	ErrPaymentFailed      = 700
-// 	ErrPurchaseIncomplete = 701
-// 	ErrEntitlementIssue   = 702
-// 	ErrStoreFetchFailed   = 703
-// )
-//
-// const (
-// 	// General errors (1-99)
-// 	ErrUnknown  = 1
-// 	ErrInternal = 2
-//
-// 	// Network errors (100-199)
-// 	ErrNetworkUnavailable = 100
-// 	ErrTimeoutExceeded    = 101
-// 	ErrBadResponse        = 102
-//
-// 	// Database errors (200-299)
-// 	ErrDBConnection    = 200
-// 	ErrQueryFailed     = 201
-// 	ErrRecordNotFound  = 202
-// 	ErrDuplicateRecord = 203
-//
-// 	// Validation errors (300-399)
-// 	ErrInvalidInput  = 300
-// 	ErrMissingField  = 301
-// 	ErrInvalidFormat = 302
-//
-// 	// Auth errors (400-499)
-// 	ErrUnauthorized = 400
-// 	ErrForbidden    = 401
-// 	ErrTokenExpired = 402
-//
-// 	// Filesystem errors (500-599)
-// 	ErrFileNotFound     = 500
-// 	ErrPermissionDenied = 501
-// 	ErrDiskFull         = 502
-//
-// 	// Cache errors (600-699)
-// 	ErrCacheMiss    = 600
-// 	ErrCacheExpired = 601
-// )

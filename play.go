@@ -25,7 +25,6 @@ import (
 	"image"
 	"p86l/assets"
 	"p86l/configs"
-	"p86l/internal/debug"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -68,41 +67,57 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	context.SetOpacity(&p.background, 0.7)
 	appender.AppendChildWidgetWithBounds(&p.background, context.Bounds(p))
 
-	img, err := assets.TheImageCache.Get("ie")
-	if err != nil {
-		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
-		return err
+	img, dErr := assets.TheImageCache.Get(e, "ie")
+	if dErr != nil {
+		aErr = dErr
+		return dErr.Err
 	}
 	p.websiteButton.SetIcon(img)
 
-	img, err = assets.TheImageCache.Get("github")
-	if err != nil {
-		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
-		return err
+	img, dErr = assets.TheImageCache.Get(e, "github")
+	if dErr != nil {
+		aErr = dErr
+		return dErr.Err
 	}
 	p.githubButton.SetIcon(img)
 
-	img, err = assets.TheImageCache.Get("discord")
-	if err != nil {
-		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
-		return err
+	img, dErr = assets.TheImageCache.Get(e, "discord")
+	if dErr != nil {
+		aErr = dErr
+		return dErr.Err
 	}
 	p.discordButton.SetIcon(img)
 
-	img, err = assets.TheImageCache.Get("patreon")
-	if err != nil {
-		aErr = e.New(err, debug.FSError, debug.ErrFileNotFound)
-		return err
+	img, dErr = assets.TheImageCache.Get(e, "patreon")
+	if dErr != nil {
+		aErr = dErr
+		return dErr.Err
 	}
 	p.patreonButton.SetIcon(img)
 
-	if p.model.isInternet {
-		context.SetEnabled(&p.actionButton, true)
-		p.actionButton.SetText(T("play.play"))
-	} else {
-		context.SetEnabled(&p.actionButton, false)
-		p.actionButton.SetText(T("play.nointernet"))
-	}
+	// if p.model.isInternet && p.model.cache.repo != nil {
+	// 	if !p.model.play.downloading {
+	// 		if dErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, "game.zip")); dErr.Err != nil {
+	// 			context.SetEnabled(&p.actionButton, true)
+	// 			p.model.play.SetStatus("install")
+	// 		} else {
+	// 			context.SetEnabled(&p.actionButton, true)
+	// 			p.model.play.SetStatus("play")
+	// 		}
+	// 		p.actionButton.SetText(T(fmt.Sprintf("play.%s", p.model.play.status)))
+	// 	} else {
+	// 		context.SetEnabled(&p.actionButton, false)
+	// 		p.actionButton.SetText(p.model.play.downloadMsg)
+	// 	}
+	// } else {
+	// 	if dErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, "game.zip")); dErr.Err != nil {
+	// 		context.SetEnabled(&p.actionButton, false)
+	// 		p.actionButton.SetText(T("play.nointernet"))
+	// 	} else {
+	// 		context.SetEnabled(&p.actionButton, true)
+	// 		p.actionButton.SetText(T("play.play"))
+	// 	}
+	// }
 
 	p.websiteButton.SetText(T("play.website"))
 	p.githubButton.SetText(T("play.github"))
@@ -110,7 +125,27 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	p.patreonButton.SetText(T("play.patreon"))
 
 	p.actionButton.SetOnDown(func() {
-
+		// if !p.model.play.downloading {
+		// 	switch p.model.play.status {
+		// 	case "install":
+		// 		for _, asset := range p.model.cache.repo.Assets {
+		// 			if IsValidGameFile(asset.GetName()) {
+		// 				p.model.play.SetDownloading(true)
+		// 				go func() {
+		// 					dErr := DownloadFile(p.model, "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip", filepath.Join(fs.CompanyDirPath, "game.zip"))
+		// 					if dErr != nil {
+		// 						log.Error().Stack().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Msg("App crashed")
+		// 					}
+		// 					p.model.play.SetDownloading(false)
+		// 				}()
+		// 			}
+		// 		}
+		// 	case "update":
+		//
+		// 	case "play":
+		//
+		// 	}
+		// }
 	})
 
 	p.Buttons()
@@ -142,7 +177,6 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		appender.AppendChildWidgetWithBounds(&p.githubButton, gl.CellBounds(1, 0))
 		appender.AppendChildWidgetWithBounds(&p.discordButton, gl.CellBounds(0, 1))
 		appender.AppendChildWidgetWithBounds(&p.patreonButton, gl.CellBounds(1, 1))
-
 	}
 	{
 		pt := gl.Bounds.Min

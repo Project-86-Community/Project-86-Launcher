@@ -1,5 +1,3 @@
-//go:build release
-
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
@@ -26,12 +24,33 @@ package p86li
 import (
 	"os"
 	"p86l"
+	"p86l/internal/debug"
+	"p86l/internal/file"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-func Run() {
-	log.Logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
+func Run2() {
+	e := &debug.Debug{}
+	a, dErr := file.NewFS(e)
+	if dErr != nil {
+		log.Error().Stack().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Send()
+	}
+
+	logFile, err := a.Root.Create("log.txt")
+	if err != nil {
+		log.Error().Stack().Int("Code", debug.ErrFSRootFileNew).Str("Type", string(debug.FSError)).Err((err)).Send()
+	}
+	defer func() {
+		err := logFile.Close()
+		if err != nil {
+			return
+		}
+	}()
+
+	multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
+	log.Logger = zerolog.New(multi).With().Timestamp().Logger()
+
 	p86l.TheDebugMode.Logs = true
 }
