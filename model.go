@@ -26,23 +26,18 @@ import (
 	"encoding/gob"
 	"p86l/configs"
 	"p86l/internal/debug"
-	"time"
+	"p86l/internal/file"
 
-	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/guigui"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/text/language"
 )
 
 type Model struct {
-	mode             string
-	isInternet       bool
-	rateLimitTracker RateLimitTracker
-	data             DataModel
-	cache            CacheModel
+	mode string
 
-	root RootModel
-	play PlayModel
+	data  DataModel
+	cache CacheModel
 }
 
 func (m *Model) Mode() string {
@@ -58,62 +53,38 @@ func (m *Model) SetMode(mode string) {
 }
 
 type DataModel struct {
-	locale    language.Tag
-	colorMode guigui.ColorMode
-	appScale  int
+	dataFile file.Data
 }
 
-func (d *DataModel) SetLocale(context *guigui.Context, locale language.Tag) *debug.Error {
-	log.Info().Str("Locale", locale.String()).Msg("SetLocale")
-	d.locale = locale
-
-	context.SetAppLocales([]language.Tag{d.locale})
-	SetLanguage(locale.String())
-
-	dErr := fs.Save(e, configs.Data, configs.LocaleFile, []byte(locale.String()))
-	if dErr != nil {
-		return dErr
-	}
-
-	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+func (d *DataModel) File() file.Data {
+	return d.dataFile
 }
 
-func (d *DataModel) SetColorMode(context *guigui.Context, colorMode guigui.ColorMode) *debug.Error {
-	log.Info().Int("guigui.ColorMode", int(colorMode)).Msg("SetColorMode")
-	d.colorMode = colorMode
-	context.SetColorMode(d.colorMode)
+func (d *DataModel) SetData(context *guigui.Context, dataFile file.Data) *debug.Error {
+	d.dataFile = dataFile
 
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(colorMode); err != nil {
-		return e.New(err, debug.FSError, debug.ErrDataColorModeSave)
+	if err := encoder.Encode(&dataFile); err != nil {
+		return e.New(err, debug.FSError, debug.ErrDataSave)
 	}
 
-	dErr := fs.Save(e, configs.Data, configs.ColorModeFile, buf.Bytes())
+	dErr := fs.Save(e, configs.DataFile, buf.Bytes())
 	if dErr != nil {
 		return dErr
 	}
 
-	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
-}
-
-func (d *DataModel) SetAppScale(context *guigui.Context, scale int) *debug.Error {
-	log.Info().Float64("guigui.AppScale", d.GetAppScaleF(scale)).Msg("SetAppScale")
-	d.appScale = scale
-	context.SetAppScale(d.GetAppScaleF(d.appScale))
-
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(scale); err != nil {
-		return e.New(err, debug.FSError, debug.ErrDataAppScaleSave)
+	locale, err := language.Parse(dataFile.Locale)
+	if err != nil {
+		return e.New(err, debug.DataError, debug.ErrDataLoad)
 	}
 
-	dErr := fs.Save(e, configs.Data, configs.AppScaleFile, buf.Bytes())
-	if dErr != nil {
-		return dErr
-	}
+	context.SetAppLocales([]language.Tag{locale})
+	context.SetAppScale(d.GetAppScaleF(dataFile.AppScale))
+	context.SetColorMode(dataFile.ColorMode)
+	SetLanguage(dataFile.Locale)
 
-	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+	return nil
 }
 
 func (d *DataModel) GetAppScale(scale float64) int {
@@ -151,61 +122,46 @@ func (d *DataModel) GetAppScaleF(scale int) float64 {
 }
 
 type CacheModel struct {
-	repo                *github.RepositoryRelease
-	timestamp           time.Time
-	expiresIn           time.Duration
+	cacheFile file.Cache
+
+	isTranslate         bool
 	translatedChangelog string
 }
 
-func (c *CacheModel) SetCache(cache CacheT) *debug.Error {
-	log.Info().Any("CacheModel.cache", cache).Msg("SetCache")
-	c.repo = cache.Repo
-	c.timestamp = cache.Timestamp
-	c.expiresIn = cache.ExpiresIn
+func (c *CacheModel) File() file.Cache {
+	return c.cacheFile
+}
+
+func (c *CacheModel) IsTranslate() bool {
+	return c.isTranslate
+}
+
+func (c *CacheModel) TranslatedChangelog() string {
+	return c.translatedChangelog
+}
+
+func (c *CacheModel) SetCache(cacheFile file.Cache) *debug.Error {
+	log.Info().Any("CacheModel.cache", cacheFile).Msg("SetCache")
+	c.cacheFile = cacheFile
 
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(cache); err != nil {
+	if err := encoder.Encode(cacheFile); err != nil {
 		return e.New(err, debug.FSError, debug.ErrCacheSave)
 	}
 
-	dErr := fs.Save(e, configs.Cache, configs.CacheFile, buf.Bytes())
+	dErr := fs.Save(e, configs.CacheFile, buf.Bytes())
 	if dErr != nil {
 		return dErr
 	}
 
-	return e.New(nil, debug.UnknownError, debug.ErrUnknown)
+	return nil
 }
 
-type RootModel struct {
-	lastInternetCheckTick int64
-	cacheDebounce         bool
+func (c *CacheModel) SetIsTranslate(value bool) {
+	c.isTranslate = value
 }
 
-func (r *RootModel) SetCacheDebounce(run func()) {
-	if !r.cacheDebounce {
-		go func() {
-			r.cacheDebounce = true
-			run()
-			r.cacheDebounce = false
-		}()
-	}
-}
-
-type PlayModel struct {
-	status      string
-	downloading bool
-	downloadMsg string
-}
-
-func (p *PlayModel) SetStatus(status string) {
-	p.status = status
-}
-
-func (p *PlayModel) SetDownloading(value bool) {
-	p.downloading = value
-}
-
-func (p *PlayModel) SetDownloadMsg(msg string) {
-	p.downloadMsg = msg
+func (c *CacheModel) SetTranslatedChangelog(value string) {
+	c.translatedChangelog = value
 }

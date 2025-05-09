@@ -36,7 +36,6 @@ import (
 type Settings struct {
 	guigui.DefaultWidget
 
-	background           basicwidget.Background
 	form                 basicwidget.Form
 	localeText           basicwidget.Text
 	localeDropdownList   basicwidget.DropdownList[language.Tag]
@@ -60,9 +59,6 @@ func (s *Settings) SetModel(model *Model) {
 }
 
 func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	context.SetOpacity(&s.background, 0.7)
-	appender.AppendChildWidgetWithBounds(&s.background, context.Bounds(s))
-
 	s.localeText.SetValue(T("settings.locale"))
 	s.colorModeText.SetValue(T("settings.colormode"))
 	s.appScaleText.SetValue(T("settings.appscale"))
@@ -77,63 +73,74 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 	s.localeDropdownList.SetItems([]basicwidget.DropdownListItem[language.Tag]{
 		{
 			Text: "English",
-			Tag:  language.English,
+			ID:   language.English,
 		},
 		{
 			Text: "French",
-			Tag:  language.French,
+			ID:   language.French,
 		},
 		{
 			Text: "Japanese",
-			Tag:  language.Japanese,
+			ID:   language.Japanese,
 		},
 	})
 	s.localeDropdownList.SetOnItemSelected(func(index int) {
+		data := s.model.data.File()
 		item, ok := s.localeDropdownList.ItemByIndex(index)
 		if !ok {
-			s.dErr = s.model.data.SetLocale(context, language.English)
+			data.Locale = language.English.String()
+			s.dErr = s.model.data.SetData(context, data)
 			return
 		}
-		s.dErr = s.model.data.SetLocale(context, item.Tag)
+		data.Locale = item.ID.String()
+		s.dErr = s.model.data.SetData(context, data)
+		s.model.cache.SetIsTranslate(false)
+		s.model.cache.SetTranslatedChangelog("")
 	})
 
 	s.colorModeToggle.SetOnValueChanged(func(value bool) {
+		data := s.model.data.File()
 		if value {
-			s.dErr = s.model.data.SetColorMode(context, guigui.ColorModeDark)
+			data.ColorMode = guigui.ColorModeDark
+			s.dErr = s.model.data.SetData(context, data)
 		} else {
-			s.dErr = s.model.data.SetColorMode(context, guigui.ColorModeLight)
+			data.ColorMode = guigui.ColorModeLight
+			s.dErr = s.model.data.SetData(context, data)
 		}
 	})
 
 	s.appScaleDropdownList.SetItems([]basicwidget.DropdownListItem[int]{
 		{
 			Text: "50%",
-			Tag:  0,
+			ID:   0,
 		},
 		{
 			Text: "75%",
-			Tag:  1,
+			ID:   1,
 		},
 		{
 			Text: "100%",
-			Tag:  2,
+			ID:   2,
 		},
 		{
 			Text: "125%",
-			Tag:  3,
+			ID:   3,
 		},
 		{
 			Text: "150%",
-			Tag:  4,
+			ID:   4,
 		},
 	})
 	s.appScaleDropdownList.SetOnItemSelected(func(index int) {
+		data := s.model.data.File()
 		item, ok := s.appScaleDropdownList.ItemByIndex(index)
 		if !ok {
-			s.dErr = s.model.data.SetAppScale(context, 2)
+			data.AppScale = 2
+			s.dErr = s.model.data.SetData(context, data)
 			return
 		}
-		s.dErr = s.model.data.SetAppScale(context, item.Tag)
+		data.AppScale = item.ID
+		s.dErr = s.model.data.SetData(context, data)
 	})
 
 	s.openFolderButton.SetOnDown(func() {
@@ -144,11 +151,11 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 
 	s.clearDataButton.SetOnDown(func() {
 		s.colorModeToggle.SetValue(false)
-		s.localeDropdownList.SelectItemByTag(language.English)
-		s.appScaleDropdownList.SelectItemByTag(2)
+		s.localeDropdownList.SelectItemByID(language.English)
+		s.appScaleDropdownList.SelectItemByID(2)
 	})
 	s.clearCacheButton.SetOnDown(func() {
-		s.model.cache.repo = nil
+		//s.model.cache.repo = nil
 	})
 	s.resetButton.SetOnDown(func() {
 
@@ -160,13 +167,18 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		} else {
 			s.colorModeToggle.SetValue(false)
 		}
-		s.localeDropdownList.SelectItemByTag(s.model.data.locale)
-		s.appScaleDropdownList.SelectItemByTag(s.model.data.GetAppScale(context.AppScale()))
+		data := s.model.data.File()
+		locale, err := language.Parse(data.Locale)
+		if err != nil {
+			s.dErr = e.New(err, debug.DataError, debug.ErrDataLoad)
+		}
+		s.localeDropdownList.SelectItemByID(locale)
+		s.appScaleDropdownList.SelectItemByID(s.model.data.GetAppScale(context.AppScale()))
 	})
 
 	if s.dErr != nil {
-		aErr = s.dErr
-		return aErr.Err
+		gErr = s.dErr
+		return s.dErr.Err
 	}
 
 	s.form.SetItems([]*basicwidget.FormItem{

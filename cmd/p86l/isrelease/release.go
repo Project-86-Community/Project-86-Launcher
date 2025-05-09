@@ -1,3 +1,5 @@
+//go:build release
+
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
@@ -19,20 +21,38 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package p86l
+package isrelease
 
-import "time"
+import (
+	"os"
+	"p86l"
+	"p86l/internal/debug"
+	"p86l/internal/file"
 
-type RateLimitTracker struct {
-	remaining      int
-	resetTimestamp time.Time
-}
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+)
 
-func (r *RateLimitTracker) Update(remaining int, resetTimestamp time.Time) {
-	r.remaining = remaining
-	r.resetTimestamp = resetTimestamp
-}
+func Run2() {
+	e := &debug.Debug{}
+	a, dErr := file.NewFS(e)
+	if dErr != nil {
+		log.Error().Stack().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Send()
+	}
 
-func (r *RateLimitTracker) Valid() bool {
-	return r.remaining > 0 && time.Now().Before(r.resetTimestamp)
+	logFile, err := a.Root.Create("log.txt")
+	if err != nil {
+		log.Error().Stack().Int("Code", debug.ErrFSRootFileNew).Str("Type", string(debug.FSError)).Err((err)).Send()
+	}
+	defer func() {
+		err := logFile.Close()
+		if err != nil {
+			return
+		}
+	}()
+
+	multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
+	log.Logger = zerolog.New(multi).With().Timestamp().Logger()
+
+	p86l.TheDebugMode.Logs = true
 }

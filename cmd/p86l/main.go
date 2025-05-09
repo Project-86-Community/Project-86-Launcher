@@ -24,7 +24,7 @@ package main
 import (
 	"os"
 	"p86l"
-	"p86l/cmd/p86l/p86li"
+	"p86l/cmd/p86l/isrelease"
 	"p86l/configs"
 	"runtime"
 
@@ -38,7 +38,7 @@ func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 
-	p86li.Run()
+	isrelease.Run()
 
 	if !p86l.TheDebugMode.Logs {
 		zerolog.SetGlobalLevel(zerolog.Disabled)
@@ -53,8 +53,11 @@ func main() {
 		WindowMinSize: configs.AppWindowMinSize,
 	}
 	if err := guigui.Run(&p86l.Root{}, op); err != nil {
-		appErr := p86l.GetAppError()
-		log.Error().Stack().Int("Code", appErr.Code).Str("Type", string(appErr.Type)).Err((appErr.Err)).Msg("App crashed")
+		gErr := p86l.GetError()
+		if gErr != nil {
+			log.Error().Stack().Int("Code", gErr.Code).Str("Type", string(gErr.Type)).Err((gErr.Err)).Msg("p86l.GetError")
+		}
+		log.Error().Stack().Err(err).Msg("guigui.Run")
 		os.Exit(1)
 	}
 }

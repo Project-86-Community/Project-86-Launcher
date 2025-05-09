@@ -6,12 +6,9 @@ require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/Conight/go-googletrans v0.2.4
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
-	github.com/cavaliergopher/grab/v3 v3.0.1
-	github.com/davidbanham/human_duration/v3 v3.4.0
 	github.com/google/go-github/v71 v71.0.0
-	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250421152323-6badd1230d6a
-	github.com/hajimehoshi/guigui v0.0.0-20250506054111-68d4091ff914
-	github.com/hashicorp/go-version v1.7.0
+	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250508150639-20a2c2c0a3fb
+	github.com/hajimehoshi/guigui v0.0.0-20250508184107-ff41a136d9af
 	github.com/kisielk/errcheck v1.9.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
@@ -26,7 +23,7 @@ require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20250329061421-6d0a8e981e4c // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
-	github.com/ebitengine/purego v0.9.0-alpha.3 // indirect
+	github.com/ebitengine/purego v0.9.0-alpha.3.0.20250507171635-5047c08daa38 // indirect
 	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hajimehoshi/oklab v0.1.0 // indirect

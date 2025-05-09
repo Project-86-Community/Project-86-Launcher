@@ -32,27 +32,23 @@ import (
 type About struct {
 	guigui.DefaultWidget
 
-	background basicwidget.Background
-	leadImg    basicwidget.Image
-	devImg     basicwidget.Image
-	leadText   basicwidget.Text
-	devText    basicwidget.Text
-	infoText   basicwidget.Text
+	leadImg  basicwidget.Image
+	devImg   basicwidget.Image
+	leadText basicwidget.Text
+	devText  basicwidget.Text
+	infoText basicwidget.Text
 }
 
 func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	context.SetOpacity(&a.background, 0.7)
-	appender.AppendChildWidgetWithBounds(&a.background, context.Bounds(a))
-
 	img, dErr := assets.TheImageCache.Get(e, "lead")
 	if dErr != nil {
-		aErr = dErr
+		gErr = dErr
 		return dErr.Err
 	}
 	a.leadImg.SetImage(img)
 	img, dErr = assets.TheImageCache.Get(e, "dev")
 	if dErr != nil {
-		aErr = dErr
+		gErr = dErr
 		return dErr.Err
 	}
 	a.devImg.SetImage(img)

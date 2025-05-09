@@ -60,27 +60,26 @@ const (
 	ErrFSRootDirInvalid
 	ErrFSRootDirNew
 
+	ErrFSRootFileInvalid
 	ErrFSRootFileNew
-
 	ErrFSRootFileNotExist
+	ErrFSRootFileRead
+	ErrFSRootFileWrite
 
 	// Data errors (3001-3999)
-	ErrDataLocaleLoad int = iota + 3001
-	ErrDataLocaleSave
-	ErrDataLocaleReset
-
-	ErrDataColorModeLoad
-	ErrDataColorModeSave
-	ErrDataColorModeReset
-
-	ErrDataAppScaleLoad
-	ErrDataAppScaleSave
-	ErrDataAppScaleReset
+	ErrDataLoad int = iota + 3001
+	ErrDataSave
+	ErrDataReset
 
 	// Cache errors (4001-4999)
 	ErrCacheLoad int = iota + 4001
 	ErrCacheSave
 	ErrCacheReset
+
+	ErrCacheRepoInvalid
+	ErrCacheBodyInvalid
+	ErrCacheURLInvalid
+	ErrCacheAssetsInvalid
 
 	// // Internet errors (5001-5999)
 	// ErrRateLimit int = iota + 5001

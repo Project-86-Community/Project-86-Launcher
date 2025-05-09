@@ -25,7 +25,6 @@ import (
 	"p86l/configs"
 	"p86l/internal/debug"
 	"p86l/internal/file"
-	"path/filepath"
 	"testing"
 )
 
@@ -33,38 +32,37 @@ func setup(t *testing.T) (*debug.Debug, *file.AppFS) {
 	e := &debug.Debug{}
 	a, dErr := file.NewFS(e, "test")
 	if dErr != nil {
-		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
+		t.Fatalf("%#v", dErr)
 	}
 
 	return e, a
 }
 
-func TestDirs(t *testing.T) {
+func TestInit(t *testing.T) {
 	_, fs := setup(t)
 	t.Logf("%#v", fs)
 }
 
 func TestSaveFiles(t *testing.T) {
 	e, fs := setup(t)
-	dErr := fs.Save(e, configs.Data, configs.ColorModeFile, []byte("Lena"))
+	dErr := fs.Save(e, configs.DataFile, []byte("Lena"))
 	if dErr != nil {
-		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
+		t.Fatalf("%#v", dErr)
 	}
 }
 
 func TestLoadFiles(t *testing.T) {
 	e, fs := setup(t)
-	bytes, dErr := fs.Load(e, configs.Data, configs.ColorModeFile)
+	bytes, dErr := fs.Load(e, configs.DataFile)
 	if dErr != nil {
-		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
+		t.Fatalf("%#v", dErr)
 	}
-	t.Log(string(bytes))
+	t.Logf("Data: %s", string(bytes))
 }
 
-func TestStatAppDir(t *testing.T) {
+func TestStatFile(t *testing.T) {
 	e, fs := setup(t)
-	statPath := filepath.Join(fs.CompanyDirPath, configs.AppName, configs.Data, configs.ColorModeFile)
-	if dErr := fs.IsDir(e, statPath); dErr != nil {
-		t.Fatalf("Code: %d, Type: %s, Err: %v", dErr.Code, string(dErr.Type), dErr.Err)
+	if dErr := fs.Stat(e, configs.DataFile); dErr != nil {
+		t.Fatalf("%#v", dErr)
 	}
 }

@@ -1,3 +1,5 @@
+//go:build !release
+
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
@@ -19,38 +21,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package p86li
+package isrelease
 
 import (
 	"os"
 	"p86l"
-	"p86l/internal/debug"
-	"p86l/internal/file"
+	"strings"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-func Run2() {
-	e := &debug.Debug{}
-	a, dErr := file.NewFS(e)
-	if dErr != nil {
-		log.Error().Stack().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Send()
-	}
-
-	logFile, err := a.Root.Create("log.txt")
-	if err != nil {
-		log.Error().Stack().Int("Code", debug.ErrFSRootFileNew).Str("Type", string(debug.FSError)).Err((err)).Send()
-	}
-	defer func() {
-		err := logFile.Close()
-		if err != nil {
-			return
+func Run() {
+	for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
+		switch token {
+		case "logs":
+			log.Logger = log.Output(zerolog.ConsoleWriter{
+				Out:        os.Stderr,
+				TimeFormat: "2006/01/02 15:04:05",
+			})
+			p86l.TheDebugMode.Logs = true
 		}
-	}()
-
-	multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
-	log.Logger = zerolog.New(multi).With().Timestamp().Logger()
-
-	p86l.TheDebugMode.Logs = true
+	}
 }

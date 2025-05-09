@@ -34,12 +34,7 @@ var (
 	RepoOwner = "Taliayaya"
 	RepoName  = "Project-86"
 
-	Data          = "data"
-	LocaleFile    = "locale.data"
-	ColorModeFile = "colormode.data"
-	AppScaleFile  = "appscale.data"
-
-	Cache     = "cache"
+	DataFile  = "data.data"
 	CacheFile = "cache.data"
 
 	Website = "https://project-86-community.github.io/Project-86-Website/"

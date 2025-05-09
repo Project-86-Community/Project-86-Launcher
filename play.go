@@ -34,7 +34,6 @@ import (
 type Play struct {
 	guigui.DefaultWidget
 
-	background    basicwidget.Background
 	actionButton  basicwidget.TextButton
 	websiteButton basicwidget.TextButton
 	githubButton  basicwidget.TextButton
@@ -64,33 +63,30 @@ func (p *Play) Buttons() {
 }
 
 func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	context.SetOpacity(&p.background, 0.7)
-	appender.AppendChildWidgetWithBounds(&p.background, context.Bounds(p))
-
 	img, dErr := assets.TheImageCache.Get(e, "ie")
 	if dErr != nil {
-		aErr = dErr
+		gErr = dErr
 		return dErr.Err
 	}
 	p.websiteButton.SetIcon(img)
 
 	img, dErr = assets.TheImageCache.Get(e, "github")
 	if dErr != nil {
-		aErr = dErr
+		gErr = dErr
 		return dErr.Err
 	}
 	p.githubButton.SetIcon(img)
 
 	img, dErr = assets.TheImageCache.Get(e, "discord")
 	if dErr != nil {
-		aErr = dErr
+		gErr = dErr
 		return dErr.Err
 	}
 	p.discordButton.SetIcon(img)
 
 	img, dErr = assets.TheImageCache.Get(e, "patreon")
 	if dErr != nil {
-		aErr = dErr
+		gErr = dErr
 		return dErr.Err
 	}
 	p.patreonButton.SetIcon(img)

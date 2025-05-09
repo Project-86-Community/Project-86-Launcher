@@ -25,22 +25,36 @@ import (
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/layout"
-	"github.com/rs/zerolog/log"
-	"golang.org/x/text/language"
 )
 
 type Changelog struct {
 	guigui.DefaultWidget
 
-	background basicwidget.Background
-	infoText   basicwidget.Text
-	form       basicwidget.Form
-	gtlText    basicwidget.Text
-	gtlToggle  basicwidget.Toggle
-	urlButton  basicwidget.TextButton
+	infoText  basicwidget.Text
+	form      basicwidget.Form
+	gtlText   basicwidget.Text
+	gtlToggle basicwidget.Toggle
+	urlButton basicwidget.TextButton
 
-	isTranslate bool
-	model       *Model
+	model *Model
+}
+
+func (c *Changelog) IsChangelog() bool {
+	// if c.model.cache.repo != nil && c.model.cache.Repo().GetBody() != "" {
+	// 	return true
+	// }
+	// cache := c.model.cache.File()
+	// cache.Get(e)
+
+	return false
+}
+
+func (c *Changelog) IsTranslated() bool {
+	if c.model.cache.IsTranslate() && c.model.cache.TranslatedChangelog() != "" {
+		return true
+	}
+
+	return false
 }
 
 func (c *Changelog) SetModel(model *Model) {
@@ -48,44 +62,44 @@ func (c *Changelog) SetModel(model *Model) {
 }
 
 func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	context.SetOpacity(&c.background, 0.7)
-	appender.AppendChildWidgetWithBounds(&c.background, context.Bounds(c))
-
-	if c.model.cache.repo.GetBody() != "" {
-		if c.isTranslate && c.model.cache.translatedChangelog != "" {
-			c.infoText.SetValue(c.model.cache.translatedChangelog)
-		} else {
-			c.infoText.SetValue(c.model.cache.repo.GetBody())
-		}
-	} else {
-		c.infoText.SetValue("")
-	}
-	if c.model.cache.repo.GetHTMLURL() != "" {
-		context.SetEnabled(&c.urlButton, true)
-	} else {
-		context.SetEnabled(&c.urlButton, false)
-	}
-	if c.model.data.locale == language.English {
-		context.SetEnabled(&c.gtlToggle, false)
-		c.gtlToggle.SetValue(false)
-	} else {
-		context.SetEnabled(&c.gtlToggle, true)
-	}
+	// if c.IsChangelog() {
+	// 	if c.IsTranslated() {
+	// 		c.infoText.SetValue(c.model.cache.TranslatedChangelog())
+	// 	} else {
+	// 		c.infoText.SetValue(c.model.cache.Repo().GetBody())
+	// 	}
+	//
+	// 	if c.model.cache.repo.GetHTMLURL() != "" {
+	// 		context.SetEnabled(&c.urlButton, true)
+	// 	} else {
+	// 		context.SetEnabled(&c.urlButton, false)
+	// 	}
+	// } else {
+	// 	context.SetEnabled(&c.urlButton, false)
+	// 	c.infoText.SetValue("")
+	// }
+	//
+	// if c.model.data.Locale() == language.English || !c.model.cache.IsTranslate() {
+	// 	context.SetEnabled(&c.gtlToggle, false)
+	// 	c.gtlToggle.SetValue(false)
+	// } else {
+	// 	context.SetEnabled(&c.gtlToggle, true)
+	// }
 
 	c.gtlText.SetValue(T("changelog.gtl"))
 	c.gtlToggle.SetOnValueChanged(func(value bool) {
-		if value {
-			go func() {
-				result, err := t.Translate(c.model.cache.repo.GetBody(), "auto", c.model.data.locale.String())
-				if err != nil {
-					log.Error().Err(err).Msg("SetChangelog")
-					return
-				}
-				c.model.cache.translatedChangelog = result.Text
-				log.Info().Any("translate", result).Msg("changelog.gtlToggle")
-			}()
-		}
-		c.isTranslate = value
+		// if value {
+		// 	go func() {
+		// 		result, err := t.Translate(c.model.cache.repo.GetBody(), "auto", c.model.data.locale.String())
+		// 		if err != nil {
+		// 			log.Error().Err(err).Msg("SetChangelog")
+		// 			return
+		// 		}
+		// 		c.model.cache.SetTranslatedChangelog(result.Text)
+		// 		log.Info().Any("translate", result).Msg("changelog.gtlToggle")
+		// 	}()
+		// }
+		// c.model.cache.SetIsTranslate(value)
 	})
 
 	c.infoText.SetAutoWrap(true)
@@ -94,9 +108,9 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 
 	c.urlButton.SetText(T("changelog.open"))
 	c.urlButton.SetOnDown(func() {
-		if c.model.cache.repo.GetBody() != "" {
-			go OpenBrowser(c.model.cache.repo.GetBody())
-		}
+		// if c.IsChangelog() {
+		// 	go OpenBrowser(c.model.cache.repo.GetHTMLURL())
+		// }
 	})
 
 	c.form.SetItems([]*basicwidget.FormItem{
