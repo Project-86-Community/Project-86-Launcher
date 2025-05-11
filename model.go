@@ -60,6 +60,24 @@ func (d *DataModel) File() file.Data {
 	return d.dataFile
 }
 
+func (d *DataModel) SetLocale(context *guigui.Context, locale language.Tag) *debug.Error {
+	log.Info().Any("Locale", locale).Msg("Model.DataModel.SetLocale")
+	d.dataFile.Locale = locale.String()
+	return d.SetData(context, d.dataFile)
+}
+
+func (d *DataModel) SetAppScale(context *guigui.Context, scale int) *debug.Error {
+	log.Info().Any("Scale", scale).Msg("Model.DataModel.SetAppScale")
+	d.dataFile.AppScale = scale
+	return d.SetData(context, d.dataFile)
+}
+
+func (d *DataModel) SetColorMode(context *guigui.Context, mode guigui.ColorMode) *debug.Error {
+	log.Info().Any("Mode", mode).Msg("Model.DataModel.SetColorMode")
+	d.dataFile.ColorMode = mode
+	return d.SetData(context, d.dataFile)
+}
+
 func (d *DataModel) SetData(context *guigui.Context, dataFile file.Data) *debug.Error {
 	d.dataFile = dataFile
 

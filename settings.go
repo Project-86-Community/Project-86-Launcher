@@ -58,18 +58,13 @@ func (s *Settings) SetModel(model *Model) {
 	s.model = model
 }
 
-func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	s.localeText.SetValue(T("settings.locale"))
-	s.colorModeText.SetValue(T("settings.colormode"))
-	s.appScaleText.SetValue(T("settings.appscale"))
+func (s *Settings) assertErr(dErr *debug.Error) {
+	if dErr != nil {
+		s.dErr = dErr
+	}
+}
 
-	s.openFolderText.SetValue(T("settings.openfoldertext"))
-	s.openFolderButton.SetText(T("settings.openfolder"))
-
-	s.clearDataButton.SetText(T("settings.resetdata"))
-	s.clearCacheButton.SetText(T("settings.resetcache"))
-	s.resetButton.SetText(T("settings.reset"))
-
+func (s *Settings) buildLocale(context *guigui.Context) {
 	s.localeDropdownList.SetItems([]basicwidget.DropdownListItem[language.Tag]{
 		{
 			Text: "English",
@@ -85,30 +80,31 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		},
 	})
 	s.localeDropdownList.SetOnItemSelected(func(index int) {
-		data := s.model.data.File()
 		item, ok := s.localeDropdownList.ItemByIndex(index)
 		if !ok {
-			data.Locale = language.English.String()
-			s.dErr = s.model.data.SetData(context, data)
+			context.SetAppLocales(nil)
 			return
 		}
-		data.Locale = item.ID.String()
-		s.dErr = s.model.data.SetData(context, data)
-		s.model.cache.SetIsTranslate(false)
-		s.model.cache.SetTranslatedChangelog("")
-	})
-
-	s.colorModeToggle.SetOnValueChanged(func(value bool) {
-		data := s.model.data.File()
-		if value {
-			data.ColorMode = guigui.ColorModeDark
-			s.dErr = s.model.data.SetData(context, data)
-		} else {
-			data.ColorMode = guigui.ColorModeLight
-			s.dErr = s.model.data.SetData(context, data)
+		if item.ID == language.English {
+			s.assertErr(s.model.data.SetLocale(context, language.English))
+			context.SetAppLocales(nil)
+			return
 		}
+		s.assertErr(s.model.data.SetLocale(context, item.ID))
+		context.SetAppLocales([]language.Tag{item.ID})
+		//s.model.cache.SetIsTranslate(false)
+		//s.model.cache.SetTranslatedChangelog("")
 	})
+	if !s.localeDropdownList.IsPopupOpen() {
+		if locales := context.AppendAppLocales(nil); len(locales) > 0 {
+			s.localeDropdownList.SelectItemByID(locales[0])
+		} else {
+			s.localeDropdownList.SelectItemByID(language.English)
+		}
+	}
+}
 
+func (s *Settings) buildAppScale(context *guigui.Context) {
 	s.appScaleDropdownList.SetItems([]basicwidget.DropdownListItem[int]{
 		{
 			Text: "50%",
@@ -132,16 +128,50 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		},
 	})
 	s.appScaleDropdownList.SetOnItemSelected(func(index int) {
-		data := s.model.data.File()
 		item, ok := s.appScaleDropdownList.ItemByIndex(index)
 		if !ok {
-			data.AppScale = 2
-			s.dErr = s.model.data.SetData(context, data)
+			s.assertErr(s.model.data.SetAppScale(context, 2))
 			return
 		}
-		data.AppScale = item.ID
-		s.dErr = s.model.data.SetData(context, data)
+		s.assertErr(s.model.data.SetAppScale(context, item.ID))
 	})
+	s.appScaleDropdownList.SelectItemByID(s.model.data.File().AppScale)
+}
+
+func (s *Settings) buildColorMode(context *guigui.Context) {
+	s.colorModeToggle.SetOnValueChanged(func(value bool) {
+		if value {
+			s.assertErr(s.model.data.SetColorMode(context, guigui.ColorModeDark))
+		} else {
+			s.assertErr(s.model.data.SetColorMode(context, guigui.ColorModeLight))
+		}
+	})
+	switch context.ColorMode() {
+	case guigui.ColorModeLight:
+		s.colorModeToggle.SetValue(false)
+	case guigui.ColorModeDark:
+		s.colorModeToggle.SetValue(true)
+	default:
+		s.colorModeToggle.SetValue(false)
+	}
+}
+
+func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	s.localeText.SetValue(T("settings.locale"))
+	s.buildLocale(context)
+
+	s.appScaleText.SetValue(T("settings.appscale"))
+	s.buildAppScale(context)
+
+	s.colorModeText.SetValue(T("settings.colormode"))
+	s.buildColorMode(context)
+
+	s.openFolderText.SetValue(T("settings.openfoldertext"))
+	s.openFolderButton.SetText(T("settings.openfolder"))
+
+	s.clearDataButton.SetText(T("settings.resetdata"))
+	s.clearCacheButton.SetText(T("settings.resetcache"))
+	s.resetButton.SetText(T("settings.reset"))
 
 	s.openFolderButton.SetOnDown(func() {
 		if dErr := fs.OpenFileManager(e, filepath.Join(fs.CompanyDirPath, configs.AppName)); dErr != nil {
@@ -153,27 +183,6 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		s.colorModeToggle.SetValue(false)
 		s.localeDropdownList.SelectItemByID(language.English)
 		s.appScaleDropdownList.SelectItemByID(2)
-	})
-	s.clearCacheButton.SetOnDown(func() {
-		//s.model.cache.repo = nil
-	})
-	s.resetButton.SetOnDown(func() {
-
-	})
-
-	s.sync.Do(func() {
-		if context.ColorMode() == guigui.ColorModeDark {
-			s.colorModeToggle.SetValue(true)
-		} else {
-			s.colorModeToggle.SetValue(false)
-		}
-		data := s.model.data.File()
-		locale, err := language.Parse(data.Locale)
-		if err != nil {
-			s.dErr = e.New(err, debug.DataError, debug.ErrDataLoad)
-		}
-		s.localeDropdownList.SelectItemByID(locale)
-		s.appScaleDropdownList.SelectItemByID(s.model.data.GetAppScale(context.AppScale()))
 	})
 
 	if s.dErr != nil {
@@ -218,7 +227,7 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		Heights: []layout.Size{
 			layout.LazySize(func(row int) layout.Size {
 				if row >= 1 {
-					return layout.FixedSize(0)
+					return layout.FixedSize(1)
 				}
 				return layout.FixedSize(s.form.DefaultSize(context).Y)
 			}),

@@ -59,30 +59,28 @@ type Root struct {
 	dErr  *debug.Error
 }
 
-func (r *Root) RunApp() *debug.Error {
-	iconImages, dErr := assets.GetIconImages(e)
+func (r *Root) assertErr(dErr *debug.Error) {
 	if dErr != nil {
-		return dErr
+		r.dErr = dErr
 	}
+}
+
+func (r *Root) RunApp() {
+	iconImages, dErr := assets.GetIconImages(e)
+	r.assertErr(dErr)
 	ebiten.SetWindowIcon(iconImages)
 
 	afs, dErr := file.NewFS(e)
-	if dErr != nil {
-		return dErr
-	}
+	r.assertErr(dErr)
 	fs = afs
 
 	bundle, dErr := p86lLocale.GetLocales(e, language.English)
-	if dErr != nil {
-		return dErr
-	}
+	r.assertErr(dErr)
 	lBundle = bundle
 	lLocalizer = i18n.NewLocalizer(bundle, "en")
-
-	return nil
 }
 
-func (r *Root) LoadB(context *guigui.Context, loadType, loadFile string) *debug.Error {
+func (r *Root) LoadB(context *guigui.Context, loadType, loadFile string) {
 	// loadPath := filepath.Join(fs.DirAppPath(), loadDir, loadFile)
 	// if dErr := fs.IsDir(e, loadPath); dErr != nil {
 	// 	switch loadType {
@@ -115,34 +113,31 @@ func (r *Root) LoadB(context *guigui.Context, loadType, loadFile string) *debug.
 			dataFile.Locale = language.English.String()
 			dataFile.AppScale = 2
 			dataFile.ColorMode = guigui.ColorModeLight
-			return r.model.data.SetData(context, dataFile)
+			r.assertErr(r.model.data.SetData(context, dataFile))
+			return
 		}
 	} else {
 
 	}
 
 	b, dErr := fs.Load(e, loadFile)
-	if dErr != nil {
-		return dErr
-	}
+	r.assertErr(dErr)
 
 	if loadType == "data" {
 		var data file.Data
 		decoder := gob.NewDecoder(bytes.NewReader(b))
 		if err := decoder.Decode(&data); err != nil {
-			return e.New(err, debug.FSError, debug.ErrDataLoad)
+			r.assertErr(e.New(err, debug.FSError, debug.ErrDataLoad))
+			return
 		}
-		return r.model.data.SetData(context, data)
+		r.assertErr(r.model.data.SetData(context, data))
+		return
 	}
-
-	return nil
 }
 
 func (r *Root) Background(context *guigui.Context, appender *guigui.ChildWidgetAppender) *debug.Error {
 	img, dErr := assets.TheImageCache.Get(e, "banner")
-	if dErr != nil {
-		return dErr
-	}
+	r.assertErr(dErr)
 	r.bgImage.SetImage(img)
 	imgWidth := img.Bounds().Dx()
 	imgHeight := img.Bounds().Dy()
@@ -171,10 +166,13 @@ func (r *Root) Background(context *guigui.Context, appender *guigui.ChildWidgetA
 
 func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	r.sync.Do(func() {
-		r.dErr = r.RunApp()
-		r.dErr = r.LoadB(context, "data", configs.DataFile)
+		r.RunApp()
+		r.LoadB(context, "data", configs.DataFile)
 		//r.dErr = r.LoadB(context, "cache", configs.CacheFile)
 	})
+
+	dErr := r.Background(context, appender)
+	r.assertErr(dErr)
 
 	if r.dErr != nil {
 		gErr = r.dErr
@@ -192,12 +190,6 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		}
 	}
 	basicwidget.SetFaceSources(faceSources)
-
-	dErr := r.Background(context, appender)
-	if dErr != nil {
-		gErr = dErr
-		return dErr.Err
-	}
 
 	r.sidebar.SetModel(&r.model)
 	r.play.SetModel(&r.model)
