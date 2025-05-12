@@ -36,18 +36,18 @@ import (
 type Settings struct {
 	guigui.DefaultWidget
 
-	form                 basicwidget.Form
-	localeText           basicwidget.Text
-	localeDropdownList   basicwidget.DropdownList[language.Tag]
-	colorModeText        basicwidget.Text
-	colorModeToggle      basicwidget.Toggle
-	appScaleText         basicwidget.Text
-	appScaleDropdownList basicwidget.DropdownList[int]
-	openFolderText       basicwidget.Text
-	openFolderButton     basicwidget.TextButton
-	clearDataButton      basicwidget.TextButton
-	clearCacheButton     basicwidget.TextButton
-	resetButton          basicwidget.TextButton
+	form                  basicwidget.Form
+	localeText            basicwidget.Text
+	localeDropdownList    basicwidget.DropdownList[language.Tag]
+	colorModeText         basicwidget.Text
+	colorModeToggle       basicwidget.Toggle
+	scaleText             basicwidget.Text
+	scaleSegmentedControl basicwidget.SegmentedControl[int]
+	openFolderText        basicwidget.Text
+	openFolderButton      basicwidget.TextButton
+	clearDataButton       basicwidget.TextButton
+	clearCacheButton      basicwidget.TextButton
+	resetButton           basicwidget.TextButton
 
 	sync  sync.Once
 	model *Model
@@ -105,7 +105,7 @@ func (s *Settings) buildLocale(context *guigui.Context) {
 }
 
 func (s *Settings) buildAppScale(context *guigui.Context) {
-	s.appScaleDropdownList.SetItems([]basicwidget.DropdownListItem[int]{
+	s.scaleSegmentedControl.SetItems([]basicwidget.SegmentedControlItem[int]{
 		{
 			Text: "50%",
 			ID:   0,
@@ -127,15 +127,15 @@ func (s *Settings) buildAppScale(context *guigui.Context) {
 			ID:   4,
 		},
 	})
-	s.appScaleDropdownList.SetOnItemSelected(func(index int) {
-		item, ok := s.appScaleDropdownList.ItemByIndex(index)
+	s.scaleSegmentedControl.SetOnItemSelected(func(index int) {
+		item, ok := s.scaleSegmentedControl.ItemByIndex(index)
 		if !ok {
 			s.assertErr(s.model.data.SetAppScale(context, 2))
 			return
 		}
 		s.assertErr(s.model.data.SetAppScale(context, item.ID))
 	})
-	s.appScaleDropdownList.SelectItemByID(s.model.data.File().AppScale)
+	s.scaleSegmentedControl.SelectItemByID(s.model.data.File().AppScale)
 }
 
 func (s *Settings) buildColorMode(context *guigui.Context) {
@@ -160,7 +160,7 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 	s.localeText.SetValue(T("settings.locale"))
 	s.buildLocale(context)
 
-	s.appScaleText.SetValue(T("settings.appscale"))
+	s.scaleText.SetValue(T("settings.appscale"))
 	s.buildAppScale(context)
 
 	s.colorModeText.SetValue(T("settings.colormode"))
@@ -182,7 +182,7 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 	s.clearDataButton.SetOnDown(func() {
 		s.colorModeToggle.SetValue(false)
 		s.localeDropdownList.SelectItemByID(language.English)
-		s.appScaleDropdownList.SelectItemByID(2)
+		s.scaleSegmentedControl.SelectItemByID(2)
 	})
 
 	if s.dErr != nil {
@@ -200,8 +200,8 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 			SecondaryWidget: &s.colorModeToggle,
 		},
 		{
-			PrimaryWidget:   &s.appScaleText,
-			SecondaryWidget: &s.appScaleDropdownList,
+			PrimaryWidget:   &s.scaleText,
+			SecondaryWidget: &s.scaleSegmentedControl,
 		},
 		{
 			PrimaryWidget:   &s.openFolderText,
