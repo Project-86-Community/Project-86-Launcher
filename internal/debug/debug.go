@@ -82,7 +82,14 @@ const (
 	ErrCacheAssetsInvalid
 
 	// // Internet errors (5001-5999)
-	// ErrRateLimit int = iota + 5001
+	ErrInternetRateLimitInvalid int = iota + 5001
+
+	ErrInternetRequestInvalid
+	ErrInternetRequestNew
+	ErrInternetRequestClose
+
+	ErrInternetCacheInvalid
+
 	// ErrConnection
 	// ErrStatusCode
 	// ErrNewRequest
@@ -90,10 +97,9 @@ const (
 )
 
 type Error struct {
-	Err     error
-	Type    ErrorType
-	Code    int
-	Message string
+	Err  error
+	Type ErrorType
+	Code int
 }
 
 type Debug struct {
@@ -101,20 +107,12 @@ type Debug struct {
 	PopupErr *Error
 }
 
-func (d *Debug) New(err error, errType ErrorType, code int, message ...string) *Error {
+func (d *Debug) New(err error, errType ErrorType, code int) *Error {
 	if err != nil {
 		return &Error{
 			Err:  errors.Wrap(err, "Debug"),
 			Type: errType,
 			Code: code,
-		}
-	}
-	if len(message) > 0 {
-		return &Error{
-			Err:     nil,
-			Type:    errType,
-			Code:    code,
-			Message: message[0],
 		}
 	}
 	return &Error{

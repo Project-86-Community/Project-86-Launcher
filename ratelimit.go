@@ -19,30 +19,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package configs
+package p86l
 
-import "image"
+import "time"
 
-var AppWindowMinSize = image.Pt(600, 300)
+type RateLimit struct {
+	remaining      int
+	resetTimestamp time.Time
+}
 
-const (
-	InternetServer = "https://clients3.google.com/generate_204"
+func (r *RateLimit) Valid() bool {
+	return r.remaining > 0 && time.Now().Before(r.resetTimestamp)
+}
 
-	CompanyName = "Project-86-Community"
-	AppName     = "Project-86-Launcher"
-	AppTitle    = "Project 86 Launcher"
-
-	RepoOwner = "Taliayaya"
-	RepoName  = "Project-86"
-
-	LoadTypeData  = "data"
-	LoadTypeCache = "cache"
-
-	DataFile  = "data.data"
-	CacheFile = "cache.data"
-
-	Website = "https://project-86-community.github.io/Project-86-Website/"
-	Github  = "https://github.com/Taliayaya/Project-86"
-	Discord = "https://discord.gg/A8Fr6yEsUn"
-	Patreon = "https://www.patreon.com/project86"
-)
+func (r *RateLimit) Update(remaining int, resetTimestamp time.Time) {
+	r.remaining = remaining
+	r.resetTimestamp = resetTimestamp
+}

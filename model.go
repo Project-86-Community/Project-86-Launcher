@@ -27,7 +27,9 @@ import (
 	"p86l/configs"
 	"p86l/internal/debug"
 	"p86l/internal/file"
+	"sync"
 
+	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/guigui"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/text/language"
@@ -35,6 +37,9 @@ import (
 
 type Model struct {
 	mode string
+
+	networkState NetworkState
+	rateLimit    RateLimit
 
 	data  DataModel
 	cache CacheModel
@@ -50,6 +55,32 @@ func (m *Model) Mode() string {
 func (m *Model) SetMode(mode string) {
 	log.Info().Str("Page", mode).Msg("Sidebar")
 	m.mode = mode
+}
+
+type NetworkState struct {
+	netMutex           sync.Mutex
+	internetAvailable  bool
+	githubRateLimit    *github.RateLimits
+	lastCheckTick      int64
+	checkingInProgress bool
+}
+
+func (n *NetworkState) InternetAvailable() bool {
+	n.netMutex.Lock()
+	defer n.netMutex.Unlock()
+	return n.internetAvailable
+}
+
+func (n *NetworkState) GitHubRateLimit() *github.RateLimits {
+	n.netMutex.Lock()
+	defer n.netMutex.Unlock()
+	return n.githubRateLimit
+}
+
+func (n *NetworkState) LastCheckTick() int64 {
+	n.netMutex.Lock()
+	defer n.netMutex.Unlock()
+	return n.lastCheckTick
 }
 
 type DataModel struct {

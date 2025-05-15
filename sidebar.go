@@ -22,6 +22,8 @@
 package p86l
 
 import (
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 )
@@ -38,7 +40,7 @@ func (s *Sidebar) SetModel(model *Model) {
 }
 
 func (s *Sidebar) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	context.SetOpacity(&s.sidebar, 0.7)
+	context.SetOpacity(&s.sidebar, 0.9)
 	context.SetSize(&s.sidebarContent, context.Size(s))
 	s.sidebar.SetContent(&s.sidebarContent)
 
@@ -100,4 +102,34 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 	appender.AppendChildWidgetWithBounds(&s.list, context.Bounds(s))
 
 	return nil
+}
+
+func (s *sidebarContent) HandleButtonInput(context *guigui.Context) guigui.HandleInputResult {
+	currentIndex := s.list.SelectedItemIndex()
+	itemsCount := s.list.ItemsCount()
+
+	if currentIndex >= 0 && currentIndex < itemsCount {
+		switch {
+		case inpututil.IsKeyJustPressed(ebiten.KeyArrowUp):
+			newIndex := currentIndex - 1
+			if newIndex >= 0 {
+				s.list.SelectItemByIndex(newIndex)
+				if item, ok := s.list.ItemByIndex(newIndex); ok && item.ID != s.model.Mode() {
+					s.model.SetMode(item.ID)
+				}
+				return guigui.HandleInputByWidget(s)
+			}
+		case inpututil.IsKeyJustPressed(ebiten.KeyArrowDown):
+			newIndex := currentIndex + 1
+			if newIndex < itemsCount {
+				s.list.SelectItemByIndex(newIndex)
+				if item, ok := s.list.ItemByIndex(newIndex); ok && item.ID != s.model.Mode() {
+					s.model.SetMode(item.ID)
+				}
+				return guigui.HandleInputByWidget(s)
+			}
+		}
+	}
+
+	return guigui.HandleInputResult{}
 }

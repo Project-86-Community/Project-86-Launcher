@@ -61,17 +61,24 @@ type Cache struct {
 }
 
 func (c *Cache) Validate(appDebug *debug.Debug) *debug.Error {
+	if c == nil {
+		return appDebug.New(errors.New("cache is nil"), debug.CacheError, debug.ErrCacheRepoInvalid)
+	}
+
 	if c.Repo == nil {
-		if c.Repo.GetBody() == "" {
-			if c.Repo.GetHTMLURL() == "" {
-				if c.Repo.Assets == nil {
-					return appDebug.New(errors.New("Assets is empty"), debug.CacheError, debug.ErrCacheAssetsInvalid)
-				}
-				return appDebug.New(errors.New("URL is empty"), debug.CacheError, debug.ErrCacheURLInvalid)
-			}
-			return appDebug.New(errors.New("Body is empty"), debug.CacheError, debug.ErrCacheBodyInvalid)
-		}
-		return appDebug.New(errors.New("Repo is empty"), debug.CacheError, debug.ErrCacheRepoInvalid)
+		return appDebug.New(errors.New("repo is nil"), debug.CacheError, debug.ErrCacheRepoInvalid)
+	}
+
+	if c.Repo.GetBody() == "" {
+		return appDebug.New(errors.New("body is empty"), debug.CacheError, debug.ErrCacheBodyInvalid)
+	}
+
+	if c.Repo.GetHTMLURL() == "" {
+		return appDebug.New(errors.New("URL is empty"), debug.CacheError, debug.ErrCacheURLInvalid)
+	}
+
+	if c.Repo.Assets == nil || len(c.Repo.Assets) == 0 {
+		return appDebug.New(errors.New("assets are empty"), debug.CacheError, debug.ErrCacheAssetsInvalid)
 	}
 
 	return nil

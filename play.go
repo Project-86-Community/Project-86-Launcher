@@ -91,6 +91,12 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	}
 	p.patreonButton.SetIcon(img)
 
+	if p.model.networkState.InternetAvailable() {
+		p.actionButton.SetText(T("play.install"))
+	} else {
+		p.actionButton.SetText(T("play.nointernet"))
+	}
+
 	// if p.model.isInternet && p.model.cache.repo != nil {
 	// 	if !p.model.play.downloading {
 	// 		if dErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, "game.zip")); dErr.Err != nil {

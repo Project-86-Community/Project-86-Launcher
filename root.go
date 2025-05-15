@@ -23,22 +23,28 @@ package p86l
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
+	"fmt"
 	"image"
+	"net/http"
 	"p86l/assets"
 	p86lLocale "p86l/assets/locale"
 	"p86l/configs"
 	"p86l/internal/debug"
 	"p86l/internal/file"
+	"slices"
 	"sync"
+	"time"
 
+	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/basicwidget/cjkfont"
 	"github.com/hajimehoshi/guigui/layout"
 	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/text/language"
 )
 
@@ -48,96 +54,144 @@ type Root struct {
 	background basicwidget.Background
 	border     basicwidget.Background
 	bgImage    basicwidget.Image
+	infoBg     basicwidget.Background
+	infoText   basicwidget.Text
 	sidebar    Sidebar
 	play       Play
 	changelog  Changelog
 	settings   Settings
 	about      About
 
-	sync  sync.Once
 	model Model
-	dErr  *debug.Error
+
+	locales           []language.Tag
+	faceSourceEntries []basicwidget.FaceSourceEntry
+
+	sync sync.Once
+	dErr *debug.Error
 }
 
+// Reduce repeating `if (err) != nil` statements
 func (r *Root) assertErr(dErr *debug.Error) {
 	if dErr != nil {
+		log.Error().Interface("dErr", dErr).Msg("Root.assertErr")
 		r.dErr = dErr
 	}
 }
 
-func (r *Root) RunApp() {
+func (r *Root) checkInternet(ctx context.Context) bool {
+	req, err := http.NewRequestWithContext(ctx, "HEAD", configs.InternetServer, nil)
+	if err != nil {
+		return false
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false
+	}
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Warn().AnErr("Internet, resp.Body.Close()", err).Msg("Root.checkInternet")
+		}
+	}()
+
+	return resp.StatusCode == 204
+}
+
+func (r *Root) checkGitHubRateLimit(ctx context.Context) *github.RateLimits {
+	limits, _, err := githubClient.RateLimit.Get(ctx)
+	if err != nil {
+		return nil
+	}
+	return limits
+}
+
+func (r *Root) runApp() *debug.Error {
 	iconImages, dErr := assets.GetIconImages(e)
-	r.assertErr(dErr)
+	if dErr != nil {
+		return dErr
+	}
 	ebiten.SetWindowIcon(iconImages)
 
 	afs, dErr := file.NewFS(e)
-	r.assertErr(dErr)
+	if dErr != nil {
+		return dErr
+	}
 	fs = afs
 
 	bundle, dErr := p86lLocale.GetLocales(e, language.English)
-	r.assertErr(dErr)
+	if dErr != nil {
+		return dErr
+	}
 	lBundle = bundle
 	lLocalizer = i18n.NewLocalizer(bundle, "en")
+
+	return nil
 }
 
-func (r *Root) LoadB(context *guigui.Context, loadType, loadFile string) {
-	// loadPath := filepath.Join(fs.DirAppPath(), loadDir, loadFile)
-	// if dErr := fs.IsDir(e, loadPath); dErr != nil {
-	// 	switch loadType {
-	// 	case "locale":
-	// 		return r.model.data.SetLocale(context, language.English)
-	// 	case "appscale":
-	// 		return r.model.data.SetColorMode(context, guigui.ColorModeLight)
-	// 	case "colormode":
-	// 		return r.model.data.SetAppScale(context, 2)
-	// 	}
-	// } else {
-	// 	if loadDir == "cache" {
-	// 		log.Info().Str("Cache", "cache found, loading cache...").Msg("Root.Init")
-	// 		b, dErr := fs.Load(e, configs.Cache, configs.CacheFile)
-	// 		if dErr != nil {
-	// 			return dErr
-	// 		}
-	// 		var cache CacheT
-	// 		decoder := gob.NewDecoder(bytes.NewReader(b))
-	// 		if err := decoder.Decode(&cache); err != nil {
-	// 			return e.New(err, debug.FSError, debug.ErrCacheLoad)
-	// 		}
-	// 		return r.model.cache.SetCache(cache)
-	// 	}
-	// }
-
+func (r *Root) loadB(context *guigui.Context, loadType, loadFile string) {
 	if dErr := fs.Stat(e, loadFile); dErr != nil {
-		if loadType == "data" {
+		switch loadType {
+		case "data":
+			log.Info().Str("Data", "data not found, creating data...").Msg("Root.LoadB")
 			var dataFile file.Data
 			dataFile.Locale = language.English.String()
 			dataFile.AppScale = 2
 			dataFile.ColorMode = guigui.ColorModeLight
 			r.assertErr(r.model.data.SetData(context, dataFile))
 			return
+		case "cache":
+			log.Info().Str("Cache", "cache not found").Msg("Root.LoadB")
+			return
 		}
-	} else {
-
 	}
 
 	b, dErr := fs.Load(e, loadFile)
 	r.assertErr(dErr)
+	if dErr != nil {
+		return
+	}
+	decoder := gob.NewDecoder(bytes.NewReader(b))
 
-	if loadType == "data" {
-		var data file.Data
-		decoder := gob.NewDecoder(bytes.NewReader(b))
-		if err := decoder.Decode(&data); err != nil {
+	switch loadType {
+	case "data":
+		log.Info().Str("Data", "data found, loading data...").Msg("Root.LoadB")
+		var dataFile file.Data
+
+		if err := decoder.Decode(&dataFile); err != nil {
 			r.assertErr(e.New(err, debug.FSError, debug.ErrDataLoad))
 			return
 		}
-		r.assertErr(r.model.data.SetData(context, data))
+
+		r.assertErr(r.model.data.SetData(context, dataFile))
+		return
+	case "cache":
+		log.Info().Str("Cache", "cache found, loading cache...").Msg("Root.LoadB")
+		var cacheFile file.Cache
+
+		if err := decoder.Decode(&cacheFile); err != nil {
+			r.assertErr(e.New(err, debug.FSError, debug.ErrCacheLoad))
+			return
+		}
+
+		dErr := cacheFile.Validate(e)
+		if dErr != nil {
+			r.assertErr(dErr)
+			return
+		}
+
+		r.assertErr(r.model.cache.SetCache(cacheFile))
 		return
 	}
 }
 
-func (r *Root) Background(context *guigui.Context, appender *guigui.ChildWidgetAppender) *debug.Error {
+func (r *Root) backgroundImg(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	img, dErr := assets.TheImageCache.Get(e, "banner")
 	r.assertErr(dErr)
+	if dErr != nil {
+		return
+	}
 	r.bgImage.SetImage(img)
 	imgWidth := img.Bounds().Dx()
 	imgHeight := img.Bounds().Dy()
@@ -160,41 +214,37 @@ func (r *Root) Background(context *guigui.Context, appender *guigui.ChildWidgetA
 		yOffset = -(newHeight - windowSize.Y) / 2
 	}
 	appender.AppendChildWidgetWithPosition(&r.bgImage, image.Pt(00, yOffset))
+}
 
-	return nil
+func (r *Root) updateFontFaceSources(context *guigui.Context) {
+	r.locales = slices.Delete(r.locales, 0, len(r.locales))
+	r.locales = context.AppendLocales(r.locales)
+
+	r.faceSourceEntries = slices.Delete(r.faceSourceEntries, 0, len(r.faceSourceEntries))
+	r.faceSourceEntries = cjkfont.AppendRecommendedFaceSourceEntries(r.faceSourceEntries, r.locales)
+	basicwidget.SetFaceSources(r.faceSourceEntries)
+
 }
 
 func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	r.sync.Do(func() {
-		r.RunApp()
-		r.LoadB(context, "data", configs.DataFile)
-		//r.dErr = r.LoadB(context, "cache", configs.CacheFile)
+		r.dErr = r.runApp()
+		r.loadB(context, "data", configs.DataFile)
+		r.loadB(context, "cache", configs.CacheFile)
 	})
-
-	dErr := r.Background(context, appender)
-	r.assertErr(dErr)
 
 	if r.dErr != nil {
 		gErr = r.dErr
 		return r.dErr.Err
 	}
 
-	faceSources := []*text.GoTextFaceSource{
-		basicwidget.DefaultFaceSource(),
-	}
-	for _, locale := range context.AppendLocales(nil) {
-		fs := cjkfont.FaceSourceFromLocale(locale)
-		if fs != nil {
-			faceSources = append(faceSources, fs)
-			break
-		}
-	}
-	basicwidget.SetFaceSources(faceSources)
-
 	r.sidebar.SetModel(&r.model)
 	r.play.SetModel(&r.model)
 	r.changelog.SetModel(&r.model)
 	r.settings.SetModel(&r.model)
+
+	r.updateFontFaceSources(context)
+	r.backgroundImg(context, appender)
 
 	gl := layout.GridLayout{
 		Bounds: context.Bounds(r),
@@ -206,7 +256,7 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	appender.AppendChildWidgetWithBounds(&r.sidebar, gl.CellBounds(0, 0))
 	bounds := gl.CellBounds(1, 0)
 
-	context.SetOpacity(&r.background, 0.6)
+	context.SetOpacity(&r.background, 0.9)
 	context.SetOpacity(&r.border, 0.5)
 
 	borderBounds := context.Bounds(r)
@@ -227,6 +277,79 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		appender.AppendChildWidgetWithBounds(&r.settings, gl.CellBounds(1, 0))
 	case "about":
 		appender.AppendChildWidgetWithBounds(&r.about, gl.CellBounds(1, 0))
+	}
+
+	{
+		status := "No connection"
+		if r.model.networkState.InternetAvailable() {
+			status = "Connected"
+		}
+
+		remaining := 0
+		resetTime := ""
+		if r.model.networkState.GitHubRateLimit() != nil {
+			remaining = r.model.networkState.GitHubRateLimit().Core.Remaining
+			resetTime = r.model.networkState.GitHubRateLimit().Core.Reset.Time.Format(time.DateTime)
+		}
+
+		if remaining == 60 {
+			r.infoText.SetValue(fmt.Sprintf("Internet: %s, API: %d/60", status, remaining))
+		} else {
+			r.infoText.SetValue(fmt.Sprintf("Internet: %s, API: %d/60 (reset until %s)", status, remaining, resetTime))
+		}
+
+		windowSize := context.Bounds(r).Size()
+		textSize := context.Size(&r.infoText)
+
+		bgWidth := textSize.X
+		bgHeight := textSize.Y
+		bgPos := image.Pt(
+			windowSize.X-bgWidth,
+			windowSize.Y-bgHeight,
+		)
+		textPos := image.Pt(
+			bgPos.X,
+			bgPos.Y,
+		)
+
+		appender.AppendChildWidgetWithBounds(&r.infoBg, image.Rect(
+			bgPos.X,
+			bgPos.Y,
+			bgPos.X+bgWidth,
+			bgPos.Y+bgHeight,
+		))
+		appender.AppendChildWidgetWithPosition(&r.infoText, textPos)
+	}
+
+	return nil
+}
+
+func (r *Root) Tick(_context *guigui.Context) error {
+	r.model.networkState.netMutex.Lock()
+	defer r.model.networkState.netMutex.Unlock()
+
+	if ebiten.Tick()-r.model.networkState.lastCheckTick >= int64(ebiten.TPS()) && !r.model.networkState.checkingInProgress {
+		r.model.networkState.checkingInProgress = true
+		r.model.networkState.lastCheckTick = ebiten.Tick()
+
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			available := r.checkInternet(ctx)
+			defer cancel()
+
+			var limits *github.RateLimits
+			if available {
+				ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+				limits = r.checkGitHubRateLimit(ctx)
+				cancel()
+			}
+
+			r.model.networkState.netMutex.Lock()
+			defer r.model.networkState.netMutex.Unlock()
+			r.model.networkState.internetAvailable = available
+			r.model.networkState.githubRateLimit = limits
+			r.model.networkState.checkingInProgress = false
+		}()
 	}
 
 	return nil

@@ -190,7 +190,7 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		return s.dErr.Err
 	}
 
-	s.form.SetItems([]*basicwidget.FormItem{
+	s.form.SetItems([]basicwidget.FormItem{
 		{
 			PrimaryWidget:   &s.localeText,
 			SecondaryWidget: &s.localeDropdownList,

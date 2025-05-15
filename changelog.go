@@ -113,7 +113,7 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 		// }
 	})
 
-	c.form.SetItems([]*basicwidget.FormItem{
+	c.form.SetItems([]basicwidget.FormItem{
 		{
 			PrimaryWidget:   &c.gtlText,
 			SecondaryWidget: &c.gtlToggle,
