@@ -177,13 +177,12 @@ func (d *DataModel) GetAppScaleF(scale int) float64 {
 }
 
 type CacheModel struct {
-	cacheFile file.Cache
-
+	cacheFile           *file.Cache
 	isTranslate         bool
 	translatedChangelog string
 }
 
-func (c *CacheModel) File() file.Cache {
+func (c *CacheModel) File() *file.Cache {
 	return c.cacheFile
 }
 
@@ -195,7 +194,7 @@ func (c *CacheModel) TranslatedChangelog() string {
 	return c.translatedChangelog
 }
 
-func (c *CacheModel) SetCache(cacheFile file.Cache) *debug.Error {
+func (c *CacheModel) SetCache(cacheFile *file.Cache) *debug.Error {
 	log.Info().Any("CacheModel.cache", cacheFile).Msg("SetCache")
 	c.cacheFile = cacheFile
 
@@ -211,12 +210,4 @@ func (c *CacheModel) SetCache(cacheFile file.Cache) *debug.Error {
 	}
 
 	return nil
-}
-
-func (c *CacheModel) SetIsTranslate(value bool) {
-	c.isTranslate = value
-}
-
-func (c *CacheModel) SetTranslatedChangelog(value string) {
-	c.translatedChangelog = value
 }

@@ -24,6 +24,7 @@ package p86l
 import (
 	"p86l/configs"
 	"p86l/internal/debug"
+	"p86l/internal/file"
 	"path/filepath"
 	"sync"
 
@@ -92,8 +93,8 @@ func (s *Settings) buildLocale(context *guigui.Context) {
 		}
 		s.assertErr(s.model.data.SetLocale(context, item.ID))
 		context.SetAppLocales([]language.Tag{item.ID})
-		//s.model.cache.SetIsTranslate(false)
-		//s.model.cache.SetTranslatedChangelog("")
+		s.model.cache.isTranslate = false
+		s.model.cache.translatedChangelog = ""
 	})
 	if !s.localeDropdownList.IsPopupOpen() {
 		if locales := context.AppendAppLocales(nil); len(locales) > 0 {
@@ -183,6 +184,12 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		s.colorModeToggle.SetValue(false)
 		s.localeDropdownList.SelectItemByID(language.English)
 		s.scaleSegmentedControl.SelectItemByID(2)
+	})
+	s.clearCacheButton.SetOnDown(func() {
+		s.model.cache.isTranslate = false
+		s.model.cache.translatedChangelog = ""
+		var cacheFile file.Cache
+		s.model.cache.SetCache(&cacheFile)
 	})
 
 	if s.dErr != nil {

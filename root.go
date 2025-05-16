@@ -107,6 +107,14 @@ func (r *Root) checkGitHubRateLimit(ctx context.Context) *github.RateLimits {
 	return limits
 }
 
+func (r *Root) fetchCache() *github.RepositoryRelease {
+	release, _, err := githubClient.Repositories.GetLatestRelease(ctx, configs.RepoOwner, configs.RepoName)
+	if err != nil {
+		return nil
+	}
+	return release
+}
+
 func (r *Root) runApp() *debug.Error {
 	iconImages, dErr := assets.GetIconImages(e)
 	if dErr != nil {
@@ -175,13 +183,15 @@ func (r *Root) loadB(context *guigui.Context, loadType, loadFile string) {
 			return
 		}
 
-		dErr := cacheFile.Validate(e)
-		if dErr != nil {
-			r.assertErr(dErr)
-			return
+		if cacheFile.Repo != nil {
+			dErr := cacheFile.Validate(e)
+			if dErr != nil {
+				r.assertErr(dErr)
+				return
+			}
 		}
 
-		r.assertErr(r.model.cache.SetCache(cacheFile))
+		r.assertErr(r.model.cache.SetCache(&cacheFile))
 		return
 	}
 }
@@ -292,7 +302,7 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 			resetTime = r.model.networkState.GitHubRateLimit().Core.Reset.Time.Format(time.DateTime)
 		}
 
-		if remaining == 60 {
+		if remaining == 60 || !r.model.networkState.InternetAvailable() {
 			r.infoText.SetValue(fmt.Sprintf("Internet: %s, API: %d/60", status, remaining))
 		} else {
 			r.infoText.SetValue(fmt.Sprintf("Internet: %s, API: %d/60 (reset until %s)", status, remaining, resetTime))
@@ -342,6 +352,18 @@ func (r *Root) Tick(_context *guigui.Context) error {
 				ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
 				limits = r.checkGitHubRateLimit(ctx)
 				cancel()
+
+				dErr := fs.Stat(e, configs.CacheFile)
+				if (dErr != nil && dErr.Code == debug.ErrFSRootFileNotExist || r.model.cache.File() == nil) || (r.model.cache.File() != nil && r.model.cache.File().Repo == nil) {
+					releases := r.fetchCache()
+					if releases != nil {
+						var cacheFile file.Cache
+						cacheFile.Repo = releases
+						cacheFile.Timestamp = time.Now()
+						cacheFile.ExpiresIn = time.Hour
+						r.model.cache.SetCache(&cacheFile)
+					}
+				}
 			}
 
 			r.model.networkState.netMutex.Lock()

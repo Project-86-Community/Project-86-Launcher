@@ -93,8 +93,18 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 
 	if p.model.networkState.InternetAvailable() {
 		p.actionButton.SetText(T("play.install"))
+
+		context.SetEnabled(&p.websiteButton, true)
+		context.SetEnabled(&p.githubButton, true)
+		context.SetEnabled(&p.discordButton, true)
+		context.SetEnabled(&p.patreonButton, true)
 	} else {
 		p.actionButton.SetText(T("play.nointernet"))
+
+		context.SetEnabled(&p.websiteButton, false)
+		context.SetEnabled(&p.githubButton, false)
+		context.SetEnabled(&p.discordButton, false)
+		context.SetEnabled(&p.patreonButton, false)
 	}
 
 	// if p.model.isInternet && p.model.cache.repo != nil {
