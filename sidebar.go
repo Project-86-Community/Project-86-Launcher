@@ -104,6 +104,33 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 	return nil
 }
 
+func (s *sidebarContent) HandlePointingInput(context *guigui.Context) guigui.HandleInputResult {
+	_, dy := ebiten.Wheel()
+
+	if context.IsFocusedOrHasFocusedChild(s) {
+		currentIndex := s.list.SelectedItemIndex()
+		itemsCount := s.list.ItemsCount()
+
+		newIndex := currentIndex + int(dy)
+
+		if newIndex < 0 {
+			newIndex = 0
+		} else if newIndex >= itemsCount {
+			newIndex = itemsCount - 1
+		}
+
+		if newIndex != currentIndex {
+			s.list.SelectItemByIndex(newIndex)
+			if item, ok := s.list.ItemByIndex(newIndex); ok {
+				s.model.SetMode(item.ID)
+			}
+			return guigui.HandleInputByWidget(s)
+		}
+	}
+
+	return guigui.HandleInputResult{}
+}
+
 func (s *sidebarContent) HandleButtonInput(context *guigui.Context) guigui.HandleInputResult {
 	currentIndex := s.list.SelectedItemIndex()
 	itemsCount := s.list.ItemsCount()
