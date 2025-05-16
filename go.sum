@@ -19,6 +19,8 @@ github.com/ebitengine/purego v0.9.0-alpha.3.0.20250507171635-5047c08daa38 h1:61W
 github.com/ebitengine/purego v0.9.0-alpha.3.0.20250507171635-5047c08daa38/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
 github.com/ebitengine/purego v0.9.0-alpha.4 h1:TAXmGRY7c6NPWU9+TCaMd0MwJyz8HmSqRgXJmE7MsS0=
 github.com/ebitengine/purego v0.9.0-alpha.4/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
+github.com/ebitengine/purego v0.9.0-alpha.5 h1:YpDyV6NEuST0L0Lw5DGrl2eCsfAPUFTifjJ4On5V1FU=
+github.com/ebitengine/purego v0.9.0-alpha.5/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
 github.com/go-text/typesetting v0.3.0 h1:OWCgYpp8njoxSRpwrdd1bQOxdjOXDj9Rqart9ML4iF4=
 github.com/go-text/typesetting v0.3.0/go.mod h1:qjZLkhRgOEYMhU9eHBr3AR4sfnGJvOXNLt8yRAySFuY=
 github.com/go-text/typesetting-utils v0.0.0-20241103174707-87a29e9e6066 h1:qCuYC+94v2xrb1PoS4NIDe7DGYtLnU2wWiQe9a1B1c0=
@@ -61,6 +63,8 @@ github.com/hajimehoshi/guigui v0.0.0-20250514172815-532c5f955827 h1:70faESl/7lMR
 github.com/hajimehoshi/guigui v0.0.0-20250514172815-532c5f955827/go.mod h1:EINjSr6Yl5CwqnHFvPeAXeM4pYFxy+gnMFu6dsG3YhU=
 github.com/hajimehoshi/guigui v0.0.0-20250515172533-dbfbef7346a8 h1:wJji5eyBC1zB84nCyTf0VDVUWZeYZ5UZ5sBfmmVyMzk=
 github.com/hajimehoshi/guigui v0.0.0-20250515172533-dbfbef7346a8/go.mod h1:EINjSr6Yl5CwqnHFvPeAXeM4pYFxy+gnMFu6dsG3YhU=
+github.com/hajimehoshi/guigui v0.0.0-20250516170241-c6336ce2bf45 h1:gFJZdanzBnzgl52qlYxdkESj9O2WF62I8PFt2Zw0558=
+github.com/hajimehoshi/guigui v0.0.0-20250516170241-c6336ce2bf45/go.mod h1:EINjSr6Yl5CwqnHFvPeAXeM4pYFxy+gnMFu6dsG3YhU=
 github.com/hajimehoshi/oklab v0.1.0 h1:+ApSswl9LlB+8AYIC9ZaRO/r1emGtTF52YQleB3bW7w=
 github.com/hajimehoshi/oklab v0.1.0/go.mod h1:PQQ2H7nXuDlAr4pkdDRTfXp5tXdfIUKQpZbpZE7ugT4=
 github.com/jeandeaual/go-locale v0.0.0-20250421151639-a9d6ed1b3d45 h1:vFdvrlsVU+p/KFBWTq0lTG4fvWvG88sawGlCzM+RUEU=

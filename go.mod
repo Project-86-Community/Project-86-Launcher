@@ -8,7 +8,7 @@ require (
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/google/go-github/v71 v71.0.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250514082650-2b29effe006c
-	github.com/hajimehoshi/guigui v0.0.0-20250515172533-dbfbef7346a8
+	github.com/hajimehoshi/guigui v0.0.0-20250516170241-c6336ce2bf45
 	github.com/kisielk/errcheck v1.9.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
@@ -23,7 +23,7 @@ require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20250329061421-6d0a8e981e4c // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
-	github.com/ebitengine/purego v0.9.0-alpha.4 // indirect
+	github.com/ebitengine/purego v0.9.0-alpha.5 // indirect
 	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hajimehoshi/oklab v0.1.0 // indirect
