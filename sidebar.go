@@ -107,25 +107,23 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 func (s *sidebarContent) HandlePointingInput(context *guigui.Context) guigui.HandleInputResult {
 	_, dy := ebiten.Wheel()
 
-	if context.IsFocusedOrHasFocusedChild(s) {
-		currentIndex := s.list.SelectedItemIndex()
-		itemsCount := s.list.ItemsCount()
+	currentIndex := s.list.SelectedItemIndex()
+	itemsCount := s.list.ItemsCount()
 
-		newIndex := currentIndex + int(dy)
+	newIndex := currentIndex - int(dy)
 
-		if newIndex < 0 {
-			newIndex = 0
-		} else if newIndex >= itemsCount {
-			newIndex = itemsCount - 1
+	if newIndex < 0 {
+		newIndex = 0
+	} else if newIndex >= itemsCount {
+		newIndex = itemsCount - 1
+	}
+
+	if newIndex != currentIndex {
+		s.list.SelectItemByIndex(newIndex)
+		if item, ok := s.list.ItemByIndex(newIndex); ok && item.ID != s.model.Mode() {
+			s.model.SetMode(item.ID)
 		}
-
-		if newIndex != currentIndex {
-			s.list.SelectItemByIndex(newIndex)
-			if item, ok := s.list.ItemByIndex(newIndex); ok {
-				s.model.SetMode(item.ID)
-			}
-			return guigui.HandleInputByWidget(s)
-		}
+		return guigui.HandleInputByWidget(s)
 	}
 
 	return guigui.HandleInputResult{}
