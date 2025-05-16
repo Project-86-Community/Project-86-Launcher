@@ -55,7 +55,7 @@ func main() {
 	if err := guigui.Run(&p86l.Root{}, op); err != nil {
 		gErr := p86l.GetError()
 		if gErr != nil {
-			log.Error().Stack().Int("Code", gErr.Code).Str("Type", string(gErr.Type)).Err((gErr.Err)).Msg("guigui.Run")
+			log.Error().Stack().Interface("dErr", gErr).Msg("guigui.Run")
 		}
 		os.Exit(1)
 	}
