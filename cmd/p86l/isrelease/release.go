@@ -42,16 +42,8 @@ func Run() {
 
 	logFile, err := a.Root.Create("log.txt")
 	if err != nil {
-		//log.Error().Stack().Int("Code", debug.ErrFSRootFileNew).Str("Type", string(debug.FSError)).Err((err)).Send()
-
 		log.Error().Stack().Interface("dErr", e.New(err, debug.FSError, debug.ErrFSRootFileNew)).Msg("Run")
 	}
-	// defer func() {
-	// 	err := logFile.Close()
-	// 	if err != nil {
-	// 		log.Warn().AnErr("Log", err).Msg("Run")
-	// 	}
-	// }()
 
 	multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
 	log.Logger = zerolog.New(multi).With().Timestamp().Logger()

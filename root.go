@@ -74,7 +74,7 @@ type Root struct {
 // Reduce repeating `if (err) != nil` statements
 func (r *Root) assertErr(dErr *debug.Error) {
 	if dErr != nil {
-		log.Error().Interface("dErr", dErr).Msg("Root.assertErr")
+		log.Error().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Msg("Root.assertErr")
 		r.dErr = dErr
 	}
 }
@@ -185,7 +185,8 @@ func (r *Root) loadB(context *guigui.Context, loadType, loadFile string) *debug.
 			}
 		}
 
-		return r.model.cache.SetCache(&cacheFile)
+		r.model.cache.cacheFile = &cacheFile
+		return nil
 	}
 
 	return nil
@@ -197,6 +198,7 @@ func (r *Root) backgroundImg(context *guigui.Context, appender *guigui.ChildWidg
 	if dErr != nil {
 		return
 	}
+
 	r.bgImage.SetImage(img)
 	imgWidth := img.Bounds().Dx()
 	imgHeight := img.Bounds().Dy()
@@ -279,6 +281,7 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		r.assertErr(r.loadB(context, "data", configs.DataFile))
 		r.assertErr(r.loadB(context, "cache", configs.CacheFile))
 	})
+	r.backgroundImg(context, appender)
 
 	if r.dErr != nil {
 		gErr = r.dErr
@@ -291,7 +294,6 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	r.settings.SetModel(&r.model)
 
 	r.updateFontFaceSources(context)
-	r.backgroundImg(context, appender)
 
 	gl := layout.GridLayout{
 		Bounds: context.Bounds(r),
