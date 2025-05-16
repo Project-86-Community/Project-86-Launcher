@@ -61,16 +61,18 @@ type Cache struct {
 }
 
 func (c *Cache) Validate(appDebug *debug.Debug) *debug.Error {
-	if c.Repo.GetBody() == "" {
-		return appDebug.New(errors.New("body is empty"), debug.CacheError, debug.ErrCacheBodyInvalid)
-	}
+	if c.Repo != nil {
+		if c.Repo.GetBody() == "" {
+			return appDebug.New(errors.New("body is empty"), debug.CacheError, debug.ErrCacheBodyInvalid)
+		}
 
-	if c.Repo.GetHTMLURL() == "" {
-		return appDebug.New(errors.New("URL is empty"), debug.CacheError, debug.ErrCacheURLInvalid)
-	}
+		if c.Repo.GetHTMLURL() == "" {
+			return appDebug.New(errors.New("URL is empty"), debug.CacheError, debug.ErrCacheURLInvalid)
+		}
 
-	if c.Repo.Assets == nil || len(c.Repo.Assets) == 0 {
-		return appDebug.New(errors.New("assets are empty"), debug.CacheError, debug.ErrCacheAssetsInvalid)
+		if c.Repo.Assets == nil || len(c.Repo.Assets) == 0 {
+			return appDebug.New(errors.New("assets are empty"), debug.CacheError, debug.ErrCacheAssetsInvalid)
+		}
 	}
 
 	return nil
