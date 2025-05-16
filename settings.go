@@ -175,9 +175,11 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 	s.resetButton.SetText(T("settings.reset"))
 
 	s.openFolderButton.SetOnDown(func() {
-		if dErr := fs.OpenFileManager(e, filepath.Join(fs.CompanyDirPath, configs.AppName)); dErr != nil {
-			e.SetToast(dErr)
-		}
+		go func() {
+			if dErr := fs.OpenFileManager(e, filepath.Join(fs.CompanyDirPath, configs.AppName)); dErr != nil {
+				e.SetToast(dErr)
+			}
+		}()
 	})
 
 	s.clearDataButton.SetOnDown(func() {
