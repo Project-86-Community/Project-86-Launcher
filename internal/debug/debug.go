@@ -40,7 +40,9 @@ const (
 	// App errors (1001-1999)
 	ErrUnknown int = iota + 1001
 	ErrBrowserOpen
+)
 
+const (
 	// Filesystem errors (2001-2999)
 	ErrFSFileInvalid int = iota + 2001
 	ErrFSDirInvalid
@@ -57,12 +59,16 @@ const (
 	ErrFSRootFileNotExist
 	ErrFSRootFileRead
 	ErrFSRootFileWrite
+)
 
+const (
 	// Data errors (3001-3999)
 	ErrDataLoad int = iota + 3001
 	ErrDataSave
 	ErrDataReset
+)
 
+const (
 	// Cache errors (4001-4999)
 	ErrCacheLoad int = iota + 4001
 	ErrCacheSave
@@ -71,7 +77,9 @@ const (
 	ErrCacheBodyInvalid
 	ErrCacheURLInvalid
 	ErrCacheAssetsInvalid
+)
 
+const (
 	// // Internet errors (5001-5999)
 	ErrInternetRateLimitInvalid int = iota + 5001
 	ErrInternetRequestInvalid
