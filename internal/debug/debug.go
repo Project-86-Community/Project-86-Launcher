@@ -43,23 +43,15 @@ const (
 
 	// Filesystem errors (2001-2999)
 	ErrFSFileInvalid int = iota + 2001
-
 	ErrFSDirInvalid
 	ErrFSDirNotExist
 	ErrFSDirNew
-
 	ErrFSNewFileInvalid
 	ErrFSFileNotExist
-
 	ErrFSOpenFileManagerInvalid
-
-	// - root
-
 	ErrFSRootInvalid
-
 	ErrFSRootDirInvalid
 	ErrFSRootDirNew
-
 	ErrFSRootFileInvalid
 	ErrFSRootFileNew
 	ErrFSRootFileNotExist
@@ -75,7 +67,6 @@ const (
 	ErrCacheLoad int = iota + 4001
 	ErrCacheSave
 	ErrCacheReset
-
 	ErrCacheRepoInvalid
 	ErrCacheBodyInvalid
 	ErrCacheURLInvalid
@@ -83,11 +74,9 @@ const (
 
 	// // Internet errors (5001-5999)
 	ErrInternetRateLimitInvalid int = iota + 5001
-
 	ErrInternetRequestInvalid
 	ErrInternetRequestNew
 	ErrInternetRequestClose
-
 	ErrInternetCacheInvalid
 
 	// ErrConnection

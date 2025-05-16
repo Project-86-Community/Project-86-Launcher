@@ -61,14 +61,6 @@ type Cache struct {
 }
 
 func (c *Cache) Validate(appDebug *debug.Debug) *debug.Error {
-	if c == nil {
-		return appDebug.New(errors.New("cache is nil"), debug.CacheError, debug.ErrCacheRepoInvalid)
-	}
-
-	if c.Repo == nil {
-		return appDebug.New(errors.New("repo is nil"), debug.CacheError, debug.ErrCacheRepoInvalid)
-	}
-
 	if c.Repo.GetBody() == "" {
 		return appDebug.New(errors.New("body is empty"), debug.CacheError, debug.ErrCacheBodyInvalid)
 	}
