@@ -28,6 +28,7 @@ import (
 	"p86l/internal/debug"
 	"p86l/internal/file"
 	"sync"
+	"time"
 
 	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/guigui"
@@ -39,7 +40,6 @@ type Model struct {
 	mode string
 
 	networkState NetworkState
-	rateLimit    RateLimit
 
 	data  DataModel
 	cache CacheModel
@@ -81,6 +81,12 @@ func (n *NetworkState) LastCheckTick() int64 {
 	n.netMutex.Lock()
 	defer n.netMutex.Unlock()
 	return n.lastCheckTick
+}
+
+func (n *NetworkState) Valid() bool {
+	n.netMutex.Lock()
+	defer n.netMutex.Unlock()
+	return n.githubRateLimit.Core.Remaining > 0 && time.Now().Before(n.githubRateLimit.Core.Reset.Time)
 }
 
 type DataModel struct {
