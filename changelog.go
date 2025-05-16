@@ -71,11 +71,7 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 			c.infoText.SetValue(c.model.cache.File().Repo.GetBody())
 		}
 
-		if c.model.cache.File().Repo.GetHTMLURL() != "" {
-			context.SetEnabled(&c.urlButton, true)
-		} else {
-			context.SetEnabled(&c.urlButton, false)
-		}
+		context.SetEnabled(&c.urlButton, true)
 	} else {
 		context.SetEnabled(&c.urlButton, false)
 		c.infoText.SetValue("")
