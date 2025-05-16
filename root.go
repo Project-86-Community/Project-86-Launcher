@@ -138,7 +138,7 @@ func (r *Root) runApp() *debug.Error {
 	return nil
 }
 
-func (r *Root) loadB(context *guigui.Context, loadType, loadFile string) {
+func (r *Root) loadB(context *guigui.Context, loadType, loadFile string) *debug.Error {
 	if dErr := fs.Stat(e, loadFile); dErr != nil {
 		switch loadType {
 		case "data":
@@ -147,18 +147,16 @@ func (r *Root) loadB(context *guigui.Context, loadType, loadFile string) {
 			dataFile.Locale = language.English.String()
 			dataFile.AppScale = 2
 			dataFile.ColorMode = guigui.ColorModeLight
-			r.assertErr(r.model.data.SetData(context, dataFile))
-			return
+			return r.model.data.SetData(context, dataFile)
 		case "cache":
 			log.Info().Str("Cache", "cache not found").Msg("Root.LoadB")
-			return
+			return nil
 		}
 	}
 
 	b, dErr := fs.Load(e, loadFile)
-	r.assertErr(dErr)
 	if dErr != nil {
-		return
+		return dErr
 	}
 	decoder := gob.NewDecoder(bytes.NewReader(b))
 
@@ -168,32 +166,29 @@ func (r *Root) loadB(context *guigui.Context, loadType, loadFile string) {
 		var dataFile file.Data
 
 		if err := decoder.Decode(&dataFile); err != nil {
-			r.assertErr(e.New(err, debug.FSError, debug.ErrDataLoad))
-			return
+			return e.New(err, debug.FSError, debug.ErrDataLoad)
 		}
 
-		r.assertErr(r.model.data.SetData(context, dataFile))
-		return
+		return r.model.data.SetData(context, dataFile)
 	case "cache":
 		log.Info().Str("Cache", "cache found, loading cache...").Msg("Root.LoadB")
 		var cacheFile file.Cache
 
 		if err := decoder.Decode(&cacheFile); err != nil {
-			r.assertErr(e.New(err, debug.FSError, debug.ErrCacheLoad))
-			return
+			return e.New(err, debug.FSError, debug.ErrCacheLoad)
 		}
 
 		if cacheFile.Repo != nil {
 			dErr := cacheFile.Validate(e)
 			if dErr != nil {
-				r.assertErr(dErr)
-				return
+				return dErr
 			}
 		}
 
-		r.assertErr(r.model.cache.SetCache(&cacheFile))
-		return
+		return r.model.cache.SetCache(&cacheFile)
 	}
+
+	return nil
 }
 
 func (r *Root) backgroundImg(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
@@ -226,6 +221,48 @@ func (r *Root) backgroundImg(context *guigui.Context, appender *guigui.ChildWidg
 	appender.AppendChildWidgetWithPosition(&r.bgImage, image.Pt(00, yOffset))
 }
 
+func (r *Root) buildInfoText(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
+	status := "No connection"
+	if r.model.networkState.InternetAvailable() {
+		status = "Connected"
+	}
+
+	remaining := 0
+	resetTime := ""
+	if r.model.networkState.GitHubRateLimit() != nil {
+		remaining = r.model.networkState.GitHubRateLimit().Core.Remaining
+		resetTime = r.model.networkState.GitHubRateLimit().Core.Reset.Time.Format(time.DateTime)
+	}
+
+	if remaining == 60 || !r.model.networkState.InternetAvailable() {
+		r.infoText.SetValue(fmt.Sprintf("Internet: %s, API: %d/60", status, remaining))
+	} else {
+		r.infoText.SetValue(fmt.Sprintf("Internet: %s, API: %d/60 (reset until %s)", status, remaining, resetTime))
+	}
+
+	windowSize := context.Bounds(r).Size()
+	textSize := context.Size(&r.infoText)
+
+	bgWidth := textSize.X
+	bgHeight := textSize.Y
+	bgPos := image.Pt(
+		windowSize.X-bgWidth,
+		windowSize.Y-bgHeight,
+	)
+	textPos := image.Pt(
+		bgPos.X,
+		bgPos.Y,
+	)
+
+	appender.AppendChildWidgetWithBounds(&r.infoBg, image.Rect(
+		bgPos.X,
+		bgPos.Y,
+		bgPos.X+bgWidth,
+		bgPos.Y+bgHeight,
+	))
+	appender.AppendChildWidgetWithPosition(&r.infoText, textPos)
+}
+
 func (r *Root) updateFontFaceSources(context *guigui.Context) {
 	r.locales = slices.Delete(r.locales, 0, len(r.locales))
 	r.locales = context.AppendLocales(r.locales)
@@ -238,9 +275,9 @@ func (r *Root) updateFontFaceSources(context *guigui.Context) {
 
 func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	r.sync.Do(func() {
-		r.dErr = r.runApp()
-		r.loadB(context, "data", configs.DataFile)
-		r.loadB(context, "cache", configs.CacheFile)
+		r.assertErr(r.runApp())
+		r.assertErr(r.loadB(context, "data", configs.DataFile))
+		r.assertErr(r.loadB(context, "cache", configs.CacheFile))
 	})
 
 	if r.dErr != nil {
@@ -288,48 +325,7 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	case "about":
 		appender.AppendChildWidgetWithBounds(&r.about, gl.CellBounds(1, 0))
 	}
-
-	{
-		status := "No connection"
-		if r.model.networkState.InternetAvailable() {
-			status = "Connected"
-		}
-
-		remaining := 0
-		resetTime := ""
-		if r.model.networkState.GitHubRateLimit() != nil {
-			remaining = r.model.networkState.GitHubRateLimit().Core.Remaining
-			resetTime = r.model.networkState.GitHubRateLimit().Core.Reset.Time.Format(time.DateTime)
-		}
-
-		if remaining == 60 || !r.model.networkState.InternetAvailable() {
-			r.infoText.SetValue(fmt.Sprintf("Internet: %s, API: %d/60", status, remaining))
-		} else {
-			r.infoText.SetValue(fmt.Sprintf("Internet: %s, API: %d/60 (reset until %s)", status, remaining, resetTime))
-		}
-
-		windowSize := context.Bounds(r).Size()
-		textSize := context.Size(&r.infoText)
-
-		bgWidth := textSize.X
-		bgHeight := textSize.Y
-		bgPos := image.Pt(
-			windowSize.X-bgWidth,
-			windowSize.Y-bgHeight,
-		)
-		textPos := image.Pt(
-			bgPos.X,
-			bgPos.Y,
-		)
-
-		appender.AppendChildWidgetWithBounds(&r.infoBg, image.Rect(
-			bgPos.X,
-			bgPos.Y,
-			bgPos.X+bgWidth,
-			bgPos.Y+bgHeight,
-		))
-		appender.AppendChildWidgetWithPosition(&r.infoText, textPos)
-	}
+	r.buildInfoText(context, appender)
 
 	return nil
 }
