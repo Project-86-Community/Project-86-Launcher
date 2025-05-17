@@ -37,12 +37,12 @@ func Run() {
 	e := &debug.Debug{}
 	a, dErr := file.NewFS(e)
 	if dErr != nil {
-		log.Error().Stack().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Send()
+		log.Error().Stack().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Msg("Run")
 	}
 
 	logFile, err := a.Root.Create("log.txt")
 	if err != nil {
-		log.Error().Stack().Interface("dErr", e.New(err, debug.FSError, debug.ErrFSRootFileNew)).Msg("Run")
+		log.Error().Stack().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Msg("Run")
 	}
 
 	multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
