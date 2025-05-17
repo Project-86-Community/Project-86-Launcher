@@ -32,7 +32,8 @@ import (
 )
 
 type debugMode struct {
-	Logs bool
+	Version string
+	Logs    bool
 }
 
 var (

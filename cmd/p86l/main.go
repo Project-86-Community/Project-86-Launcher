@@ -34,11 +34,14 @@ import (
 	"github.com/rs/zerolog/pkgerrors"
 )
 
+var version = "dev"
+
 func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 
 	isrelease.Run()
+	p86l.TheDebugMode.Version = version
 
 	if !p86l.TheDebugMode.Logs {
 		zerolog.SetGlobalLevel(zerolog.Disabled)
@@ -46,6 +49,7 @@ func init() {
 }
 
 func main() {
+	log.Info().Str("Version", version).Msg("P86L - Project 86 Launcher")
 	log.Info().Str("Detected OS", runtime.GOOS).Send()
 
 	op := &guigui.RunOptions{

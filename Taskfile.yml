@@ -19,4 +19,4 @@ tasks:
 
   build:windows:
     cmds:
-      - GOOS=windows GOARCH=amd64 go build -tags release -ldflags "-s -w -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -trimpath -o ./bin/Project-86-Launcher-{{.VERSION}}.exe ./cmd/p86l
+      - GOOS=windows GOARCH=amd64 go build -tags release -ldflags "-s -w -X main.version={{.VERSION}} -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -trimpath -o ./bin/Project-86-Launcher-{{.VERSION}}.exe ./cmd/p86l
