@@ -26,7 +26,6 @@ import (
 	"p86l/internal/debug"
 	"p86l/internal/file"
 	"path/filepath"
-	"sync"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -50,7 +49,6 @@ type Settings struct {
 	clearCacheButton      basicwidget.TextButton
 	resetButton           basicwidget.TextButton
 
-	sync  sync.Once
 	model *Model
 	dErr  *debug.Error
 }
