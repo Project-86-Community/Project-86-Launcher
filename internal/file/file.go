@@ -69,8 +69,7 @@ func (c *Cache) Validate(appDebug *debug.Debug) *debug.Error {
 		if c.Repo.GetHTMLURL() == "" {
 			return appDebug.New(errors.New("URL is empty"), debug.CacheError, debug.ErrCacheURLInvalid)
 		}
-
-		if c.Repo.Assets == nil || len(c.Repo.Assets) == 0 {
+		if len(c.Repo.Assets) < 1 {
 			return appDebug.New(errors.New("assets are empty"), debug.CacheError, debug.ErrCacheAssetsInvalid)
 		}
 	}
