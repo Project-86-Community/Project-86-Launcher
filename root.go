@@ -54,13 +54,16 @@ type Root struct {
 	background basicwidget.Background
 	border     basicwidget.Background
 	bgImage    basicwidget.Image
-	infoBg     basicwidget.Background
-	infoText   basicwidget.Text
-	sidebar    Sidebar
-	play       Play
-	changelog  Changelog
-	settings   Settings
-	about      About
+
+	infoBg      basicwidget.Background
+	infoText    basicwidget.Text
+	versionText basicwidget.Text
+
+	sidebar   Sidebar
+	play      Play
+	changelog Changelog
+	settings  Settings
+	about     About
 
 	model Model
 
@@ -265,6 +268,18 @@ func (r *Root) buildInfoText(context *guigui.Context, appender *guigui.ChildWidg
 	appender.AppendChildWidgetWithPosition(&r.infoText, textPos)
 }
 
+func (r *Root) buildVersionText(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
+	r.versionText.SetValue(TheDebugMode.Version)
+
+	sidebarBounds := context.Bounds(&r.sidebar)
+	textSize := context.Size(&r.versionText)
+
+	xPos := sidebarBounds.Min.X + (sidebarBounds.Dx()-textSize.X)/2
+	yPos := sidebarBounds.Max.Y - textSize.Y - 10
+
+	appender.AppendChildWidgetWithPosition(&r.versionText, image.Pt(xPos, yPos))
+}
+
 func (r *Root) updateFontFaceSources(context *guigui.Context) {
 	r.locales = slices.Delete(r.locales, 0, len(r.locales))
 	r.locales = context.AppendLocales(r.locales)
@@ -327,6 +342,7 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	case "about":
 		appender.AppendChildWidgetWithBounds(&r.about, gl.CellBounds(1, 0))
 	}
+	r.buildVersionText(context, appender)
 	r.buildInfoText(context, appender)
 
 	return nil
