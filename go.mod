@@ -7,8 +7,8 @@ require (
 	github.com/Conight/go-googletrans v0.2.4
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/google/go-github/v71 v71.0.0
-	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250514082650-2b29effe006c
-	github.com/hajimehoshi/guigui v0.0.0-20250516170241-c6336ce2bf45
+	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250518103147-cd31850015bb
+	github.com/hajimehoshi/guigui v0.0.0-20250518170430-5a30c01dc12e
 	github.com/kisielk/errcheck v1.9.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c

@@ -34,11 +34,11 @@ import (
 type Play struct {
 	guigui.DefaultWidget
 
-	actionButton  basicwidget.TextButton
-	websiteButton basicwidget.TextButton
-	githubButton  basicwidget.TextButton
-	discordButton basicwidget.TextButton
-	patreonButton basicwidget.TextButton
+	actionButton  basicwidget.Button
+	websiteButton basicwidget.Button
+	githubButton  basicwidget.Button
+	discordButton basicwidget.Button
+	patreonButton basicwidget.Button
 
 	model *Model
 }

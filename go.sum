@@ -45,6 +45,8 @@ github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250513071836-4c0b28721bb9 h1
 github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250513071836-4c0b28721bb9/go.mod h1:adaFKZVyoyAg9FNhk7mU87vFjPxPupB7+c+FlbIxf3c=
 github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250514082650-2b29effe006c h1:ZyEPnw6TUIrG/+ANue71uZI4BexjgVco1wo/XKJU50g=
 github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250514082650-2b29effe006c/go.mod h1:OvY5X1jAtr8tnMHxBwKGiJm5o+1yKlcbF1e42jKOJa8=
+github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250518103147-cd31850015bb h1:BXM3qvr2RewlAwr6er4kZq+BmCHNv8nEutRe4FoRlKU=
+github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250518103147-cd31850015bb/go.mod h1:9IRfS1bf3B3Jlu41nuLlAFt/JHoDN+h6kL/4M9n7osw=
 github.com/hajimehoshi/guigui v0.0.0-20250506191658-00db00f27d32 h1:McQ3Mbmrh/OnJUAN4N16WuFeIpzVnhU/fd6sgu6fn4Y=
 github.com/hajimehoshi/guigui v0.0.0-20250506191658-00db00f27d32/go.mod h1:fBgAi7x8LHpkAqTaMfz46x40YGSZ5A6MLl1XGoChrW8=
 github.com/hajimehoshi/guigui v0.0.0-20250508091652-265db7ebf2ea h1:XC4h4NviSv/hOslCHlUOxENkgRz7YRtIvUrU0Ug5FiM=
@@ -65,6 +67,8 @@ github.com/hajimehoshi/guigui v0.0.0-20250515172533-dbfbef7346a8 h1:wJji5eyBC1zB
 github.com/hajimehoshi/guigui v0.0.0-20250515172533-dbfbef7346a8/go.mod h1:EINjSr6Yl5CwqnHFvPeAXeM4pYFxy+gnMFu6dsG3YhU=
 github.com/hajimehoshi/guigui v0.0.0-20250516170241-c6336ce2bf45 h1:gFJZdanzBnzgl52qlYxdkESj9O2WF62I8PFt2Zw0558=
 github.com/hajimehoshi/guigui v0.0.0-20250516170241-c6336ce2bf45/go.mod h1:EINjSr6Yl5CwqnHFvPeAXeM4pYFxy+gnMFu6dsG3YhU=
+github.com/hajimehoshi/guigui v0.0.0-20250518170430-5a30c01dc12e h1:cWpIhlOLK1XZkcVGndtzeRlfgptV7pbLaLoJR4glVSA=
+github.com/hajimehoshi/guigui v0.0.0-20250518170430-5a30c01dc12e/go.mod h1:V8JwK0eE/SSHZQRqoxwqRDdF42adysum60x7EUxrlXA=
 github.com/hajimehoshi/oklab v0.1.0 h1:+ApSswl9LlB+8AYIC9ZaRO/r1emGtTF52YQleB3bW7w=
 github.com/hajimehoshi/oklab v0.1.0/go.mod h1:PQQ2H7nXuDlAr4pkdDRTfXp5tXdfIUKQpZbpZE7ugT4=
 github.com/jeandeaual/go-locale v0.0.0-20250421151639-a9d6ed1b3d45 h1:vFdvrlsVU+p/KFBWTq0lTG4fvWvG88sawGlCzM+RUEU=

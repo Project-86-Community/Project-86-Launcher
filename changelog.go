@@ -36,7 +36,7 @@ type Changelog struct {
 	form      basicwidget.Form
 	gtlText   basicwidget.Text
 	gtlToggle basicwidget.Toggle
-	urlButton basicwidget.TextButton
+	urlButton basicwidget.Button
 
 	model *Model
 }

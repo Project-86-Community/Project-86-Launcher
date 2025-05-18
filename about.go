@@ -54,10 +54,10 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	a.devImg.SetImage(img)
 
 	a.infoText.SetAutoWrap(true)
-	a.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
-	a.infoText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 	a.leadText.SetScale(1.2)
 	a.devText.SetScale(1.2)
+	a.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+	a.infoText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 	a.leadText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 	a.devText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 

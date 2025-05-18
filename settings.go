@@ -44,10 +44,10 @@ type Settings struct {
 	scaleText             basicwidget.Text
 	scaleSegmentedControl basicwidget.SegmentedControl[int]
 	openFolderText        basicwidget.Text
-	openFolderButton      basicwidget.TextButton
-	resetDataButton       basicwidget.TextButton
-	resetCacheButton      basicwidget.TextButton
-	resetButton           basicwidget.TextButton
+	openFolderButton      basicwidget.Button
+	resetDataButton       basicwidget.Button
+	resetCacheButton      basicwidget.Button
+	resetButton           basicwidget.Button
 
 	model *Model
 	dErr  *debug.Error
