@@ -41,97 +41,83 @@ type Changelog struct {
 	model *Model
 }
 
-func (c *Changelog) IsChangelog() bool {
-	value := c.model.cache.File()
-	dErr := value.Validate(e)
-	if value != nil && dErr == nil {
-		return true
-	}
-
-	return false
-}
-
-func (c *Changelog) IsTranslated() bool {
-	if c.model.cache.IsTranslate() && c.model.cache.TranslatedChangelog() != "" {
-		return true
-	}
-
-	return false
-}
-
 func (c *Changelog) SetModel(model *Model) {
 	c.model = model
 }
 
-func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	if c.IsChangelog() {
-		if c.IsTranslated() {
-			c.infoText.SetValue(c.model.cache.TranslatedChangelog())
-		} else {
-			c.infoText.SetValue(c.model.cache.File().Repo.GetBody())
-		}
+func (c *Changelog) IsChangelog() bool {
+	file := c.model.cache.File()
+	return file != nil && file.Validate(e) == nil
+}
 
-		context.SetEnabled(&c.urlButton, true)
-	} else {
-		context.SetEnabled(&c.urlButton, false)
-		c.infoText.SetValue("")
+func (c *Changelog) IsTranslated() bool {
+	return c.model.cache.IsTranslate() && c.model.cache.TranslatedChangelog() != ""
+}
+
+func (c *Changelog) handleTranslationToggle(value bool) {
+	if value {
+		go c.translateChangelog()
 	}
+	c.model.cache.isTranslate = value
+}
 
-	if c.model.networkState.InternetAvailable() {
-		context.SetEnabled(&c.urlButton, true)
-		if c.model.data.File().Locale == language.English.String() {
-			context.SetEnabled(&c.gtlToggle, false)
-			c.gtlToggle.SetValue(false)
-		} else {
-			context.SetEnabled(&c.gtlToggle, true)
-		}
-
-		if !c.model.cache.IsTranslate() {
-			c.gtlToggle.SetValue(false)
-		}
-	} else {
-		context.SetEnabled(&c.urlButton, false)
-		context.SetEnabled(&c.gtlToggle, false)
-		c.gtlToggle.SetValue(false)
+func (c *Changelog) translateChangelog() {
+	body := c.model.cache.File().Repo.GetBody()
+	targetLang := c.model.data.File().Locale
+	result, err := t.Translate(body, "auto", targetLang)
+	if err != nil {
+		log.Error().Err(err).Msg("Translation failed")
+		return
 	}
+	c.model.cache.translatedChangelog = result.Text
+	log.Info().Any("translation", result).Msg("Changelog translated")
+}
 
-	c.gtlText.SetValue(T("changelog.gtl"))
-	c.gtlToggle.SetOnValueChanged(func(value bool) {
-		if value {
-			go func() {
-				result, err := t.Translate(c.model.cache.File().Repo.GetBody(), "auto", c.model.data.File().Locale)
-				if err != nil {
-					log.Error().Err(err).Msg("SetChangelog")
-					return
-				}
-				c.model.cache.translatedChangelog = result.Text
-				log.Info().Any("translate", result).Msg("changelog.gtlToggle")
-			}()
-		}
-		c.model.cache.isTranslate = value
-	})
-
+func (c *Changelog) configureInfoText() {
 	c.infoText.SetAutoWrap(true)
 	c.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 	c.infoText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+}
 
+func (c *Changelog) configureURLButton(context *guigui.Context) {
 	c.urlButton.SetText(T("changelog.open"))
 	c.urlButton.SetOnDown(func() {
 		if c.model.networkState.InternetAvailable() && c.IsChangelog() {
 			go OpenBrowser(c.model.cache.File().Repo.GetHTMLURL())
 		}
 	})
-
 	c.form.SetItems([]basicwidget.FormItem{
-		{
-			PrimaryWidget:   &c.gtlText,
-			SecondaryWidget: &c.gtlToggle,
-		},
-		{
-			PrimaryWidget:   nil,
-			SecondaryWidget: &c.urlButton,
-		},
+		{PrimaryWidget: &c.gtlText, SecondaryWidget: &c.gtlToggle},
+		{SecondaryWidget: &c.urlButton},
 	})
+}
+
+func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	isChangelog := c.IsChangelog()
+	hasNet := c.model.networkState.InternetAvailable()
+	locale := c.model.data.File().Locale
+
+	if isChangelog {
+		if c.IsTranslated() {
+			c.infoText.SetValue(c.model.cache.TranslatedChangelog())
+		} else {
+			c.infoText.SetValue(c.model.cache.File().Repo.GetBody())
+		}
+	} else {
+		c.infoText.SetValue("")
+	}
+
+	urlEnabled := isChangelog && hasNet
+	context.SetEnabled(&c.urlButton, urlEnabled)
+
+	gtlEnabled := hasNet && locale != language.English.String() && isChangelog
+	context.SetEnabled(&c.gtlToggle, gtlEnabled)
+	c.gtlToggle.SetValue(gtlEnabled && c.model.cache.IsTranslate())
+
+	c.gtlText.SetValue(T("changelog.gtl"))
+	c.gtlToggle.SetOnValueChanged(c.handleTranslationToggle)
+	c.configureInfoText()
+	c.configureURLButton(context)
 
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
