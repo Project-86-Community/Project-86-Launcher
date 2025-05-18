@@ -45,8 +45,8 @@ type Settings struct {
 	scaleSegmentedControl basicwidget.SegmentedControl[int]
 	openFolderText        basicwidget.Text
 	openFolderButton      basicwidget.TextButton
-	clearDataButton       basicwidget.TextButton
-	clearCacheButton      basicwidget.TextButton
+	resetDataButton       basicwidget.TextButton
+	resetCacheButton      basicwidget.TextButton
 	resetButton           basicwidget.TextButton
 
 	model *Model
@@ -155,6 +155,30 @@ func (s *Settings) buildColorMode(context *guigui.Context) {
 	}
 }
 
+func (s *Settings) buildOpenFolder() {
+	s.openFolderButton.SetOnDown(func() {
+		go func() {
+			if dErr := fs.OpenFileManager(e, filepath.Join(fs.CompanyDirPath, configs.AppName)); dErr != nil {
+				e.SetToast(dErr)
+			}
+		}()
+	})
+}
+
+func (s *Settings) buildReset() {
+	s.resetDataButton.SetOnDown(func() {
+		s.colorModeToggle.SetValue(false)
+		s.localeDropdownList.SelectItemByID(language.English)
+		s.scaleSegmentedControl.SelectItemByID(2)
+	})
+	s.resetCacheButton.SetOnDown(func() {
+		s.model.cache.isTranslate = false
+		s.model.cache.translatedChangelog = ""
+		var cacheFile file.Cache
+		s.model.cache.SetCache(&cacheFile)
+	})
+}
+
 func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	s.localeText.SetValue(T("settings.locale"))
 	s.buildLocale(context)
@@ -167,30 +191,12 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 
 	s.openFolderText.SetValue(T("settings.openfoldertext"))
 	s.openFolderButton.SetText(T("settings.openfolder"))
+	s.buildOpenFolder()
 
-	s.clearDataButton.SetText(T("settings.resetdata"))
-	s.clearCacheButton.SetText(T("settings.resetcache"))
+	s.resetDataButton.SetText(T("settings.resetdata"))
+	s.resetCacheButton.SetText(T("settings.resetcache"))
 	s.resetButton.SetText(T("settings.reset"))
-
-	s.openFolderButton.SetOnDown(func() {
-		go func() {
-			if dErr := fs.OpenFileManager(e, filepath.Join(fs.CompanyDirPath, configs.AppName)); dErr != nil {
-				e.SetToast(dErr)
-			}
-		}()
-	})
-
-	s.clearDataButton.SetOnDown(func() {
-		s.colorModeToggle.SetValue(false)
-		s.localeDropdownList.SelectItemByID(language.English)
-		s.scaleSegmentedControl.SelectItemByID(2)
-	})
-	s.clearCacheButton.SetOnDown(func() {
-		s.model.cache.isTranslate = false
-		s.model.cache.translatedChangelog = ""
-		var cacheFile file.Cache
-		s.model.cache.SetCache(&cacheFile)
-	})
+	s.buildReset()
 
 	if s.dErr != nil {
 		gErr = s.dErr
@@ -216,11 +222,11 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		},
 		{
 			PrimaryWidget:   nil,
-			SecondaryWidget: &s.clearDataButton,
+			SecondaryWidget: &s.resetDataButton,
 		},
 		{
 			PrimaryWidget:   nil,
-			SecondaryWidget: &s.clearCacheButton,
+			SecondaryWidget: &s.resetCacheButton,
 		},
 		{
 			PrimaryWidget:   nil,
