@@ -78,6 +78,7 @@ func (c *Cache) Validate(appDebug *debug.Debug) *debug.Error {
 }
 
 type AppFS struct {
+	CRoot          *os.Root
 	Root           *os.Root
 	CompanyDirPath string
 }
@@ -103,12 +104,18 @@ func NewFS(appDebug *debug.Debug, extra ...string) (*AppFS, *debug.Error) {
 		return nil, dErr
 	}
 
+	croot, err := os.OpenRoot(companyPath)
+	if err != nil {
+		return nil, appDebug.New(err, debug.FSError, debug.ErrFSRootInvalid)
+	}
+
 	root, err := os.OpenRoot(filepath.Join(companyPath, configs.AppName))
 	if err != nil {
 		return nil, appDebug.New(err, debug.FSError, debug.ErrFSRootInvalid)
 	}
 
 	return &AppFS{
+		CRoot:          croot,
 		Root:           root,
 		CompanyDirPath: companyPath,
 	}, nil
