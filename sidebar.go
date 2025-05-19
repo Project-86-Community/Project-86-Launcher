@@ -22,6 +22,8 @@
 package p86l
 
 import (
+	"image"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/guigui"
@@ -136,7 +138,11 @@ func (s *sidebarContent) HandleButtonInput(context *guigui.Context) guigui.Handl
 }
 
 func (s *sidebarContent) Tick(context *guigui.Context) error {
-	if context.IsFocusedOrHasFocusedChild(s) {
+	if inpututil.IsKeyJustPressed(ebiten.KeyTab) {
+		context.SetFocused(s, true)
+		return nil
+	}
+	if context.IsWidgetHitAt(s, image.Pt(ebiten.CursorPosition())) {
 		_, dy := ebiten.Wheel()
 
 		currentIndex := s.list.SelectedItemIndex()
@@ -156,6 +162,8 @@ func (s *sidebarContent) Tick(context *guigui.Context) error {
 				s.model.SetMode(item.ID)
 			}
 		}
+
+		context.SetFocused(s, true)
 	}
 
 	return nil
