@@ -22,6 +22,8 @@
 package debug
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -117,6 +119,13 @@ func (d *Debug) New(err error, errType ErrorType, code int) *Error {
 		Type: errType,
 		Code: code,
 	}
+}
+
+func (d *Debug) String(err *Error) string {
+	if err != nil {
+		return fmt.Sprintf("Code: %d, Type: %s, Err: %s", err.Code, string(err.Type), err.Err.Error())
+	}
+	return ""
 }
 
 func (d *Debug) SetToast(err *Error) {

@@ -24,10 +24,12 @@ package p86l
 import (
 	"image"
 
+	"github.com/atotto/clipboard"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/hajimehoshi/guigui/layout"
 )
 
 type Sidebar struct {
@@ -55,7 +57,10 @@ func (s *Sidebar) Build(context *guigui.Context, appender *guigui.ChildWidgetApp
 type sidebarContent struct {
 	guigui.DefaultWidget
 
-	list basicwidget.List[string]
+	list        basicwidget.List[string]
+	toastPanel  basicwidget.Panel
+	toastButton basicwidget.Button
+	toastText   basicwidget.Text
 
 	model *Model
 }
@@ -102,7 +107,41 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 		s.model.SetMode(item.ID)
 	})
 
-	appender.AppendChildWidgetWithBounds(&s.list, context.Bounds(s))
+	s.toastButton.SetOnDown(func() {
+		if e.ToastErr == nil {
+			return
+		}
+		clipboard.WriteAll(e.String(e.ToastErr))
+	})
+
+	s.toastButton.SetText("Copy")
+	if s.toastText.Value() != e.String(e.ToastErr) {
+		s.toastText.SetValue(e.String(e.ToastErr))
+	}
+	s.toastPanel.SetContent(&s.toastText)
+
+	u := basicwidget.UnitSize(context)
+	gl := layout.GridLayout{
+		Bounds: context.Bounds(s),
+		Heights: []layout.Size{
+			layout.FixedSize(s.list.DefaultSize(context).Y + (u * 2)),
+			layout.FixedSize(s.toastText.DefaultSize(context).Y + (u / 2)),
+		},
+	}
+	appender.AppendChildWidgetWithBounds(&s.list, gl.CellBounds(0, 0))
+	glE := layout.GridLayout{
+		Bounds: gl.CellBounds(0, 1),
+		Widths: []layout.Size{
+			layout.FixedSize(s.toastButton.DefaultSize(context).Y + u),
+			layout.FlexibleSize(1),
+		},
+		ColumnGap: u / 2,
+	}
+	if e.ToastErr == nil {
+		return nil
+	}
+	appender.AppendChildWidgetWithBounds(&s.toastButton, glE.CellBounds(0, 0))
+	appender.AppendChildWidgetWithBounds(&s.toastPanel, glE.CellBounds(1, 0))
 
 	return nil
 }
