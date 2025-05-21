@@ -35,6 +35,7 @@ type Play struct {
 	guigui.DefaultWidget
 
 	actionButton  basicwidget.Button
+	updateButton  basicwidget.Button
 	websiteButton basicwidget.Button
 	githubButton  basicwidget.Button
 	discordButton basicwidget.Button
@@ -47,22 +48,11 @@ func (p *Play) SetModel(model *Model) {
 	p.model = model
 }
 
-func (p *Play) Buttons() {
-	p.websiteButton.SetOnDown(func() {
-		go OpenBrowser(configs.Website)
-	})
-	p.githubButton.SetOnDown(func() {
-		go OpenBrowser(configs.Github)
-	})
-	p.discordButton.SetOnDown(func() {
-		go OpenBrowser(configs.Discord)
-	})
-	p.patreonButton.SetOnDown(func() {
-		go OpenBrowser(configs.Patreon)
-	})
+func (p *Play) shouldShowUpdateButton() bool {
+	return p.model.lunch.status == LunchStatusUpdate
 }
 
-func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+func (p *Play) buildImages() error {
 	img, dErr := assets.TheImageCache.Get(e, "ie")
 	if dErr != nil {
 		gErr = dErr
@@ -91,45 +81,54 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	}
 	p.patreonButton.SetIcon(img)
 
-	if p.model.networkState.InternetAvailable() {
-		p.actionButton.SetText(T("play.install"))
+	return nil
+}
 
+func (p *Play) buildButtons() {
+	p.websiteButton.SetOnDown(func() {
+		go OpenBrowser(configs.Website)
+	})
+	p.githubButton.SetOnDown(func() {
+		go OpenBrowser(configs.Github)
+	})
+	p.discordButton.SetOnDown(func() {
+		go OpenBrowser(configs.Discord)
+	})
+	p.patreonButton.SetOnDown(func() {
+		go OpenBrowser(configs.Patreon)
+	})
+}
+
+func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	if err := p.buildImages(); err != nil {
+		return err
+	}
+
+	if p.model.networkState.InternetAvailable() {
 		context.SetEnabled(&p.websiteButton, true)
 		context.SetEnabled(&p.githubButton, true)
 		context.SetEnabled(&p.discordButton, true)
 		context.SetEnabled(&p.patreonButton, true)
 	} else {
-		p.actionButton.SetText(T("play.nointernet"))
-
 		context.SetEnabled(&p.websiteButton, false)
 		context.SetEnabled(&p.githubButton, false)
 		context.SetEnabled(&p.discordButton, false)
 		context.SetEnabled(&p.patreonButton, false)
 	}
 
-	// if p.model.isInternet && p.model.cache.repo != nil {
-	// 	if !p.model.play.downloading {
-	// 		if dErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, "game.zip")); dErr.Err != nil {
-	// 			context.SetEnabled(&p.actionButton, true)
-	// 			p.model.play.SetStatus("install")
-	// 		} else {
-	// 			context.SetEnabled(&p.actionButton, true)
-	// 			p.model.play.SetStatus("play")
-	// 		}
-	// 		p.actionButton.SetText(T(fmt.Sprintf("play.%s", p.model.play.status)))
-	// 	} else {
-	// 		context.SetEnabled(&p.actionButton, false)
-	// 		p.actionButton.SetText(p.model.play.downloadMsg)
-	// 	}
-	// } else {
-	// 	if dErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, "game.zip")); dErr.Err != nil {
-	// 		context.SetEnabled(&p.actionButton, false)
-	// 		p.actionButton.SetText(T("play.nointernet"))
-	// 	} else {
-	// 		context.SetEnabled(&p.actionButton, true)
-	// 		p.actionButton.SetText(T("play.play"))
-	// 	}
-	// }
+	switch p.model.lunch.status {
+	case LunchStatusInstall:
+		if p.model.networkState.InternetAvailable() {
+			p.actionButton.SetText(T("play.install"))
+		} else {
+			p.actionButton.SetText(T("play.nointernet"))
+		}
+	case LunchStatusUpdate:
+		p.actionButton.SetText(T("play.play"))
+		p.updateButton.SetText(T("play.update"))
+	case LunchStatusPlay:
+		p.actionButton.SetText(T("play.play"))
+	}
 
 	p.websiteButton.SetText(T("play.website"))
 	p.githubButton.SetText(T("play.github"))
@@ -137,30 +136,13 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	p.patreonButton.SetText(T("play.patreon"))
 
 	p.actionButton.SetOnDown(func() {
-		// if !p.model.play.downloading {
-		// 	switch p.model.play.status {
-		// 	case "install":
-		// 		for _, asset := range p.model.cache.repo.Assets {
-		// 			if IsValidGameFile(asset.GetName()) {
-		// 				p.model.play.SetDownloading(true)
-		// 				go func() {
-		// 					dErr := DownloadFile(p.model, "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip", filepath.Join(fs.CompanyDirPath, "game.zip"))
-		// 					if dErr != nil {
-		// 						log.Error().Stack().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Msg("App crashed")
-		// 					}
-		// 					p.model.play.SetDownloading(false)
-		// 				}()
-		// 			}
-		// 		}
-		// 	case "update":
-		//
-		// 	case "play":
-		//
-		// 	}
-		// }
+
+	})
+	p.updateButton.SetOnDown(func() {
+
 	})
 
-	p.Buttons()
+	p.buildButtons()
 
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
@@ -168,11 +150,15 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		Heights: []layout.Size{
 			layout.FixedSize(u * 4),
 			layout.FlexibleSize(1),
+			layout.FixedSize(u * 2),
+			layout.FlexibleSize(1),
 		},
 		RowGap: u / 2,
 	}
+
+	// Social buttons grid
 	{
-		gl := layout.GridLayout{
+		glB := layout.GridLayout{
 			Bounds: gl.CellBounds(0, 0),
 			Widths: []layout.Size{
 				layout.FlexibleSize(1),
@@ -185,20 +171,38 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 			RowGap:    u / 2,
 			ColumnGap: u / 2,
 		}
-		appender.AppendChildWidgetWithBounds(&p.websiteButton, gl.CellBounds(0, 0))
-		appender.AppendChildWidgetWithBounds(&p.githubButton, gl.CellBounds(1, 0))
-		appender.AppendChildWidgetWithBounds(&p.discordButton, gl.CellBounds(0, 1))
-		appender.AppendChildWidgetWithBounds(&p.patreonButton, gl.CellBounds(1, 1))
+		appender.AppendChildWidgetWithBounds(&p.websiteButton, glB.CellBounds(0, 0))
+		appender.AppendChildWidgetWithBounds(&p.githubButton, glB.CellBounds(1, 0))
+		appender.AppendChildWidgetWithBounds(&p.discordButton, glB.CellBounds(0, 1))
+		appender.AppendChildWidgetWithBounds(&p.patreonButton, glB.CellBounds(1, 1))
 	}
-	{
-		pt := gl.Bounds.Min
-		s := p.actionButton.DefaultSize(context)
-		pt.X += (gl.Bounds.Dx() - s.X) / 2
-		pt.Y += (gl.Bounds.Dy() - s.Y) / 2
-		appender.AppendChildWidgetWithBounds(&p.actionButton, image.Rectangle{
-			Min: pt.Add(image.Pt(-u*2, -u/2)),
-			Max: pt.Add(s.Add(image.Pt(u*2, u/2))),
-		})
+
+	actionButtonsRow := gl.CellBounds(0, 2)
+	buttonWidth := p.actionButton.DefaultSize(context).X + (u * 4)
+	totalWidth := buttonWidth
+
+	if p.shouldShowUpdateButton() {
+		totalWidth += u + p.updateButton.DefaultSize(context).X
+	}
+
+	startX := actionButtonsRow.Min.X + (actionButtonsRow.Dx()-totalWidth)/2
+
+	actionBtnBounds := image.Rect(
+		startX,
+		actionButtonsRow.Min.Y,
+		startX+buttonWidth,
+		actionButtonsRow.Max.Y,
+	)
+	appender.AppendChildWidgetWithBounds(&p.actionButton, actionBtnBounds)
+
+	if p.shouldShowUpdateButton() {
+		updateBtnBounds := image.Rect(
+			startX+buttonWidth+u,
+			actionButtonsRow.Min.Y,
+			startX+totalWidth,
+			actionButtonsRow.Max.Y,
+		)
+		appender.AppendChildWidgetWithBounds(&p.updateButton, updateBtnBounds)
 	}
 
 	return nil
