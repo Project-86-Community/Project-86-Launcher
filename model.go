@@ -37,7 +37,8 @@ import (
 )
 
 type Model struct {
-	mode string
+	mode  string
+	lunch LunchModel
 
 	networkState NetworkState
 
@@ -112,6 +113,12 @@ func (d *DataModel) SetAppScale(context *guigui.Context, scale int) *debug.Error
 func (d *DataModel) SetColorMode(context *guigui.Context, mode guigui.ColorMode) *debug.Error {
 	log.Info().Any("Mode", mode).Msg("Model.DataModel.SetColorMode")
 	d.dataFile.ColorMode = mode
+	return d.SetData(context, d.dataFile)
+}
+
+func (d *DataModel) SetGameVersion(context *guigui.Context, ver string) *debug.Error {
+	log.Info().Any("GameVersion", ver).Msg("Model.DataModel.SetGameVersion")
+	d.dataFile.GameVersion = ver
 	return d.SetData(context, d.dataFile)
 }
 
@@ -210,4 +217,24 @@ func (c *CacheModel) SetCache(cacheFile *file.Cache) *debug.Error {
 	}
 
 	return nil
+}
+
+type LunchStatus int
+
+const (
+	LunchStatusInstall LunchStatus = iota
+	LunchStatusUpdate
+	LunchStatusPlay
+)
+
+type LunchModel struct {
+	status LunchStatus
+}
+
+func (l *LunchModel) Status() LunchStatus {
+	return l.status
+}
+
+func (l *LunchModel) Set(value LunchStatus) {
+	l.status = value
 }

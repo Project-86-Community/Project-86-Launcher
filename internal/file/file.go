@@ -49,9 +49,10 @@ func mkdirAll(appDebug *debug.Debug, path string) *debug.Error {
 }
 
 type Data struct {
-	Locale    string
-	AppScale  int
-	ColorMode guigui.ColorMode
+	Locale      string
+	AppScale    int
+	ColorMode   guigui.ColorMode
+	GameVersion string
 }
 
 type Cache struct {
