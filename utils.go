@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"p86l/internal/debug"
 
+	version "github.com/hashicorp/go-version"
 	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/browser"
 	"github.com/rs/zerolog/log"
@@ -50,4 +51,18 @@ func OpenBrowser(url string) {
 	if err := browser.OpenURL(url); err != nil {
 		e.SetPopup(e.New(err, debug.InternetError, debug.ErrBrowserOpen))
 	}
+}
+
+func IsNewVersion(currentVersion, newVersion string) (bool, error) {
+	current, err := version.NewVersion(currentVersion)
+	if err != nil {
+		return false, fmt.Errorf("invalid current version: %w", err)
+	}
+
+	newer, err := version.NewVersion(newVersion)
+	if err != nil {
+		return false, fmt.Errorf("invalid new version: %w", err)
+	}
+
+	return newer.GreaterThan(current), nil
 }

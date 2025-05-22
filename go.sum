@@ -69,8 +69,14 @@ github.com/hajimehoshi/guigui v0.0.0-20250516170241-c6336ce2bf45 h1:gFJZdanzBnzg
 github.com/hajimehoshi/guigui v0.0.0-20250516170241-c6336ce2bf45/go.mod h1:EINjSr6Yl5CwqnHFvPeAXeM4pYFxy+gnMFu6dsG3YhU=
 github.com/hajimehoshi/guigui v0.0.0-20250518170430-5a30c01dc12e h1:cWpIhlOLK1XZkcVGndtzeRlfgptV7pbLaLoJR4glVSA=
 github.com/hajimehoshi/guigui v0.0.0-20250518170430-5a30c01dc12e/go.mod h1:V8JwK0eE/SSHZQRqoxwqRDdF42adysum60x7EUxrlXA=
+github.com/hajimehoshi/guigui v0.0.0-20250520054658-b80ac6ebc608 h1:bV3g6O6EbGI23F8Wcl466ZDOghAwG+ZgXOFQD7XkPvw=
+github.com/hajimehoshi/guigui v0.0.0-20250520054658-b80ac6ebc608/go.mod h1:V8JwK0eE/SSHZQRqoxwqRDdF42adysum60x7EUxrlXA=
+github.com/hajimehoshi/guigui v0.0.0-20250521182058-42bf28e6e3cc h1:iSYRULA1yVX4cHnQ4XCq9Xsg2CzBnWopGM2piYGs778=
+github.com/hajimehoshi/guigui v0.0.0-20250521182058-42bf28e6e3cc/go.mod h1:V8JwK0eE/SSHZQRqoxwqRDdF42adysum60x7EUxrlXA=
 github.com/hajimehoshi/oklab v0.1.0 h1:+ApSswl9LlB+8AYIC9ZaRO/r1emGtTF52YQleB3bW7w=
 github.com/hajimehoshi/oklab v0.1.0/go.mod h1:PQQ2H7nXuDlAr4pkdDRTfXp5tXdfIUKQpZbpZE7ugT4=
+github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
+github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/jeandeaual/go-locale v0.0.0-20250421151639-a9d6ed1b3d45 h1:vFdvrlsVU+p/KFBWTq0lTG4fvWvG88sawGlCzM+RUEU=
 github.com/jeandeaual/go-locale v0.0.0-20250421151639-a9d6ed1b3d45/go.mod h1:ZDXo8KHryOWSIqnsb/CiDq7hQUYryCgdVnxbj8tDG7o=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=

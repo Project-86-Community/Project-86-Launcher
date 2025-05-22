@@ -33,12 +33,14 @@ import (
 	"p86l/configs"
 	"p86l/internal/debug"
 	"p86l/internal/file"
+	"path/filepath"
 	"slices"
 	"sync"
 	"time"
 
 	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/basicwidget/cjkfont"
@@ -55,9 +57,9 @@ type Root struct {
 	border     basicwidget.Background
 	bgImage    basicwidget.Image
 
+	versionText basicwidget.Text
 	infoBg      basicwidget.Background
 	infoText    basicwidget.Text
-	versionText basicwidget.Text
 
 	sidebar   Sidebar
 	play      Play
@@ -137,6 +139,10 @@ func (r *Root) runApp() *debug.Error {
 	}
 	lBundle = bundle
 	lLocalizer = i18n.NewLocalizer(bundle, "en")
+
+	if dErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, "build")); dErr == nil {
+		r.model.lunch.Set(LunchStatusPlay)
+	}
 
 	return nil
 }
@@ -226,7 +232,20 @@ func (r *Root) backgroundImg(context *guigui.Context, appender *guigui.ChildWidg
 	appender.AppendChildWidgetWithPosition(&r.bgImage, image.Pt(00, yOffset))
 }
 
-func (r *Root) buildInfoText(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
+func (r *Root) buildVersionText(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
+	r.versionText.SetValue(TheDebugMode.Version)
+
+	sidebarBounds := context.Bounds(&r.sidebar)
+	textSize := context.Size(&r.versionText)
+
+	xPos := sidebarBounds.Min.X + (sidebarBounds.Dx()-textSize.X)/2
+	yPos := sidebarBounds.Max.Y - textSize.Y - 10
+
+	context.SetOpacity(&r.versionText, 0.5)
+	appender.AppendChildWidgetWithPosition(&r.versionText, image.Pt(xPos, yPos))
+}
+
+func (r *Root) buildInfo(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	status := "No connection"
 	if r.model.networkState.InternetAvailable() {
 		status = "Connected"
@@ -268,18 +287,6 @@ func (r *Root) buildInfoText(context *guigui.Context, appender *guigui.ChildWidg
 	appender.AppendChildWidgetWithPosition(&r.infoText, textPos)
 }
 
-func (r *Root) buildVersionText(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	r.versionText.SetValue(TheDebugMode.Version)
-
-	sidebarBounds := context.Bounds(&r.sidebar)
-	textSize := context.Size(&r.versionText)
-
-	xPos := sidebarBounds.Min.X + (sidebarBounds.Dx()-textSize.X)/2
-	yPos := sidebarBounds.Max.Y - textSize.Y - 10
-
-	appender.AppendChildWidgetWithPosition(&r.versionText, image.Pt(xPos, yPos))
-}
-
 func (r *Root) updateFontFaceSources(context *guigui.Context) {
 	r.locales = slices.Delete(r.locales, 0, len(r.locales))
 	r.locales = context.AppendLocales(r.locales)
@@ -318,8 +325,8 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		},
 	}
 	appender.AppendChildWidgetWithBounds(&r.sidebar, gl.CellBounds(0, 0))
-	bounds := gl.CellBounds(1, 0)
 
+	// Background and sidebar border
 	context.SetOpacity(&r.background, 0.9)
 	context.SetOpacity(&r.border, 0.5)
 
@@ -328,7 +335,7 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	borderBounds.Max.X = context.Size(&r.sidebar).X
 
 	if r.model.Mode() != "home" {
-		appender.AppendChildWidgetWithBounds(&r.background, bounds)
+		appender.AppendChildWidgetWithBounds(&r.background, gl.CellBounds(1, 0))
 		appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
 	}
 
@@ -343,7 +350,23 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		appender.AppendChildWidgetWithBounds(&r.about, gl.CellBounds(1, 0))
 	}
 	r.buildVersionText(context, appender)
-	r.buildInfoText(context, appender)
+	r.buildInfo(context, appender)
+
+	return nil
+}
+
+// Enable Update status, when we have internet and valid cachefiles
+func (r *Root) tickUpdate(context *guigui.Context) *debug.Error {
+	gameVersion := r.model.data.File().GameVersion
+	if gameVersion != "" {
+		isBig, err := IsNewVersion(gameVersion, r.model.cache.File().Repo.GetTagName())
+		if err != nil {
+			return e.New(err, debug.DataError, debug.ErrDataLoad)
+		}
+		if isBig {
+			r.model.lunch.status = LunchStatusUpdate
+		}
+	}
 
 	return nil
 }
@@ -351,6 +374,14 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 func (r *Root) Tick(_context *guigui.Context) error {
 	r.model.networkState.netMutex.Lock()
 	defer r.model.networkState.netMutex.Unlock()
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyDigit1) {
+		r.model.lunch.status = LunchStatusInstall
+	} else if inpututil.IsKeyJustPressed(ebiten.KeyDigit2) {
+		r.model.lunch.status = LunchStatusUpdate
+	} else if inpututil.IsKeyJustPressed(ebiten.KeyDigit3) {
+		r.model.lunch.status = LunchStatusPlay
+	}
 
 	if ebiten.Tick()-r.model.networkState.lastCheckTick >= int64(ebiten.TPS()) && !r.model.networkState.checkingInProgress {
 		r.model.networkState.checkingInProgress = true
@@ -360,6 +391,14 @@ func (r *Root) Tick(_context *guigui.Context) error {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			available := r.checkInternet(ctx)
 			defer cancel()
+
+			// Enable play status, when build folder is detected
+			dErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, "build"))
+			if dErr == nil {
+				r.model.lunch.status = LunchStatusPlay
+			} else {
+				r.model.lunch.status = LunchStatusInstall
+			}
 
 			var limits *github.RateLimits
 			if available {
@@ -376,6 +415,11 @@ func (r *Root) Tick(_context *guigui.Context) error {
 						cacheFile.Timestamp = time.Now()
 						cacheFile.ExpiresIn = time.Hour
 						r.model.cache.SetCache(&cacheFile)
+					}
+				} else {
+					dErr := r.tickUpdate(_context)
+					if dErr != nil {
+						e.SetToast(dErr)
 					}
 				}
 			}
