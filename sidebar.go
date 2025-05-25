@@ -58,6 +58,8 @@ type sidebarContent struct {
 	guigui.DefaultWidget
 
 	list        basicwidget.List[string]
+	lunchPanel  basicwidget.Panel
+	lunchText   basicwidget.Text
 	toastPanel  basicwidget.Panel
 	toastButton basicwidget.Button
 	toastText   basicwidget.Text
@@ -107,6 +109,13 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 		s.model.SetMode(item.ID)
 	})
 
+	if msg := s.model.lunch.Msg(); msg != "" {
+		s.lunchText.SetValue(msg)
+	} else {
+		s.lunchText.SetValue("")
+	}
+	s.lunchPanel.SetContent(&s.lunchText)
+
 	s.toastButton.SetOnDown(func() {
 		if e.ToastErr == nil {
 			return
@@ -115,9 +124,7 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 	})
 
 	s.toastButton.SetText("Copy")
-	if s.toastText.Value() != e.String(e.ToastErr) {
-		s.toastText.SetValue(e.String(e.ToastErr))
-	}
+	s.toastText.SetValue(e.String(e.ToastErr))
 	s.toastPanel.SetContent(&s.toastText)
 
 	u := basicwidget.UnitSize(context)
@@ -125,12 +132,14 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 		Bounds: context.Bounds(s),
 		Heights: []layout.Size{
 			layout.FixedSize(s.list.DefaultSize(context).Y + (u * 2)),
+			layout.FixedSize(s.lunchText.DefaultSize(context).Y + (u / 2)),
 			layout.FixedSize(s.toastText.DefaultSize(context).Y + (u / 2)),
 		},
 	}
 	appender.AppendChildWidgetWithBounds(&s.list, gl.CellBounds(0, 0))
+	appender.AppendChildWidgetWithBounds(&s.lunchPanel, gl.CellBounds(0, 1))
 	glE := layout.GridLayout{
-		Bounds: gl.CellBounds(0, 1),
+		Bounds: gl.CellBounds(0, 2),
 		Widths: []layout.Size{
 			layout.FixedSize(s.toastButton.DefaultSize(context).Y + u),
 			layout.FlexibleSize(1),
