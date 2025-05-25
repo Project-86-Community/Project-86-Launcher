@@ -198,3 +198,7 @@ func (a *AppFS) FileDataPath() string {
 func (a *AppFS) FileCachePath() string {
 	return filepath.Join(a.DirAppPath(), configs.CacheFile)
 }
+
+func (a *AppFS) DirGamePath() string {
+	return filepath.Join(a.CompanyDirPath, "build")
+}
