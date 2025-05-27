@@ -22,14 +22,13 @@
 package p86l
 
 import (
-	"p86l/configs"
 	"p86l/internal/debug"
 	"p86l/internal/file"
-	"path/filepath"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/layout"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/text/language"
 )
 
@@ -157,8 +156,9 @@ func (s *Settings) buildColorMode(context *guigui.Context) {
 
 func (s *Settings) buildOpenFolder() {
 	s.openFolderButton.SetOnDown(func() {
+		log.Info().Str("Open Folder", fs.DirAppPath()).Msg("Settings")
 		go func() {
-			if dErr := fs.OpenFileManager(e, filepath.Join(fs.CompanyDirPath, configs.AppName)); dErr != nil {
+			if dErr := fs.OpenFileManager(e, fs.DirAppPath()); dErr != nil {
 				e.SetToast(dErr)
 			}
 		}()

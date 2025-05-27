@@ -109,11 +109,8 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 		s.model.SetMode(item.ID)
 	})
 
-	if msg := s.model.lunch.Msg(); msg != "" {
-		s.lunchText.SetValue(msg)
-	} else {
-		s.lunchText.SetValue("")
-	}
+	s.lunchText.SetScale(0.8)
+	s.lunchText.SetValue(s.model.lunch.Msg())
 	s.lunchPanel.SetContent(&s.lunchText)
 
 	s.toastButton.SetOnDown(func() {
@@ -123,8 +120,9 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 		clipboard.WriteAll(e.String(e.ToastErr))
 	})
 
-	s.toastButton.SetText("Copy")
+	s.toastText.SetScale(0.8)
 	s.toastText.SetValue(e.String(e.ToastErr))
+	s.toastButton.SetText("Copy")
 	s.toastPanel.SetContent(&s.toastText)
 
 	u := basicwidget.UnitSize(context)
