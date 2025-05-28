@@ -23,8 +23,12 @@ package p86l
 
 import (
 	"fmt"
+	"io"
 	"p86l/internal/debug"
+	"time"
 
+	"github.com/dustin/go-humanize"
+	"github.com/hashicorp/go-getter"
 	version "github.com/hashicorp/go-version"
 	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/browser"
@@ -65,4 +69,90 @@ func IsNewVersion(currentVersion, newVersion string) (bool, error) {
 	}
 
 	return newer.GreaterThan(current), nil
+}
+
+type DownloadType int
+
+const (
+	GameDownloadType DownloadType = iota
+)
+
+type ProgressTracker struct {
+	Model *Model
+}
+
+func (p *ProgressTracker) TrackProgress(src string, currentSize, totalSize int64, stream io.ReadCloser) io.ReadCloser {
+	return &readProgress{
+		Model:      p.Model,
+		ReadCloser: stream,
+		current:    currentSize,
+		total:      totalSize,
+		source:     src,
+		startTime:  time.Now(),
+		lastTime:   time.Now(),
+		lastBytes:  currentSize,
+	}
+}
+
+type readProgress struct {
+	Model *Model
+	io.ReadCloser
+	current   int64
+	total     int64
+	source    string
+	startTime time.Time
+	lastTime  time.Time
+	lastBytes int64
+}
+
+func (r *readProgress) Read(p []byte) (n int, err error) {
+	n, err = r.ReadCloser.Read(p)
+	if n > 0 {
+		now := time.Now()
+		r.current += int64(n)
+
+		// Calculate speed and ETA
+		timeElapsed := now.Sub(r.lastTime).Seconds()
+		if timeElapsed > 0.1 { // Update stats every 100ms to smooth fluctuations
+			bytesSinceLast := r.current - r.lastBytes
+			speed := float64(bytesSinceLast) / timeElapsed
+
+			remainingBytes := r.total - r.current
+			eta := time.Duration(float64(remainingBytes)/speed) * time.Second
+
+			percentage := float64(r.current) / float64(r.total) * 100
+
+			msg := fmt.Sprintf("- Downloading %.0f%% (%s/%s), Speed: %s/s, ETA: %s -",
+				percentage,
+				humanize.IBytes(uint64(r.current)),
+				humanize.IBytes(uint64(r.total)),
+				humanize.IBytes(uint64(speed)),
+				eta.Round(time.Second),
+			)
+
+			r.Model.lunch.SetMsg(msg)
+
+			r.lastTime = now
+			r.lastBytes = r.current
+		}
+	}
+
+	return
+}
+
+func DownloadFile(model *Model, dest, sourceUrl string) *debug.Error {
+	client := &getter.Client{
+		Src:              sourceUrl,
+		Dst:              dest,
+		Mode:             getter.ClientModeDir,
+		ProgressListener: &ProgressTracker{Model: model},
+	}
+
+	err := client.Get()
+	if err != nil {
+		return e.New(err, debug.InternetError, debug.ErrInternetRequestInvalid)
+	}
+
+	model.lunch.SetMsg("")
+	return nil
 }

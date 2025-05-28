@@ -29,6 +29,7 @@ import (
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/layout"
+	"github.com/rs/zerolog/log"
 )
 
 type Play struct {
@@ -99,6 +100,35 @@ func (p *Play) buildButtons() {
 	})
 }
 
+func (p *Play) install(context *guigui.Context) {
+	switch p.model.lunch.status {
+	case LunchStatusInstall:
+		log.Info().Str("Install game", "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip").Msg("Play")
+		context.SetEnabled(&p.actionButton, false)
+		go func() {
+			dErr := DownloadFile(p.model, fs.DirGamePath(), "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip")
+			if dErr != nil {
+				e.SetToast(dErr)
+			}
+			p.model.data.SetGameVersion(context, "v0.0.0-alpha")
+			context.SetEnabled(&p.actionButton, true)
+		}()
+	}
+}
+
+func (p *Play) update(context *guigui.Context) {
+	log.Info().Str("Update game", "https://github.com/Taliayaya/Project-86/releases/download/v0.0.1-alpha/Project86-v0.0.1-alpha.zip").Msg("Play")
+	context.SetEnabled(&p.updateButton, false)
+	go func() {
+		dErr := DownloadFile(p.model, fs.DirGamePath(), "https://github.com/Taliayaya/Project-86/releases/download/v0.0.1-alpha/Project86-v0.0.1-alpha.zip")
+		if dErr != nil {
+			e.SetToast(dErr)
+		}
+		p.model.data.SetGameVersion(context, "v1.8.2-alpha")
+		context.SetEnabled(&p.updateButton, true)
+	}()
+}
+
 func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	if err := p.buildImages(); err != nil {
 		return err
@@ -136,10 +166,12 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	p.patreonButton.SetText(T("play.patreon"))
 
 	p.actionButton.SetOnDown(func() {
-
+		p.install(context)
 	})
 	p.updateButton.SetOnDown(func() {
-
+		if p.model.lunch.status == LunchStatusUpdate {
+			p.update(context)
+		}
 	})
 
 	p.buildButtons()

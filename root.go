@@ -258,6 +258,7 @@ func (r *Root) buildInfo(context *guigui.Context, appender *guigui.ChildWidgetAp
 		resetTime = r.model.networkState.GitHubRateLimit().Core.Reset.Time.Format(time.DateTime)
 	}
 
+	r.infoText.SetScale(0.8)
 	if remaining == 60 || !r.model.networkState.InternetAvailable() {
 		r.infoText.SetValue(fmt.Sprintf("Internet: %s, API: %d/60", status, remaining))
 	} else {
@@ -357,6 +358,12 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 
 // Enable Update status, when we have internet and valid cachefiles
 func (r *Root) tickUpdate(context *guigui.Context) *debug.Error {
+	dErr := fs.IsDir(e, fs.DirGamePath())
+	if dErr != nil {
+		r.model.lunch.Set(LunchStatusInstall)
+		return nil
+	}
+
 	gameVersion := r.model.data.File().GameVersion
 	if gameVersion != "" {
 		isBig, err := IsNewVersion(gameVersion, r.model.cache.File().Repo.GetTagName())
@@ -364,8 +371,12 @@ func (r *Root) tickUpdate(context *guigui.Context) *debug.Error {
 			return e.New(err, debug.DataError, debug.ErrDataLoad)
 		}
 		if isBig {
-			r.model.lunch.status = LunchStatusUpdate
+			r.model.lunch.Set(LunchStatusUpdate)
+		} else {
+			r.model.lunch.Set(LunchStatusPlay)
 		}
+	} else {
+		r.model.lunch.Set(LunchStatusPlay)
 	}
 
 	return nil
@@ -388,21 +399,13 @@ func (r *Root) Tick(_context *guigui.Context) error {
 		r.model.networkState.lastCheckTick = ebiten.Tick()
 
 		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			available := r.checkInternet(ctx)
 			defer cancel()
 
-			// Enable play status, when build folder is detected
-			dErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, "build"))
-			if dErr == nil {
-				r.model.lunch.status = LunchStatusPlay
-			} else {
-				r.model.lunch.status = LunchStatusInstall
-			}
-
 			var limits *github.RateLimits
 			if available {
-				ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+				ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 				limits = r.checkGitHubRateLimit(ctx)
 				cancel()
 
@@ -421,6 +424,14 @@ func (r *Root) Tick(_context *guigui.Context) error {
 					if dErr != nil {
 						e.SetToast(dErr)
 					}
+				}
+			} else {
+				// Enable play status, when build folder is detected and no internet
+				dErr := fs.IsDir(e, fs.DirGamePath())
+				if dErr == nil {
+					r.model.lunch.Set(LunchStatusPlay)
+				} else {
+					r.model.lunch.Set(LunchStatusInstall)
 				}
 			}
 

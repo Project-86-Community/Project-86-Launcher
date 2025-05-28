@@ -229,12 +229,21 @@ const (
 
 type LunchModel struct {
 	status LunchStatus
+	msg    string
 }
 
 func (l *LunchModel) Status() LunchStatus {
 	return l.status
 }
 
+func (l *LunchModel) Msg() string {
+	return l.msg
+}
+
 func (l *LunchModel) Set(value LunchStatus) {
 	l.status = value
+}
+
+func (l *LunchModel) SetMsg(value string) {
+	l.msg = value
 }
