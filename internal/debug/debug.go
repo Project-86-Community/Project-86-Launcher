@@ -32,6 +32,7 @@ type ErrorType string
 
 const (
 	UnknownError  ErrorType = "unknown"
+	AppError      ErrorType = "app"
 	FSError       ErrorType = "filesystem"
 	DataError     ErrorType = "data"
 	CacheError    ErrorType = "cache"
@@ -42,6 +43,7 @@ const (
 	// App errors (1001-1999)
 	ErrUnknown int = iota + 1001
 	ErrBrowserOpen
+	ErrClipboardWrite
 )
 
 const (

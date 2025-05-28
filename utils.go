@@ -53,7 +53,7 @@ func T(key string) string {
 func OpenBrowser(url string) {
 	log.Info().Str("Url", url).Msg("OpenBrowser")
 	if err := browser.OpenURL(url); err != nil {
-		e.SetPopup(e.New(err, debug.InternetError, debug.ErrBrowserOpen))
+		e.SetPopup(e.New(err, debug.AppError, debug.ErrBrowserOpen))
 	}
 }
 

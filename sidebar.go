@@ -23,6 +23,7 @@ package p86l
 
 import (
 	"image"
+	"p86l/internal/debug"
 
 	"github.com/atotto/clipboard"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -117,7 +118,10 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 		if e.ToastErr == nil {
 			return
 		}
-		clipboard.WriteAll(e.String(e.ToastErr))
+		err := clipboard.WriteAll(e.String(e.ToastErr))
+		if err != nil {
+			e.SetToast(e.New(err, debug.AppError, debug.ErrClipboardWrite))
+		}
 	})
 
 	s.toastText.SetScale(0.8)
