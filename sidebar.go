@@ -22,7 +22,6 @@
 package p86l
 
 import (
-	"image"
 	"p86l/internal/debug"
 
 	"github.com/atotto/clipboard"
@@ -192,7 +191,7 @@ func (s *sidebarContent) Tick(context *guigui.Context) error {
 		context.SetFocused(s, true)
 		return nil
 	}
-	if context.IsWidgetHitAt(s, image.Pt(ebiten.CursorPosition())) {
+	if context.IsWidgetHitAtCursor(s) {
 		_, dy := ebiten.Wheel()
 
 		currentIndex := s.list.SelectedItemIndex()

@@ -9,7 +9,7 @@ require (
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/google/go-github/v71 v71.0.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250518103147-cd31850015bb
-	github.com/hajimehoshi/guigui v0.0.0-20250521182058-42bf28e6e3cc
+	github.com/hajimehoshi/guigui v0.0.0-20250528162800-1add44a7ef81
 	github.com/hashicorp/go-getter v1.7.8
 	github.com/hashicorp/go-version v1.7.0
 	github.com/kisielk/errcheck v1.9.0
@@ -33,7 +33,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20250329061421-6d0a8e981e4c // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
-	github.com/ebitengine/purego v0.9.0-alpha.5 // indirect
+	github.com/ebitengine/purego v0.9.0-alpha.6 // indirect
 	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
