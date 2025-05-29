@@ -40,7 +40,6 @@ import (
 
 	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/basicwidget/cjkfont"
@@ -279,12 +278,14 @@ func (r *Root) buildInfo(context *guigui.Context, appender *guigui.ChildWidgetAp
 		bgPos.Y,
 	)
 
-	appender.AppendChildWidgetWithBounds(&r.infoBg, image.Rect(
-		bgPos.X,
-		bgPos.Y,
-		bgPos.X+bgWidth,
-		bgPos.Y+bgHeight,
-	))
+	if r.model.Mode() == "home" {
+		appender.AppendChildWidgetWithBounds(&r.infoBg, image.Rect(
+			bgPos.X,
+			bgPos.Y,
+			bgPos.X+bgWidth,
+			bgPos.Y+bgHeight,
+		))
+	}
 	appender.AppendChildWidgetWithPosition(&r.infoText, textPos)
 }
 
@@ -385,14 +386,6 @@ func (r *Root) tickUpdate(context *guigui.Context) *debug.Error {
 func (r *Root) Tick(_context *guigui.Context) error {
 	r.model.networkState.netMutex.Lock()
 	defer r.model.networkState.netMutex.Unlock()
-
-	if inpututil.IsKeyJustPressed(ebiten.KeyDigit1) {
-		r.model.lunch.status = LunchStatusInstall
-	} else if inpututil.IsKeyJustPressed(ebiten.KeyDigit2) {
-		r.model.lunch.status = LunchStatusUpdate
-	} else if inpututil.IsKeyJustPressed(ebiten.KeyDigit3) {
-		r.model.lunch.status = LunchStatusPlay
-	}
 
 	if ebiten.Tick()-r.model.networkState.lastCheckTick >= int64(ebiten.TPS()) && !r.model.networkState.checkingInProgress {
 		r.model.networkState.checkingInProgress = true

@@ -25,6 +25,8 @@ import (
 	"p86l/internal/debug"
 	"p86l/internal/file"
 
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/layout"
@@ -248,6 +250,73 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 		RowGap: u / 2,
 	}
 	appender.AppendChildWidgetWithBounds(&s.form, gl.CellBounds(0, 0))
+
+	return nil
+}
+
+func (s *Settings) HandleButtonInput(context *guigui.Context) guigui.HandleInputResult {
+	if s.dErr != nil {
+		gErr = s.dErr
+		return guigui.AbortHandlingInputByWidget(s)
+	}
+
+	currentIndex := s.scaleSegmentedControl.SelectedItemIndex()
+	itemsCount := 5
+
+	if currentIndex >= 0 && currentIndex < itemsCount && context.IsFocusedOrHasFocusedChild(&s.scaleSegmentedControl) {
+		switch {
+		case inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft):
+			newIndex := currentIndex - 1
+			if newIndex >= 0 {
+				s.scaleSegmentedControl.SelectItemByIndex(newIndex)
+				if item, ok := s.scaleSegmentedControl.ItemByIndex(newIndex); ok && item.ID != s.model.data.File().AppScale {
+					s.assertErr(s.model.data.SetAppScale(context, item.ID))
+				}
+				return guigui.HandleInputByWidget(s)
+			}
+		case inpututil.IsKeyJustPressed(ebiten.KeyArrowRight):
+			newIndex := currentIndex + 1
+			if newIndex < itemsCount {
+				s.scaleSegmentedControl.SelectItemByIndex(newIndex)
+				if item, ok := s.scaleSegmentedControl.ItemByIndex(newIndex); ok && item.ID != s.model.data.File().AppScale {
+					s.assertErr(s.model.data.SetAppScale(context, item.ID))
+				}
+				return guigui.HandleInputByWidget(s)
+			}
+		}
+	}
+
+	return guigui.HandleInputResult{}
+}
+
+func (s *Settings) Tick(context *guigui.Context) error {
+	if s.dErr != nil {
+		gErr = s.dErr
+		return s.dErr.Err
+	}
+
+	if context.IsWidgetHitAtCursor(&s.scaleSegmentedControl) || context.IsFocusedOrHasFocusedChild(&s.scaleSegmentedControl) {
+		_, dy := ebiten.Wheel()
+
+		currentIndex := s.scaleSegmentedControl.SelectedItemIndex()
+		itemsCount := 5
+
+		newIndex := currentIndex - int(dy)
+
+		if newIndex < 0 {
+			newIndex = 0
+		} else if newIndex >= itemsCount {
+			newIndex = itemsCount - 1
+		}
+
+		if newIndex != currentIndex {
+			s.scaleSegmentedControl.SelectItemByIndex(newIndex)
+			if item, ok := s.scaleSegmentedControl.ItemByIndex(newIndex); ok && item.ID != s.model.data.File().AppScale {
+				s.assertErr(s.model.data.SetAppScale(context, item.ID))
+			}
+			context.SetFocused(&s.scaleSegmentedControl, true)
+		}
+	}
 
 	return nil
 }

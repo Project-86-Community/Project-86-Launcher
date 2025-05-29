@@ -106,6 +106,9 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 			s.model.SetMode("")
 			return
 		}
+		if item.ID == s.model.Mode() {
+			return
+		}
 		s.model.SetMode(item.ID)
 	})
 
@@ -191,7 +194,7 @@ func (s *sidebarContent) Tick(context *guigui.Context) error {
 		context.SetFocused(s, true)
 		return nil
 	}
-	if context.IsWidgetHitAtCursor(s) {
+	if context.IsWidgetHitAtCursor(&s.list) {
 		_, dy := ebiten.Wheel()
 
 		currentIndex := s.list.SelectedItemIndex()
@@ -210,9 +213,8 @@ func (s *sidebarContent) Tick(context *guigui.Context) error {
 			if item, ok := s.list.ItemByIndex(newIndex); ok && item.ID != s.model.Mode() {
 				s.model.SetMode(item.ID)
 			}
+			context.SetFocused(&s.list, true)
 		}
-
-		context.SetFocused(s, true)
 	}
 
 	return nil
