@@ -46,30 +46,30 @@ func (c *Changelog) SetModel(model *Model) {
 }
 
 func (c *Changelog) IsChangelog() bool {
-	file := c.model.cache.File()
-	return file != nil && file.Validate(e) == nil
+	file := c.model.CacheM.File()
+	return file.Validate(e) == nil
 }
 
 func (c *Changelog) IsTranslated() bool {
-	return c.model.cache.IsTranslate() && c.model.cache.TranslatedChangelog() != ""
+	return c.model.CacheM.IsTranslate() && c.model.CacheM.TranslatedChangelog() != ""
 }
 
 func (c *Changelog) handleTranslationToggle(value bool) {
 	if value {
 		go c.translateChangelog()
 	}
-	c.model.cache.isTranslate = value
+	c.model.CacheM.isTranslate = value
 }
 
 func (c *Changelog) translateChangelog() {
-	body := c.model.cache.File().Repo.GetBody()
-	targetLang := c.model.data.File().Locale
+	body := c.model.CacheM.File().Repo.GetBody()
+	targetLang := c.model.DataM.File().Locale
 	result, err := t.Translate(body, "auto", targetLang)
 	if err != nil {
 		log.Error().Err(err).Msg("Translation failed")
 		return
 	}
-	c.model.cache.translatedChangelog = result.Text
+	c.model.CacheM.translatedChangelog = result.Text
 	log.Info().Any("translation", result).Msg("Changelog translated")
 }
 
@@ -83,7 +83,7 @@ func (c *Changelog) configureURLButton(context *guigui.Context) {
 	c.urlButton.SetText(T("changelog.open"))
 	c.urlButton.SetOnDown(func() {
 		if c.model.networkState.InternetAvailable() && c.IsChangelog() {
-			go OpenBrowser(c.model.cache.File().Repo.GetHTMLURL())
+			go OpenBrowser(c.model.CacheM.File().Repo.GetHTMLURL())
 		}
 	})
 	c.form.SetItems([]basicwidget.FormItem{
@@ -95,13 +95,13 @@ func (c *Changelog) configureURLButton(context *guigui.Context) {
 func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	isChangelog := c.IsChangelog()
 	hasNet := c.model.networkState.InternetAvailable()
-	locale := c.model.data.File().Locale
+	locale := c.model.DataM.File().Locale
 
 	if isChangelog {
 		if c.IsTranslated() {
-			c.infoText.SetValue(c.model.cache.TranslatedChangelog())
+			c.infoText.SetValue(c.model.CacheM.TranslatedChangelog())
 		} else {
-			c.infoText.SetValue(c.model.cache.File().Repo.GetBody())
+			c.infoText.SetValue(c.model.CacheM.File().Repo.GetBody())
 		}
 	} else {
 		c.infoText.SetValue("")
@@ -112,7 +112,7 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 
 	gtlEnabled := hasNet && locale != language.English.String() && isChangelog
 	context.SetEnabled(&c.gtlToggle, gtlEnabled)
-	c.gtlToggle.SetValue(gtlEnabled && c.model.cache.IsTranslate())
+	c.gtlToggle.SetValue(gtlEnabled && c.model.CacheM.IsTranslate())
 
 	c.gtlText.SetValue(T("changelog.gtl"))
 	c.gtlToggle.SetOnValueChanged(c.handleTranslationToggle)

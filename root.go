@@ -33,7 +33,7 @@ import (
 	"p86l/configs"
 	"p86l/internal/debug"
 	"p86l/internal/file"
-	"path/filepath"
+	"runtime"
 	"slices"
 	"sync"
 	"time"
@@ -78,7 +78,7 @@ type Root struct {
 // Reduce repeating `if (err) != nil` statements
 func (r *Root) assertErr(dErr *debug.Error) {
 	if dErr != nil {
-		log.Error().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Msg("Root.assertErr")
+		log.Error().Int("Code", dErr.Code).Any("Type", dErr.Type).Err((dErr.Err)).Str("Root", "assertErr").Msg("ErrorManager")
 		r.dErr = dErr
 	}
 }
@@ -139,10 +139,6 @@ func (r *Root) runApp() *debug.Error {
 	lBundle = bundle
 	lLocalizer = i18n.NewLocalizer(bundle, "en")
 
-	if dErr := fs.IsDir(e, filepath.Join(fs.CompanyDirPath, "build")); dErr == nil {
-		r.model.lunch.Set(LunchStatusPlay)
-	}
-
 	return nil
 }
 
@@ -150,14 +146,12 @@ func (r *Root) loadB(context *guigui.Context, loadType, loadFile string) *debug.
 	if dErr := fs.Stat(e, loadFile); dErr != nil {
 		switch loadType {
 		case "data":
-			log.Info().Str("Data", "data not found, creating data...").Msg("Root.LoadB")
-			var dataFile file.Data
-			dataFile.Locale = language.English.String()
-			dataFile.AppScale = 2
-			dataFile.ColorMode = guigui.ColorModeLight
-			return r.model.data.SetData(context, dataFile)
+			log.Info().Str("Data", "data not found, creating data...").Str("Root", "loadB").Msg("FileManager")
+			dataFile := NewData()
+			dataFile.Log()
+			return r.model.DataM.SetData(context, dataFile)
 		case "cache":
-			log.Info().Str("Cache", "cache not found").Msg("Root.LoadB")
+			log.Info().Str("Cache", "cache not found").Str("Root", "loadB").Msg("FileManager")
 			return nil
 		}
 	}
@@ -170,44 +164,30 @@ func (r *Root) loadB(context *guigui.Context, loadType, loadFile string) *debug.
 
 	switch loadType {
 	case "data":
-		log.Info().Str("Data", "data found, loading data...").Msg("Root.LoadB")
+		log.Info().Str("Data", "data found, loading data...").Str("Root", "loadB").Msg("FileManager")
 		var dataFile file.Data
 
 		if err := decoder.Decode(&dataFile); err != nil {
 			return e.New(err, debug.FSError, debug.ErrDataLoad)
 		}
 
-		return r.model.data.SetData(context, dataFile)
+		dataFile.Log()
+		return r.model.DataM.SetData(context, dataFile)
 	case "cache":
-		log.Info().Str("Cache", "cache found, loading cache...").Msg("Root.LoadB")
+		log.Info().Str("Cache", "cache found, loading cache...").Str("Root", "loadB").Msg("FileManager")
 		var cacheFile file.Cache
 
 		if err := decoder.Decode(&cacheFile); err != nil {
 			return e.New(err, debug.FSError, debug.ErrCacheLoad)
 		}
 
-		if cacheFile.Repo != nil {
-			dErr := cacheFile.Validate(e)
-			if dErr != nil {
-				return dErr
-			}
-		}
-
-		r.model.cache.cacheFile = &cacheFile
-		return nil
+		return r.model.CacheM.SetCache(cacheFile)
 	}
 
 	return nil
 }
 
-func (r *Root) backgroundImg(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	img, dErr := assets.TheImageCache.Get(e, "banner")
-	r.assertErr(dErr)
-	if dErr != nil {
-		return
-	}
-
-	r.bgImage.SetImage(img)
+func (r *Root) buildBackground(context *guigui.Context, img *ebiten.Image) image.Point {
 	imgWidth := img.Bounds().Dx()
 	imgHeight := img.Bounds().Dy()
 	aspectRatio := float64(imgHeight) / float64(imgWidth)
@@ -228,7 +208,8 @@ func (r *Root) backgroundImg(context *guigui.Context, appender *guigui.ChildWidg
 	if newHeight > windowSize.Y {
 		yOffset = -(newHeight - windowSize.Y) / 2
 	}
-	appender.AppendChildWidgetWithPosition(&r.bgImage, image.Pt(00, yOffset))
+
+	return image.Pt(00, yOffset)
 }
 
 func (r *Root) buildVersionText(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
@@ -304,13 +285,26 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		r.assertErr(r.runApp())
 		r.assertErr(r.loadB(context, "data", configs.DataFile))
 		r.assertErr(r.loadB(context, "cache", configs.CacheFile))
+
+		log.Info().Msg("..:: GuiGui GUI Framework Alpha ::..")
+		log.Info().Str("Version", TheDebugMode.Version).Msg("P86L - Project 86 Launcher")
+		log.Info().Str("Detected OS", runtime.GOOS).Msg("Operating System")
+		log.Info().Str("Graphics API", "TODO:").Msg("GPU")
 	})
-	r.backgroundImg(context, appender)
 
 	if r.dErr != nil {
 		gErr = r.dErr
 		return r.dErr.Err
 	}
+
+	img, dErr := assets.TheImageCache.Get(e, "banner")
+	if dErr != nil {
+		gErr = r.dErr
+		return dErr.Err
+	}
+	r.bgImage.SetImage(img)
+	imgPosition := r.buildBackground(context, img)
+	appender.AppendChildWidgetWithPosition(&r.bgImage, imgPosition)
 
 	r.sidebar.SetModel(&r.model)
 	r.play.SetModel(&r.model)
@@ -365,9 +359,9 @@ func (r *Root) tickUpdate(context *guigui.Context) *debug.Error {
 		return nil
 	}
 
-	gameVersion := r.model.data.File().GameVersion
+	gameVersion := r.model.DataM.File().GameVersion
 	if gameVersion != "" {
-		isBig, err := IsNewVersion(gameVersion, r.model.cache.File().Repo.GetTagName())
+		isBig, err := IsNewVersion(gameVersion, r.model.CacheM.File().Repo.GetTagName())
 		if err != nil {
 			return e.New(err, debug.DataError, debug.ErrDataLoad)
 		}
@@ -403,14 +397,14 @@ func (r *Root) Tick(_context *guigui.Context) error {
 				cancel()
 
 				dErr := fs.Stat(e, configs.CacheFile)
-				if (dErr != nil && dErr.Code == debug.ErrFSRootFileNotExist || r.model.cache.File() == nil) || (r.model.cache.File() != nil && r.model.cache.File().Repo == nil) {
+				if (dErr != nil && dErr.Code == debug.ErrFSRootFileNotExist) || !r.model.CacheM.IsVaild() {
 					releases := r.fetchCache()
 					if releases != nil {
 						var cacheFile file.Cache
 						cacheFile.Repo = releases
 						cacheFile.Timestamp = time.Now()
 						cacheFile.ExpiresIn = time.Hour
-						r.model.cache.SetCache(&cacheFile)
+						r.model.CacheM.SetCache(cacheFile)
 					}
 				} else {
 					dErr := r.tickUpdate(_context)

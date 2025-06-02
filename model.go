@@ -32,6 +32,7 @@ import (
 
 	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/guigui"
+	"github.com/hashicorp/go-version"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/text/language"
 )
@@ -42,8 +43,8 @@ type Model struct {
 
 	networkState NetworkState
 
-	data  DataModel
-	cache CacheModel
+	DataM  DataModel
+	CacheM CacheModel
 }
 
 func (m *Model) Mode() string {
@@ -91,39 +92,67 @@ func (n *NetworkState) Valid() bool {
 }
 
 type DataModel struct {
-	dataFile file.Data
+	validGameVersion bool
+	file             file.Data
+}
+
+func NewData() file.Data {
+	return file.Data{
+		Locale:      language.English.String(),
+		AppScale:    2,
+		ColorMode:   guigui.ColorModeLight,
+		GameVersion: "",
+	}
+}
+
+func (d *DataModel) IsValidGameVersion() bool {
+	return d.validGameVersion
 }
 
 func (d *DataModel) File() file.Data {
-	return d.dataFile
+	return d.file
 }
 
 func (d *DataModel) SetLocale(context *guigui.Context, locale language.Tag) *debug.Error {
-	log.Info().Any("Locale", locale).Msg("Model.DataModel.SetLocale")
-	d.dataFile.Locale = locale.String()
-	return d.SetData(context, d.dataFile)
+	log.Info().Any("Translation", locale).Str("DataModel", "SetLocale").Msg("FileManager")
+	d.file.Locale = locale.String()
+	return d.SetData(context, d.file)
 }
 
 func (d *DataModel) SetAppScale(context *guigui.Context, scale int) *debug.Error {
-	log.Info().Any("Scale", scale).Msg("Model.DataModel.SetAppScale")
-	d.dataFile.AppScale = scale
-	return d.SetData(context, d.dataFile)
+	log.Info().Any("Scaling", scale).Str("DataModel", "SetAppScale").Msg("FileManager")
+	d.file.AppScale = scale
+	return d.SetData(context, d.file)
 }
 
 func (d *DataModel) SetColorMode(context *guigui.Context, mode guigui.ColorMode) *debug.Error {
-	log.Info().Any("Mode", mode).Msg("Model.DataModel.SetColorMode")
-	d.dataFile.ColorMode = mode
-	return d.SetData(context, d.dataFile)
+	log.Info().Any("Theme", mode).Str("DataModel", "SetColorMode").Msg("FileManager")
+	d.file.ColorMode = mode
+	return d.SetData(context, d.file)
 }
 
 func (d *DataModel) SetGameVersion(context *guigui.Context, ver string) *debug.Error {
-	log.Info().Any("GameVersion", ver).Msg("Model.DataModel.SetGameVersion")
-	d.dataFile.GameVersion = ver
-	return d.SetData(context, d.dataFile)
+	_, err := version.NewVersion(ver)
+	if err != nil {
+		return e.New(err, debug.AppError, debug.ErrGameVersionInvalid)
+	}
+
+	log.Info().Any("Game Version", ver).Str("DateModel", "SetGameVersion").Msg("FileManager")
+	d.file.GameVersion = ver
+	return d.SetData(context, d.file)
 }
 
 func (d *DataModel) SetData(context *guigui.Context, dataFile file.Data) *debug.Error {
-	d.dataFile = dataFile
+	locale, err := language.Parse(dataFile.Locale)
+	if err != nil {
+		return e.New(err, debug.DataError, debug.ErrDataLocaleInvalid)
+	}
+
+	d.file = dataFile
+	context.SetAppLocales([]language.Tag{locale})
+	context.SetAppScale(d.GetAppScaleF(dataFile.AppScale))
+	context.SetColorMode(dataFile.ColorMode)
+	SetLanguage(dataFile.Locale)
 
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
@@ -135,16 +164,6 @@ func (d *DataModel) SetData(context *guigui.Context, dataFile file.Data) *debug.
 	if dErr != nil {
 		return dErr
 	}
-
-	locale, err := language.Parse(dataFile.Locale)
-	if err != nil {
-		return e.New(err, debug.DataError, debug.ErrDataLoad)
-	}
-
-	context.SetAppLocales([]language.Tag{locale})
-	context.SetAppScale(d.GetAppScaleF(dataFile.AppScale))
-	context.SetColorMode(dataFile.ColorMode)
-	SetLanguage(dataFile.Locale)
 
 	return nil
 }
@@ -184,12 +203,17 @@ func (d *DataModel) GetAppScaleF(scale int) float64 {
 }
 
 type CacheModel struct {
-	cacheFile           *file.Cache
+	validCacheFile      bool
+	cacheFile           file.Cache
 	isTranslate         bool
 	translatedChangelog string
 }
 
-func (c *CacheModel) File() *file.Cache {
+func (c *CacheModel) IsVaild() bool {
+	return c.validCacheFile
+}
+
+func (c *CacheModel) File() file.Cache {
 	return c.cacheFile
 }
 
@@ -201,8 +225,16 @@ func (c *CacheModel) TranslatedChangelog() string {
 	return c.translatedChangelog
 }
 
-func (c *CacheModel) SetCache(cacheFile *file.Cache) *debug.Error {
-	log.Info().Any("CacheModel.cache", cacheFile).Msg("SetCache")
+func (c *CacheModel) SetCache(cacheFile file.Cache) *debug.Error {
+	cacheFile.Log()
+
+	dErr := cacheFile.Validate(e)
+	if dErr != nil {
+		c.validCacheFile = false
+		return dErr
+	}
+
+	c.validCacheFile = true
 	c.cacheFile = cacheFile
 
 	var buf bytes.Buffer
@@ -211,7 +243,7 @@ func (c *CacheModel) SetCache(cacheFile *file.Cache) *debug.Error {
 		return e.New(err, debug.FSError, debug.ErrCacheSave)
 	}
 
-	dErr := fs.Save(e, configs.CacheFile, buf.Bytes())
+	dErr = fs.Save(e, configs.CacheFile, buf.Bytes())
 	if dErr != nil {
 		return dErr
 	}

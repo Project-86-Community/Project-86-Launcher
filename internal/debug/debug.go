@@ -44,6 +44,7 @@ const (
 	ErrUnknown int = iota + 1001
 	ErrBrowserOpen
 	ErrClipboardWrite
+	ErrGameVersionInvalid
 )
 
 const (
@@ -70,6 +71,7 @@ const (
 	ErrDataLoad int = iota + 3001
 	ErrDataSave
 	ErrDataReset
+	ErrDataLocaleInvalid
 )
 
 const (
@@ -77,6 +79,7 @@ const (
 	ErrCacheLoad int = iota + 4001
 	ErrCacheSave
 	ErrCacheReset
+	ErrCacheInvalid
 	ErrCacheRepoInvalid
 	ErrCacheBodyInvalid
 	ErrCacheURLInvalid

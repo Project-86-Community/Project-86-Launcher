@@ -110,7 +110,7 @@ func (p *Play) install(context *guigui.Context) {
 			if dErr != nil {
 				e.SetToast(dErr)
 			}
-			p.model.data.SetGameVersion(context, "v0.0.0-alpha")
+			p.model.DataM.SetGameVersion(context, "v0.0.0-alpha")
 			context.SetEnabled(&p.actionButton, true)
 		}()
 	}
@@ -124,7 +124,7 @@ func (p *Play) update(context *guigui.Context) {
 		if dErr != nil {
 			e.SetToast(dErr)
 		}
-		p.model.data.SetGameVersion(context, "v1.8.2-alpha")
+		p.model.DataM.SetGameVersion(context, "v1.8.2-alpha")
 		context.SetEnabled(&p.updateButton, true)
 	}()
 }

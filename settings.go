@@ -86,14 +86,14 @@ func (s *Settings) buildLocale(context *guigui.Context) {
 			return
 		}
 		if item.ID == language.English {
-			s.assertErr(s.model.data.SetLocale(context, language.English))
+			s.assertErr(s.model.DataM.SetLocale(context, language.English))
 			context.SetAppLocales(nil)
 			return
 		}
-		s.assertErr(s.model.data.SetLocale(context, item.ID))
+		s.assertErr(s.model.DataM.SetLocale(context, item.ID))
 		context.SetAppLocales([]language.Tag{item.ID})
-		s.model.cache.isTranslate = false
-		s.model.cache.translatedChangelog = ""
+		s.model.CacheM.isTranslate = false
+		s.model.CacheM.translatedChangelog = ""
 	})
 	if !s.localeDropdownList.IsPopupOpen() {
 		if locales := context.AppendAppLocales(nil); len(locales) > 0 {
@@ -130,20 +130,20 @@ func (s *Settings) buildAppScale(context *guigui.Context) {
 	s.scaleSegmentedControl.SetOnItemSelected(func(index int) {
 		item, ok := s.scaleSegmentedControl.ItemByIndex(index)
 		if !ok {
-			s.assertErr(s.model.data.SetAppScale(context, 2))
+			s.assertErr(s.model.DataM.SetAppScale(context, 2))
 			return
 		}
-		s.assertErr(s.model.data.SetAppScale(context, item.ID))
+		s.assertErr(s.model.DataM.SetAppScale(context, item.ID))
 	})
-	s.scaleSegmentedControl.SelectItemByID(s.model.data.File().AppScale)
+	s.scaleSegmentedControl.SelectItemByID(s.model.DataM.File().AppScale)
 }
 
 func (s *Settings) buildColorMode(context *guigui.Context) {
 	s.colorModeToggle.SetOnValueChanged(func(value bool) {
 		if value {
-			s.assertErr(s.model.data.SetColorMode(context, guigui.ColorModeDark))
+			s.assertErr(s.model.DataM.SetColorMode(context, guigui.ColorModeDark))
 		} else {
-			s.assertErr(s.model.data.SetColorMode(context, guigui.ColorModeLight))
+			s.assertErr(s.model.DataM.SetColorMode(context, guigui.ColorModeLight))
 		}
 	})
 	switch context.ColorMode() {
@@ -174,10 +174,10 @@ func (s *Settings) buildReset() {
 		s.scaleSegmentedControl.SelectItemByID(2)
 	})
 	s.resetCacheButton.SetOnDown(func() {
-		s.model.cache.isTranslate = false
-		s.model.cache.translatedChangelog = ""
+		s.model.CacheM.isTranslate = false
+		s.model.CacheM.translatedChangelog = ""
 		var cacheFile file.Cache
-		s.model.cache.SetCache(&cacheFile)
+		s.model.CacheM.SetCache(cacheFile)
 	})
 }
 
@@ -269,8 +269,8 @@ func (s *Settings) HandleButtonInput(context *guigui.Context) guigui.HandleInput
 			newIndex := currentIndex - 1
 			if newIndex >= 0 {
 				s.scaleSegmentedControl.SelectItemByIndex(newIndex)
-				if item, ok := s.scaleSegmentedControl.ItemByIndex(newIndex); ok && item.ID != s.model.data.File().AppScale {
-					s.assertErr(s.model.data.SetAppScale(context, item.ID))
+				if item, ok := s.scaleSegmentedControl.ItemByIndex(newIndex); ok && item.ID != s.model.DataM.File().AppScale {
+					s.assertErr(s.model.DataM.SetAppScale(context, item.ID))
 				}
 				return guigui.HandleInputByWidget(s)
 			}
@@ -278,8 +278,8 @@ func (s *Settings) HandleButtonInput(context *guigui.Context) guigui.HandleInput
 			newIndex := currentIndex + 1
 			if newIndex < itemsCount {
 				s.scaleSegmentedControl.SelectItemByIndex(newIndex)
-				if item, ok := s.scaleSegmentedControl.ItemByIndex(newIndex); ok && item.ID != s.model.data.File().AppScale {
-					s.assertErr(s.model.data.SetAppScale(context, item.ID))
+				if item, ok := s.scaleSegmentedControl.ItemByIndex(newIndex); ok && item.ID != s.model.DataM.File().AppScale {
+					s.assertErr(s.model.DataM.SetAppScale(context, item.ID))
 				}
 				return guigui.HandleInputByWidget(s)
 			}
@@ -311,8 +311,8 @@ func (s *Settings) Tick(context *guigui.Context) error {
 
 		if newIndex != currentIndex {
 			s.scaleSegmentedControl.SelectItemByIndex(newIndex)
-			if item, ok := s.scaleSegmentedControl.ItemByIndex(newIndex); ok && item.ID != s.model.data.File().AppScale {
-				s.assertErr(s.model.data.SetAppScale(context, item.ID))
+			if item, ok := s.scaleSegmentedControl.ItemByIndex(newIndex); ok && item.ID != s.model.DataM.File().AppScale {
+				s.assertErr(s.model.DataM.SetAppScale(context, item.ID))
 			}
 			context.SetFocused(&s.scaleSegmentedControl, true)
 		}

@@ -26,7 +26,6 @@ import (
 	"p86l"
 	"p86l/cmd/p86l/isrelease"
 	"p86l/configs"
-	"runtime"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/rs/zerolog"
@@ -49,9 +48,6 @@ func init() {
 }
 
 func main() {
-	log.Info().Str("Version", version).Msg("P86L - Project 86 Launcher")
-	log.Info().Str("Detected OS", runtime.GOOS).Send()
-
 	op := &guigui.RunOptions{
 		Title:         configs.AppTitle,
 		WindowMinSize: configs.AppWindowMinSize,
@@ -59,7 +55,7 @@ func main() {
 	if err := guigui.Run(&p86l.Root{}, op); err != nil {
 		gErr := p86l.GetError()
 		if gErr != nil {
-			log.Error().Stack().Int("Code", gErr.Code).Str("Type", string(gErr.Type)).Err((gErr.Err)).Msg("guigui.Run")
+			log.Error().Stack().Int("Code", gErr.Code).Any("Type", gErr.Type).Err((gErr.Err)).Str("main", "guigui.Run").Msg("ErrorManager")
 		}
 		os.Exit(1)
 	}
