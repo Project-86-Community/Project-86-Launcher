@@ -134,11 +134,11 @@ func (d *Debug) String(err *Error) string {
 }
 
 func (d *Debug) SetToast(err *Error) {
-	log.Info().Stack().Int("Code", err.Code).Str("Type", string(err.Type)).Err(err.Err).Msg("SetToast")
+	log.Warn().Stack().Int("Code", err.Code).Any("Type", err.Type).Err(err.Err).Str("Debug", "SetToast").Msg("ErrorManager")
 	d.ToastErr = err
 }
 
 func (d *Debug) SetPopup(err *Error) {
-	log.Info().Stack().Int("Code", err.Code).Str("Type", string(err.Type)).Err(err.Err).Msg("SetPopup")
+	log.Warn().Stack().Int("Code", err.Code).Any("Type", err.Type).Err(err.Err).Str("Debug", "SetPopup").Msg("ErrorManager")
 	d.PopupErr = err
 }
