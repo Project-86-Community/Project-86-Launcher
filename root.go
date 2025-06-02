@@ -238,7 +238,7 @@ func (r *Root) buildInfo(context *guigui.Context, appender *guigui.ChildWidgetAp
 		resetTime = r.model.networkState.GitHubRateLimit().Core.Reset.Time.Format(time.DateTime)
 	}
 
-	r.infoText.SetScale(0.8)
+	r.infoText.SetScale(1)
 	if remaining == 60 || !r.model.networkState.InternetAvailable() {
 		r.infoText.SetValue(fmt.Sprintf("Internet: %s, API: %d/60", status, remaining))
 	} else {
@@ -290,6 +290,7 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		log.Info().Str("Version", TheDebugMode.Version).Msg("P86L - Project 86 Launcher")
 		log.Info().Str("Detected OS", runtime.GOOS).Msg("Operating System")
 		log.Info().Str("Graphics API", "TODO:").Msg("GPU")
+		log.Warn().Str("LICENSE", aLicense).Msg("README")
 	})
 
 	if r.dErr != nil {

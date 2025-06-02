@@ -32,11 +32,12 @@ import (
 type About struct {
 	guigui.DefaultWidget
 
-	leadImg  basicwidget.Image
-	devImg   basicwidget.Image
-	leadText basicwidget.Text
-	devText  basicwidget.Text
-	infoText basicwidget.Text
+	leadImg     basicwidget.Image
+	devImg      basicwidget.Image
+	leadText    basicwidget.Text
+	devText     basicwidget.Text
+	infoText    basicwidget.Text
+	licenseText basicwidget.Text
 }
 
 func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
@@ -53,17 +54,24 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 	}
 	a.devImg.SetImage(img)
 
-	a.infoText.SetAutoWrap(true)
 	a.leadText.SetScale(1.2)
 	a.devText.SetScale(1.2)
-	a.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
-	a.infoText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 	a.leadText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 	a.devText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+
+	a.licenseText.SetScale(0.6)
+	context.SetOpacity(&a.licenseText, 0.5)
+	a.infoText.SetAutoWrap(true)
+	a.licenseText.SetAutoWrap(true)
+	a.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+	a.infoText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+	a.licenseText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+	a.licenseText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 
 	a.leadText.SetValue(T("about.lead"))
 	a.devText.SetValue(T("about.dev"))
 	a.infoText.SetValue(T("about.info"))
+	a.licenseText.SetValue(aLicense)
 
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
@@ -75,7 +83,7 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		RowGap: u / 2,
 	}
 	{
-		gl := layout.GridLayout{
+		glP := layout.GridLayout{
 			Bounds: gl.CellBounds(0, 0),
 			Widths: []layout.Size{
 				layout.FlexibleSize(2),
@@ -88,12 +96,22 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 			RowGap:    u / 2,
 			ColumnGap: u / 2,
 		}
-		appender.AppendChildWidgetWithBounds(&a.leadText, gl.CellBounds(0, 0))
-		appender.AppendChildWidgetWithBounds(&a.leadImg, gl.CellBounds(1, 0))
-		appender.AppendChildWidgetWithBounds(&a.devText, gl.CellBounds(0, 1))
-		appender.AppendChildWidgetWithBounds(&a.devImg, gl.CellBounds(1, 1))
+		appender.AppendChildWidgetWithBounds(&a.leadText, glP.CellBounds(0, 0))
+		appender.AppendChildWidgetWithBounds(&a.leadImg, glP.CellBounds(1, 0))
+		appender.AppendChildWidgetWithBounds(&a.devText, glP.CellBounds(0, 1))
+		appender.AppendChildWidgetWithBounds(&a.devImg, glP.CellBounds(1, 1))
 	}
-	appender.AppendChildWidgetWithBounds(&a.infoText, gl.CellBounds(0, 1))
+	{
+		glA := layout.GridLayout{
+			Bounds: gl.CellBounds(0, 1),
+			Heights: []layout.Size{
+				layout.FlexibleSize(1),
+				layout.FlexibleSize(1),
+			},
+		}
+		appender.AppendChildWidgetWithBounds(&a.infoText, glA.CellBounds(0, 0))
+		appender.AppendChildWidgetWithBounds(&a.licenseText, glA.CellBounds(0, 1))
+	}
 
 	return nil
 }
