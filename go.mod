@@ -7,6 +7,7 @@ require (
 	github.com/Conight/go-googletrans v0.2.4
 	github.com/atotto/clipboard v0.1.4
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
+	github.com/dustin/go-humanize v1.0.1
 	github.com/google/go-github/v71 v71.0.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250518103147-cd31850015bb
 	github.com/hajimehoshi/guigui v0.0.0-20250528162800-1add44a7ef81
@@ -30,7 +31,6 @@ require (
 	cloud.google.com/go/storage v1.29.0 // indirect
 	github.com/aws/aws-sdk-go v1.44.122 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
-	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20250329061421-6d0a8e981e4c // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/ebitengine/purego v0.9.0-alpha.6 // indirect

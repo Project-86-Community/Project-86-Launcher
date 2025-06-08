@@ -217,12 +217,8 @@ func (c *CacheModel) File() file.Cache {
 	return c.cacheFile
 }
 
-func (c *CacheModel) IsTranslate() bool {
-	return c.isTranslate
-}
-
-func (c *CacheModel) TranslatedChangelog() string {
-	return c.translatedChangelog
+func (c *CacheModel) Translate() (bool, string) {
+	return c.isTranslate, c.translatedChangelog
 }
 
 func (c *CacheModel) SetCache(cacheFile file.Cache) *debug.Error {
