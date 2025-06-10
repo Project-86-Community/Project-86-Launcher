@@ -22,6 +22,7 @@
 package p86l
 
 import (
+	"cmp"
 	"image"
 	"p86l/assets"
 	"p86l/configs"
@@ -53,38 +54,6 @@ func (p *Play) shouldShowUpdateButton() bool {
 	return p.model.lunch.status == LunchStatusUpdate
 }
 
-func (p *Play) buildImages() error {
-	img, dErr := assets.TheImageCache.Get(e, "ie")
-	if dErr != nil {
-		gErr = dErr
-		return dErr.Err
-	}
-	p.websiteButton.SetIcon(img)
-
-	img, dErr = assets.TheImageCache.Get(e, "github")
-	if dErr != nil {
-		gErr = dErr
-		return dErr.Err
-	}
-	p.githubButton.SetIcon(img)
-
-	img, dErr = assets.TheImageCache.Get(e, "discord")
-	if dErr != nil {
-		gErr = dErr
-		return dErr.Err
-	}
-	p.discordButton.SetIcon(img)
-
-	img, dErr = assets.TheImageCache.Get(e, "patreon")
-	if dErr != nil {
-		gErr = dErr
-		return dErr.Err
-	}
-	p.patreonButton.SetIcon(img)
-
-	return nil
-}
-
 func (p *Play) buildButtons() {
 	p.websiteButton.SetOnDown(func() {
 		go OpenBrowser(configs.Website)
@@ -106,7 +75,7 @@ func (p *Play) install(context *guigui.Context) {
 		log.Info().Str("Install game", "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip").Msg("Play")
 		context.SetEnabled(&p.actionButton, false)
 		go func() {
-			dErr := DownloadFile(p.model, fs.DirGamePath(), "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip")
+			dErr := DownloadFile(p.model, fs.DirGamePath(), "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip", GameDownloadType)
 			if dErr != nil {
 				e.SetToast(dErr)
 			}
@@ -123,7 +92,7 @@ func (p *Play) update(context *guigui.Context) {
 	log.Info().Str("Update game", "https://github.com/Taliayaya/Project-86/releases/download/v0.0.1-alpha/Project86-v0.0.1-alpha.zip").Msg("Play")
 	context.SetEnabled(&p.updateButton, false)
 	go func() {
-		dErr := DownloadFile(p.model, fs.DirGamePath(), "https://github.com/Taliayaya/Project-86/releases/download/v0.0.1-alpha/Project86-v0.0.1-alpha.zip")
+		dErr := DownloadFile(p.model, fs.DirGamePath(), "https://github.com/Taliayaya/Project-86/releases/download/v0.0.1-alpha/Project86-v0.0.1-alpha.zip", GameDownloadType)
 		if dErr != nil {
 			e.SetToast(dErr)
 		}
@@ -136,9 +105,20 @@ func (p *Play) update(context *guigui.Context) {
 }
 
 func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	if err := p.buildImages(); err != nil {
-		return err
+	img1, dErr1 := assets.TheImageCache.Get(e, "ie")
+	img2, dErr2 := assets.TheImageCache.Get(e, "github")
+	img3, dErr3 := assets.TheImageCache.Get(e, "discord")
+	img4, dErr4 := assets.TheImageCache.Get(e, "patreon")
+
+	if dErr := cmp.Or(dErr1, dErr2, dErr3, dErr4); dErr != nil {
+		gErr = dErr
+		return dErr.Err
 	}
+
+	p.websiteButton.SetIcon(img1)
+	p.githubButton.SetIcon(img2)
+	p.discordButton.SetIcon(img3)
+	p.patreonButton.SetIcon(img4)
 
 	if p.model.networkState.InternetAvailable() {
 		context.SetEnabled(&p.websiteButton, true)

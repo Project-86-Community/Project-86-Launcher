@@ -67,6 +67,12 @@ var (
 	gErr *debug.Error
 )
 
+type DownloadType int
+
+const (
+	GameDownloadType DownloadType = iota
+)
+
 func GetError() *debug.Error {
 	return gErr
 }

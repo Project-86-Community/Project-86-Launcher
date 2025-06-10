@@ -24,6 +24,7 @@ package p86l
 import (
 	"fmt"
 	"io"
+	"os"
 	"p86l/internal/debug"
 	"time"
 
@@ -70,12 +71,6 @@ func IsNewVersion(currentVersion, newVersion string) (bool, error) {
 
 	return newer.GreaterThan(current), nil
 }
-
-type DownloadType int
-
-const (
-	GameDownloadType DownloadType = iota
-)
 
 type ProgressTracker struct {
 	Model *Model
@@ -140,7 +135,14 @@ func (r *readProgress) Read(p []byte) (n int, err error) {
 	return
 }
 
-func DownloadFile(model *Model, dest, sourceUrl string) *debug.Error {
+func DownloadFile(model *Model, dest, sourceUrl string, dType DownloadType) *debug.Error {
+	switch dType {
+	case GameDownloadType:
+		if fs.IsDir(e, fs.DirGamePath()) == nil {
+			os.RemoveAll(fs.DirGamePath())
+		}
+	}
+
 	client := &getter.Client{
 		Src:              sourceUrl,
 		Dst:              dest,

@@ -46,7 +46,7 @@ func (s *Sidebar) SetModel(model *Model) {
 func (s *Sidebar) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	context.SetOpacity(&s.panel, 0.9)
 	s.panel.SetStyle(basicwidget.PanelStyleSide)
-	context.SetSize(&s.panelContent, context.Size(s))
+	context.SetSize(&s.panelContent, context.ActualSize(s))
 	s.panel.SetContent(&s.panelContent)
 
 	appender.AppendChildWidgetWithBounds(&s.panel, context.Bounds(s))

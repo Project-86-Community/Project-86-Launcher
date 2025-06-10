@@ -9,8 +9,8 @@ require (
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/dustin/go-humanize v1.0.1
 	github.com/google/go-github/v71 v71.0.0
-	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250518103147-cd31850015bb
-	github.com/hajimehoshi/guigui v0.0.0-20250528162800-1add44a7ef81
+	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.5.0.20250608152909-a034565163b5
+	github.com/hajimehoshi/guigui v0.0.0-20250609192204-d32e919d930e
 	github.com/hashicorp/go-getter v1.7.8
 	github.com/hashicorp/go-version v1.7.0
 	github.com/kisielk/errcheck v1.9.0
@@ -19,8 +19,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.34.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
-	golang.org/x/text v0.25.0
-	golang.org/x/tools v0.33.0
+	golang.org/x/text v0.26.0
+	golang.org/x/tools v0.34.0
 )
 
 require (
@@ -57,11 +57,11 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/image v0.27.0 // indirect
-	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/image v0.28.0 // indirect
+	golang.org/x/mod v0.25.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
-	golang.org/x/sync v0.14.0 // indirect
+	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.114.0 // indirect

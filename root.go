@@ -23,6 +23,7 @@ package p86l
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/gob"
 	"fmt"
@@ -75,14 +76,6 @@ type Root struct {
 	dErr *debug.Error
 }
 
-// Reduce repeating `if (err) != nil` statements
-func (r *Root) assertErr(dErr *debug.Error) {
-	if dErr != nil {
-		log.Error().Int("Code", dErr.Code).Any("Type", dErr.Type).Err((dErr.Err)).Str("Root", "assertErr").Msg("ErrorManager")
-		r.dErr = dErr
-	}
-}
-
 func (r *Root) checkInternet(ctx context.Context) bool {
 	req, err := http.NewRequestWithContext(ctx, "HEAD", configs.InternetServer, nil)
 	if err != nil {
@@ -120,22 +113,16 @@ func (r *Root) fetchCache() *github.RepositoryRelease {
 }
 
 func (r *Root) runApp() *debug.Error {
-	iconImages, dErr := assets.GetIconImages(e)
-	if dErr != nil {
+	iconImages, dErr1 := assets.GetIconImages(e)
+	afs, dErr2 := file.NewFS(e)
+	bundle, dErr3 := p86lLocale.GetLocales(e, language.English)
+
+	if dErr := cmp.Or(dErr1, dErr2, dErr3); dErr != nil {
 		return dErr
 	}
+
 	ebiten.SetWindowIcon(iconImages)
-
-	afs, dErr := file.NewFS(e)
-	if dErr != nil {
-		return dErr
-	}
 	fs = afs
-
-	bundle, dErr := p86lLocale.GetLocales(e, language.English)
-	if dErr != nil {
-		return dErr
-	}
 	lBundle = bundle
 	lLocalizer = i18n.NewLocalizer(bundle, "en")
 
@@ -192,7 +179,7 @@ func (r *Root) buildBackground(context *guigui.Context, img *ebiten.Image) image
 	imgHeight := img.Bounds().Dy()
 	aspectRatio := float64(imgHeight) / float64(imgWidth)
 
-	windowSize := context.Size(r)
+	windowSize := context.ActualSize(r)
 	availableWidth := windowSize.X
 
 	newHeight := int(float64(availableWidth) * aspectRatio)
@@ -216,7 +203,7 @@ func (r *Root) buildVersionText(context *guigui.Context, appender *guigui.ChildW
 	r.versionText.SetValue(TheDebugMode.Version)
 
 	sidebarBounds := context.Bounds(&r.sidebar)
-	textSize := context.Size(&r.versionText)
+	textSize := context.ActualSize(&r.versionText)
 
 	xPos := sidebarBounds.Min.X + (sidebarBounds.Dx()-textSize.X)/2
 	yPos := sidebarBounds.Max.Y - textSize.Y - 10
@@ -246,7 +233,7 @@ func (r *Root) buildInfo(context *guigui.Context, appender *guigui.ChildWidgetAp
 	}
 
 	windowSize := context.Bounds(r).Size()
-	textSize := context.Size(&r.infoText)
+	textSize := context.ActualSize(&r.infoText)
 
 	bgWidth := textSize.X
 	bgHeight := textSize.Y
@@ -282,9 +269,14 @@ func (r *Root) updateFontFaceSources(context *guigui.Context) {
 
 func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	r.sync.Do(func() {
-		r.assertErr(r.runApp())
-		r.assertErr(r.loadB(context, "data", configs.DataFile))
-		r.assertErr(r.loadB(context, "cache", configs.CacheFile))
+		err1 := r.runApp()
+		err2 := r.loadB(context, "data", configs.DataFile)
+		err3 := r.loadB(context, "cache", configs.CacheFile)
+
+		if err := cmp.Or(err1, err2, err3); err != nil {
+			r.dErr = err
+			return
+		}
 
 		log.Info().Msg("..:: GuiGui GUI Framework Alpha ::..")
 		log.Info().Str("Version", TheDebugMode.Version).Msg("P86L - Project 86 Launcher")
@@ -293,16 +285,14 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		log.Warn().Str("LICENSE", aLicense).Msg("README")
 	})
 
+	img, dErr := assets.TheImageCache.Get(e, "banner")
+	r.dErr = dErr
+
 	if r.dErr != nil {
 		gErr = r.dErr
 		return r.dErr.Err
 	}
 
-	img, dErr := assets.TheImageCache.Get(e, "banner")
-	if dErr != nil {
-		gErr = r.dErr
-		return dErr.Err
-	}
 	r.bgImage.SetImage(img)
 	imgPosition := r.buildBackground(context, img)
 	appender.AppendChildWidgetWithPosition(&r.bgImage, imgPosition)
@@ -328,8 +318,8 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	context.SetOpacity(&r.border, 0.5)
 
 	borderBounds := context.Bounds(r)
-	borderBounds.Min.X = context.Size(&r.sidebar).X - (basicwidget.UnitSize(context) / 12)
-	borderBounds.Max.X = context.Size(&r.sidebar).X
+	borderBounds.Min.X = context.ActualSize(&r.sidebar).X - (basicwidget.UnitSize(context) / 12)
+	borderBounds.Max.X = context.ActualSize(&r.sidebar).X
 
 	if r.model.Mode() != "home" {
 		appender.AppendChildWidgetWithBounds(&r.background, gl.CellBounds(1, 0))
