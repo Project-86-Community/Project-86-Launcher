@@ -105,14 +105,14 @@ func (p *Play) update(context *guigui.Context) {
 }
 
 func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	img1, dErr1 := assets.TheImageCache.Get(e, "ie")
-	img2, dErr2 := assets.TheImageCache.Get(e, "github")
-	img3, dErr3 := assets.TheImageCache.Get(e, "discord")
-	img4, dErr4 := assets.TheImageCache.Get(e, "patreon")
+	img1, err1 := assets.TheImageCache.Get(e, "ie")
+	img2, err2 := assets.TheImageCache.Get(e, "github")
+	img3, err3 := assets.TheImageCache.Get(e, "discord")
+	img4, err4 := assets.TheImageCache.Get(e, "patreon")
 
-	if dErr := cmp.Or(dErr1, dErr2, dErr3, dErr4); dErr != nil {
-		gErr = dErr
-		return dErr.Err
+	if err := cmp.Or(err1, err2, err3, err4); err != nil {
+		gErr = err
+		return err.Err
 	}
 
 	p.websiteButton.SetIcon(img1)

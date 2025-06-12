@@ -22,6 +22,7 @@
 package p86l
 
 import (
+	"cmp"
 	"p86l/assets"
 
 	"github.com/hajimehoshi/guigui"
@@ -32,46 +33,32 @@ import (
 type About struct {
 	guigui.DefaultWidget
 
-	leadImg     basicwidget.Image
-	devImg      basicwidget.Image
-	leadText    basicwidget.Text
-	devText     basicwidget.Text
-	infoText    basicwidget.Text
-	licenseText basicwidget.Text
+	leadImg      basicwidget.Image
+	devImg       basicwidget.Image
+	leadText     basicwidget.Text
+	devText      basicwidget.Text
+	aboutContent aboutContent
 }
 
 func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	img, dErr := assets.TheImageCache.Get(e, "lead")
-	if dErr != nil {
-		gErr = dErr
-		return dErr.Err
-	}
-	a.leadImg.SetImage(img)
-	img, dErr = assets.TheImageCache.Get(e, "dev")
-	if dErr != nil {
-		gErr = dErr
-		return dErr.Err
-	}
-	a.devImg.SetImage(img)
+	img1, err1 := assets.TheImageCache.Get(e, "lead")
+	img2, err2 := assets.TheImageCache.Get(e, "dev")
 
-	a.leadText.SetScale(1.2)
-	a.devText.SetScale(1.2)
+	if err := cmp.Or(err1, err2); err != nil {
+		gErr = err
+		return err.Err
+	}
+
+	a.leadImg.SetImage(img1)
+	a.devImg.SetImage(img2)
+
 	a.leadText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
-	a.devText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
-
-	a.licenseText.SetScale(0.6)
-	context.SetOpacity(&a.licenseText, 0.5)
-	a.infoText.SetAutoWrap(true)
-	a.licenseText.SetAutoWrap(true)
-	a.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
-	a.infoText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
-	a.licenseText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
-	a.licenseText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
-
+	a.leadText.SetScale(1.2)
 	a.leadText.SetValue(T("about.lead"))
+
+	a.devText.SetScale(1.2)
+	a.devText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 	a.devText.SetValue(T("about.dev"))
-	a.infoText.SetValue(T("about.info"))
-	a.licenseText.SetValue(aLicense)
 
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
@@ -101,17 +88,40 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 		appender.AppendChildWidgetWithBounds(&a.devText, glP.CellBounds(0, 1))
 		appender.AppendChildWidgetWithBounds(&a.devImg, glP.CellBounds(1, 1))
 	}
-	{
-		glA := layout.GridLayout{
-			Bounds: gl.CellBounds(0, 1),
-			Heights: []layout.Size{
-				layout.FlexibleSize(1),
-				layout.FlexibleSize(1),
-			},
-		}
-		appender.AppendChildWidgetWithBounds(&a.infoText, glA.CellBounds(0, 0))
-		appender.AppendChildWidgetWithBounds(&a.licenseText, glA.CellBounds(0, 1))
+	appender.AppendChildWidgetWithBounds(&a.aboutContent, gl.CellBounds(0, 1))
+
+	return nil
+}
+
+type aboutContent struct {
+	guigui.DefaultWidget
+
+	infoText    basicwidget.Text
+	licenseText basicwidget.Text
+}
+
+func (a *aboutContent) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	a.infoText.SetAutoWrap(true)
+	a.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+	a.infoText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+	a.infoText.SetValue(T("about.info"))
+
+	a.licenseText.SetAutoWrap(true)
+	a.licenseText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+	a.licenseText.SetVerticalAlign(basicwidget.VerticalAlignBottom)
+	a.licenseText.SetScale(0.6)
+	context.SetOpacity(&a.licenseText, 0.5)
+	a.licenseText.SetValue(aLicense)
+
+	gl := layout.GridLayout{
+		Bounds: context.Bounds(a),
+		Heights: []layout.Size{
+			layout.FlexibleSize(2),
+			layout.FlexibleSize(1),
+		},
 	}
+	appender.AppendChildWidgetWithBounds(&a.infoText, gl.CellBounds(0, 0))
+	appender.AppendChildWidgetWithBounds(&a.licenseText, gl.CellBounds(0, 1))
 
 	return nil
 }
