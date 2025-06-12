@@ -139,7 +139,10 @@ func DownloadFile(model *Model, dest, sourceUrl string, dType DownloadType) *deb
 	switch dType {
 	case GameDownloadType:
 		if fs.IsDir(e, fs.DirGamePath()) == nil {
-			os.RemoveAll(fs.DirGamePath())
+			err := os.RemoveAll(fs.DirGamePath())
+			if err != nil {
+				return e.New(err, debug.FSError, debug.ErrFSDirRemove)
+			}
 		}
 	}
 

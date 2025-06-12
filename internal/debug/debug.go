@@ -53,6 +53,7 @@ const (
 	ErrFSDirInvalid
 	ErrFSDirNotExist
 	ErrFSDirNew
+	ErrFSDirRemove
 	ErrFSNewFileInvalid
 	ErrFSFileNotExist
 	ErrFSOpenFileManagerInvalid
