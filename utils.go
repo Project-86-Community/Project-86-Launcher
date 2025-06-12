@@ -115,18 +115,14 @@ func (r *readProgress) Read(p []byte) (n int, err error) {
 			remainingBytes := r.total - r.current
 			eta := time.Duration(float64(remainingBytes)/speed) * time.Second
 
-			percentage := float64(r.current) / float64(r.total) * 100
-
-			msg := fmt.Sprintf("- Downloading %.0f%% (%s/%s), Speed: %s/s, ETA: %s -",
-				percentage,
-				humanize.IBytes(uint64(r.current)),
-				humanize.IBytes(uint64(r.total)),
-				humanize.IBytes(uint64(speed)),
+			msg := fmt.Sprintf("- Downloading <%s>: %s/%s, %s -",
+				r.source,
+				humanize.Bytes(uint64(r.current)),
+				humanize.Bytes(uint64(r.total)),
 				eta.Round(time.Second),
 			)
 
 			r.Model.lunch.SetMsg(msg)
-
 			r.lastTime = now
 			r.lastBytes = r.current
 		}
