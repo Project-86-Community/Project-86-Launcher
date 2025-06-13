@@ -113,11 +113,13 @@ func (a *aboutContent) Build(context *guigui.Context, appender *guigui.ChildWidg
 	context.SetOpacity(&a.licenseText, 0.5)
 	a.licenseText.SetValue(aLicense)
 
+	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
 		Bounds: context.Bounds(a),
 		Heights: []layout.Size{
 			layout.FlexibleSize(2),
 			layout.FlexibleSize(1),
+			layout.FixedSize(u),
 		},
 	}
 	appender.AppendChildWidgetWithBounds(&a.infoText, gl.CellBounds(0, 0))
