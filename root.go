@@ -22,10 +22,8 @@
 package p86l
 
 import (
-	"bytes"
 	"cmp"
 	"context"
-	"encoding/gob"
 	"fmt"
 	"image"
 	"net/http"
@@ -73,7 +71,7 @@ type Root struct {
 	faceSourceEntries []basicwidget.FaceSourceEntry
 
 	sync sync.Once
-	dErr *debug.Error
+	err  *debug.Error
 }
 
 func (r *Root) checkInternet(ctx context.Context) bool {
@@ -130,7 +128,7 @@ func (r *Root) runApp() *debug.Error {
 }
 
 func (r *Root) loadB(context *guigui.Context, loadType, loadFile string) *debug.Error {
-	if dErr := fs.Stat(e, loadFile); dErr != nil {
+	if err := fs.Stat(e, loadFile); err != nil {
 		switch loadType {
 		case "data":
 			log.Info().Str("Data", "data not found, creating data...").Str("Root", "loadB").Msg("FileManager")
@@ -143,29 +141,26 @@ func (r *Root) loadB(context *guigui.Context, loadType, loadFile string) *debug.
 		}
 	}
 
-	b, dErr := fs.Load(e, loadFile)
-	if dErr != nil {
-		return dErr
+	b, err := fs.Load(e, loadFile)
+	if err != nil {
+		return err
 	}
-	decoder := gob.NewDecoder(bytes.NewReader(b))
 
 	switch loadType {
 	case "data":
 		log.Info().Str("Data", "data found, loading data...").Str("Root", "loadB").Msg("FileManager")
-		var dataFile file.Data
-
-		if err := decoder.Decode(&dataFile); err != nil {
-			return e.New(err, debug.FSError, debug.ErrDataLoad)
+		dataFile, err := fs.DecodeData(e, b)
+		if err != nil {
+			return err
 		}
 
 		dataFile.Log()
 		return r.model.DataM.SetData(context, dataFile)
 	case "cache":
 		log.Info().Str("Cache", "cache found, loading cache...").Str("Root", "loadB").Msg("FileManager")
-		var cacheFile file.Cache
-
-		if err := decoder.Decode(&cacheFile); err != nil {
-			return e.New(err, debug.FSError, debug.ErrCacheLoad)
+		cacheFile, err := fs.DecodeCache(e, b)
+		if err != nil {
+			return err
 		}
 
 		return r.model.CacheM.SetCache(cacheFile)
@@ -274,7 +269,7 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		err3 := r.loadB(context, "cache", configs.CacheFile)
 
 		if err := cmp.Or(err1, err2, err3); err != nil {
-			r.dErr = err
+			r.err = err
 			return
 		}
 
@@ -286,11 +281,11 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	})
 
 	img, dErr := assets.TheImageCache.Get(e, "banner")
-	r.dErr = dErr
+	r.err = dErr
 
-	if r.dErr != nil {
-		gErr = r.dErr
-		return r.dErr.Err
+	if r.err != nil {
+		gErr = r.err
+		return r.err.Err
 	}
 
 	r.bgImage.SetImage(img)
