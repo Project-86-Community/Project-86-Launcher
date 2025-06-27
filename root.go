@@ -111,12 +111,12 @@ func (r *Root) fetchCache() *github.RepositoryRelease {
 }
 
 func (r *Root) runApp() *debug.Error {
-	iconImages, dErr1 := assets.GetIconImages(e)
-	afs, dErr2 := file.NewFS(e)
-	bundle, dErr3 := p86lLocale.GetLocales(e, language.English)
+	iconImages, err1 := assets.GetIconImages(e)
+	afs, err2 := file.NewFS(e)
+	bundle, err3 := p86lLocale.GetLocales(e, language.English)
 
-	if dErr := cmp.Or(dErr1, dErr2, dErr3); dErr != nil {
-		return dErr
+	if err := cmp.Or(err1, err2, err3); err != nil {
+		return err
 	}
 
 	ebiten.SetWindowIcon(iconImages)
@@ -273,15 +273,18 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 			return
 		}
 
+		var gpuInfo ebiten.DebugInfo
+		ebiten.ReadDebugInfo(&gpuInfo)
+
 		log.Info().Msg("..:: GuiGui GUI Framework Alpha ::..")
 		log.Info().Str("Version", TheDebugMode.Version).Msg("P86L - Project 86 Launcher")
 		log.Info().Str("Detected OS", runtime.GOOS).Msg("Operating System")
-		log.Info().Str("Graphics API", "TODO:").Msg("GPU")
+		log.Info().Str("Graphics API", gpuInfo.GraphicsLibrary.String()).Msg("GPU")
 		log.Warn().Str("LICENSE", aLicense).Msg("README")
 	})
 
-	img, dErr := assets.TheImageCache.Get(e, "banner")
-	r.err = dErr
+	img, err := assets.TheImageCache.Get(e, "banner")
+	r.err = err
 
 	if r.err != nil {
 		gErr = r.err
