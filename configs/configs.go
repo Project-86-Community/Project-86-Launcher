@@ -38,8 +38,8 @@ const (
 	LoadTypeData  = "data"
 	LoadTypeCache = "cache"
 
-	DataFile  = "data.dat"
-	CacheFile = "cache.dat"
+	DataFile  = "data.json"
+	CacheFile = "cache.json"
 
 	Website = "https://project-86-community.github.io/Project-86-Website/"
 	Github  = "https://github.com/Taliayaya/Project-86"

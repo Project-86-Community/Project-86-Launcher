@@ -1,11 +1,9 @@
-
 package file
 
 import (
-	"bytes"
-	"encoding/gob"
+	"encoding/json"
 	"errors"
-	"p86l/internal/debug"
+	pd "p86l/internal/debug"
 	"time"
 
 	"github.com/google/go-github/v71/github"
@@ -14,10 +12,10 @@ import (
 )
 
 type Data struct {
-	Locale      string
-	AppScale    int
-	ColorMode   guigui.ColorMode
-	GameVersion string
+	Locale      string           `json:"locale"`
+	AppScale    int              `json:"app_scale"`
+	ColorMode   guigui.ColorMode `json:"color_mode"`
+	GameVersion string           `json:"game_version"`
 }
 
 func (d *Data) Log() {
@@ -31,48 +29,71 @@ func (d *Data) Log() {
 }
 
 type Cache struct {
-	Repo      *github.RepositoryRelease
-	Timestamp time.Time
-	ExpiresIn time.Duration
+	Repo      *github.RepositoryRelease `json:"repo"`
+	Timestamp time.Time                 `json:"time_stamp"`
+	ExpiresIn time.Duration             `json:"expires_in"`
 }
 
 func (c *Cache) Log() {
 	log.Info().Any("Changelog", c.Repo.GetBody()).Any("Timestamp", c.Timestamp).Any("ExpiresIn", c.ExpiresIn).Msg("FileManager")
 }
 
-func (c *Cache) Validate(appDebug *debug.Debug) *debug.Error {
+func (c *Cache) Validate(appDebug *pd.Debug) *pd.Error {
 	if c.Repo == nil {
-		return appDebug.New(errors.New("repo is empty"), debug.CacheError, debug.ErrCacheInvalid)
+		return appDebug.New(errors.New("repo is empty"), pd.CacheError, pd.ErrCacheInvalid)
 	}
 
 	if c.Repo.GetBody() == "" {
-		return appDebug.New(errors.New("body is empty"), debug.CacheError, debug.ErrCacheBodyInvalid)
+		return appDebug.New(errors.New("body is empty"), pd.CacheError, pd.ErrCacheBodyInvalid)
 	}
 
 	if c.Repo.GetHTMLURL() == "" {
-		return appDebug.New(errors.New("URL is empty"), debug.CacheError, debug.ErrCacheURLInvalid)
+		return appDebug.New(errors.New("URL is empty"), pd.CacheError, pd.ErrCacheURLInvalid)
 	}
 	if len(c.Repo.Assets) < 1 {
-		return appDebug.New(errors.New("assets are empty"), debug.CacheError, debug.ErrCacheAssetsInvalid)
+		return appDebug.New(errors.New("assets are empty"), pd.CacheError, pd.ErrCacheAssetsInvalid)
 	}
 
 	return nil
 }
 
-func (a *AppFS) DecodeData(appDebug *debug.Debug, b []byte) (Data, *debug.Error) {
+// -- Used to convert data to bytes.
+
+func (a *AppFS) EncodeData(appDebug *pd.Debug, d Data) ([]byte, *pd.Error) {
+	b, err := json.Marshal(d)
+	if err != nil {
+		return nil, appDebug.New(err, pd.FSError, pd.ErrDataSave)
+	}
+	return b, nil
+}
+
+func (a *AppFS) EncodeCache(appDebug *pd.Debug, c Data) ([]byte, *pd.Error) {
+	b, err := json.Marshal(c)
+	if err != nil {
+		return nil, appDebug.New(err, pd.FSError, pd.ErrDataSave)
+	}
+	return b, nil
+}
+
+// -- Used to get data and use it for app.
+
+// Get data.
+func (a *AppFS) DecodeData(appDebug *pd.Debug, b []byte) (Data, *pd.Error) {
 	var d Data
-	decoder := gob.NewDecoder(bytes.NewReader(b))
-	if err := decoder.Decode(&d); err != nil {
-		return d, appDebug.New(err, debug.FSError, debug.ErrDataLoad)
+	err := json.Unmarshal(b, &d)
+	if err != nil {
+		return d, appDebug.New(err, pd.FSError, pd.ErrDataLoad)
 	}
 	return d, nil
 }
 
-func (a *AppFS) DecodeCache(appDebug *debug.Debug, b []byte) (Cache, *debug.Error) {
+// Get cache.
+func (a *AppFS) DecodeCache(appDebug *pd.Debug, b []byte) (Cache, *pd.Error) {
 	var c Cache
-	decoder := gob.NewDecoder(bytes.NewReader(b))
-	if err := decoder.Decode(&c); err != nil {
-		return c, appDebug.New(err, debug.FSError, debug.ErrCacheLoad)
+	err := json.Unmarshal(b, &c)
+	if err != nil {
+		return c, appDebug.New(err, pd.FSError, pd.ErrCacheLoad)
 	}
 	return c, nil
 }
+

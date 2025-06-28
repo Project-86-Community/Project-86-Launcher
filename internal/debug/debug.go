@@ -127,11 +127,19 @@ func (d *Debug) New(err error, errType ErrorType, code int) *Error {
 	}
 }
 
-func (d *Debug) String(err *Error) string {
-	if err != nil {
-		return fmt.Sprintf("Code: %d, Type: %s, Err: %s", err.Code, string(err.Type), err.Err.Error())
+func (e *Error) String() string {
+	if e != nil {
+		return fmt.Sprintf("Code: %d, Type: %s, Err: %s", e.Code, string(e.Type), e.Err.Error())
 	}
 	return ""
+}
+
+func (e *Error) LogErr(place, who string) {
+	log.Error().Int("Code", e.Code).Any("Type", e.Type).Err((e.Err)).Str(place, who).Msg("ErrorManager")
+}
+
+func (e *Error) LogErrStack(place, who string) {
+	log.Error().Stack().Int("Code", e.Code).Any("Type", e.Type).Err((e.Err)).Str(place, who).Msg("ErrorManager")
 }
 
 func (d *Debug) SetToast(err *Error) {
@@ -143,3 +151,4 @@ func (d *Debug) SetPopup(err *Error) {
 	log.Warn().Stack().Int("Code", err.Code).Any("Type", err.Type).Err(err.Err).Str("Debug", "SetPopup").Msg("ErrorManager")
 	d.PopupErr = err
 }
+

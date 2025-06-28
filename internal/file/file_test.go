@@ -22,17 +22,18 @@
 package file_test
 
 import (
-	"p86l/configs"
-	"p86l/internal/debug"
+	pd "p86l/internal/debug"
 	"p86l/internal/file"
 	"testing"
+
+	"github.com/hajimehoshi/guigui"
 )
 
-func setup(t *testing.T) (*debug.Debug, *file.AppFS) {
-	e := &debug.Debug{}
-	a, dErr := file.NewFS(e, "test")
-	if dErr != nil {
-		t.Fatalf("%#v", dErr)
+func setup(t *testing.T) (*pd.Debug, *file.AppFS) {
+	e := &pd.Debug{}
+	a, err := file.NewFS(e, "test")
+	if err != nil {
+		t.Fatalf("%#v", err)
 	}
 
 	return e, a
@@ -45,24 +46,44 @@ func TestInit(t *testing.T) {
 
 func TestSaveFiles(t *testing.T) {
 	e, fs := setup(t)
-	dErr := fs.Save(e, configs.DataFile, []byte("Lena"))
-	if dErr != nil {
-		t.Fatalf("%#v", dErr)
+
+	exampleData := file.Data{
+		Locale:    "fr",
+		AppScale:  2,
+		ColorMode: guigui.ColorModeDark,
+	}
+
+	b, err := fs.EncodeData(e, exampleData)
+	if err != nil {
+		t.Fatalf("%#v", err)
+	}
+
+	err = fs.Save(e, fs.FileDataPath(), b)
+	if err != nil {
+		t.Fatalf("%#v", err)
 	}
 }
 
 func TestLoadFiles(t *testing.T) {
 	e, fs := setup(t)
-	bytes, dErr := fs.Load(e, configs.DataFile)
-	if dErr != nil {
-		t.Fatalf("%#v", dErr)
+
+	b, err := fs.Load(e, fs.FileDataPath())
+	if err != nil {
+		t.Fatalf("%#v", err)
 	}
-	t.Logf("Data: %s", string(bytes))
+
+	d, err := fs.DecodeData(e, b)
+	if err != nil {
+		t.Fatalf("%#v", err)
+	}
+
+	t.Logf("%#v", d)
 }
 
 func TestStatFile(t *testing.T) {
 	e, fs := setup(t)
-	if dErr := fs.Stat(e, configs.DataFile); dErr != nil {
-		t.Fatalf("%#v", dErr)
+	if err := fs.IsDirR(e, fs.FileDataPath()); err != nil {
+		t.Fatalf("%#v", err)
 	}
 }
+
