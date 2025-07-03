@@ -22,15 +22,9 @@
 package p86l
 
 import (
-	"bytes"
-	"encoding/gob"
-	"p86l/configs"
-	"p86l/internal/debug"
+	pd "p86l/internal/debug"
 	"p86l/internal/file"
-	"sync"
-	"time"
 
-	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hashicorp/go-version"
 	"github.com/rs/zerolog/log"
@@ -38,13 +32,10 @@ import (
 )
 
 type Model struct {
-	mode  string
-	lunch LunchModel
+	mode string
 
-	networkState NetworkState
-
-	DataM  DataModel
-	CacheM CacheModel
+	data  DataModel
+	cache CacheModel
 }
 
 func (m *Model) Mode() string {
@@ -59,37 +50,11 @@ func (m *Model) SetMode(mode string) {
 	m.mode = mode
 }
 
-type NetworkState struct {
-	netMutex           sync.Mutex
-	internetAvailable  bool
-	githubRateLimit    *github.RateLimits
-	lastCheckTick      int64
-	checkingInProgress bool
+func (m *Model) Data() *DataModel {
+	return &m.data
 }
 
-func (n *NetworkState) InternetAvailable() bool {
-	n.netMutex.Lock()
-	defer n.netMutex.Unlock()
-	return n.internetAvailable
-}
-
-func (n *NetworkState) GitHubRateLimit() *github.RateLimits {
-	n.netMutex.Lock()
-	defer n.netMutex.Unlock()
-	return n.githubRateLimit
-}
-
-func (n *NetworkState) LastCheckTick() int64 {
-	n.netMutex.Lock()
-	defer n.netMutex.Unlock()
-	return n.lastCheckTick
-}
-
-func (n *NetworkState) Valid() bool {
-	n.netMutex.Lock()
-	defer n.netMutex.Unlock()
-	return n.githubRateLimit.Core.Remaining > 0 && time.Now().Before(n.githubRateLimit.Core.Reset.Time)
-}
+// -- DataModel: handles data for app --
 
 type DataModel struct {
 	validGameVersion bool
@@ -98,77 +63,23 @@ type DataModel struct {
 
 func NewData() file.Data {
 	return file.Data{
-		Locale:      language.English.String(),
-		AppScale:    2,
-		ColorMode:   guigui.ColorModeLight,
-		GameVersion: "",
+		Locale:        language.English.String(),
+		AppScale:      2,
+		ColorMode:     guigui.ColorModeLight,
+		GameVersion:   "",
+		UsePreRelease: false,
 	}
+}
+
+func (d *DataModel) File() *file.Data {
+	return &d.file
 }
 
 func (d *DataModel) IsValidGameVersion() bool {
 	return d.validGameVersion
 }
 
-func (d *DataModel) File() file.Data {
-	return d.file
-}
-
-func (d *DataModel) SetLocale(context *guigui.Context, locale language.Tag) *debug.Error {
-	log.Info().Any("Translation", locale).Str("DataModel", "SetLocale").Msg("FileManager")
-	d.file.Locale = locale.String()
-	return d.SetData(context, d.file)
-}
-
-func (d *DataModel) SetAppScale(context *guigui.Context, scale int) *debug.Error {
-	log.Info().Any("Scaling", scale).Str("DataModel", "SetAppScale").Msg("FileManager")
-	d.file.AppScale = scale
-	return d.SetData(context, d.file)
-}
-
-func (d *DataModel) SetColorMode(context *guigui.Context, mode guigui.ColorMode) *debug.Error {
-	log.Info().Any("Theme", mode).Str("DataModel", "SetColorMode").Msg("FileManager")
-	d.file.ColorMode = mode
-	return d.SetData(context, d.file)
-}
-
-func (d *DataModel) SetGameVersion(context *guigui.Context, ver string) *debug.Error {
-	_, err := version.NewVersion(ver)
-	if err != nil {
-		return e.New(err, debug.AppError, debug.ErrGameVersionInvalid)
-	}
-
-	log.Info().Any("Game Version", ver).Str("DateModel", "SetGameVersion").Msg("FileManager")
-	d.file.GameVersion = ver
-	return d.SetData(context, d.file)
-}
-
-func (d *DataModel) SetData(context *guigui.Context, dataFile file.Data) *debug.Error {
-	locale, err := language.Parse(dataFile.Locale)
-	if err != nil {
-		return e.New(err, debug.DataError, debug.ErrDataLocaleInvalid)
-	}
-
-	d.file = dataFile
-	context.SetAppLocales([]language.Tag{locale})
-	context.SetAppScale(d.GetAppScaleF(dataFile.AppScale))
-	context.SetColorMode(dataFile.ColorMode)
-	SetLanguage(dataFile.Locale)
-
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(&dataFile); err != nil {
-		return e.New(err, debug.FSError, debug.ErrDataSave)
-	}
-
-	dErr := fs.Save(e, configs.DataFile, buf.Bytes())
-	if dErr != nil {
-		return dErr
-	}
-
-	return nil
-}
-
-func (d *DataModel) GetAppScale(scale float64) int {
+func (d *DataModel) GetAppScaleI(scale float64) int {
 	switch scale {
 	case 0.5: // 50%
 		return 0
@@ -202,76 +113,51 @@ func (d *DataModel) GetAppScaleF(scale int) float64 {
 	return -1
 }
 
-type CacheModel struct {
-	validCacheFile      bool
-	cacheFile           file.Cache
-	isTranslate         bool
-	translatedChangelog string
+func (d *DataModel) SetLocale(context *guigui.Context, locale language.Tag) {
+	log.Info().Any("Translation", locale).Str("DataModel", "SetLocale").Msg("FileManager")
+	d.file.Locale = locale.String()
+	context.SetAppLocales([]language.Tag{locale})
+	SetLanguage(locale.String())
 }
 
-func (c *CacheModel) IsVaild() bool {
-	return c.validCacheFile
+func (d *DataModel) SetAppScale(context *guigui.Context, scale int) {
+	log.Info().Any("Scaling", scale).Str("DataModel", "SetAppScale").Msg("FileManager")
+	d.file.AppScale = scale
+	context.SetAppScale(d.GetAppScaleF(scale))
 }
 
-func (c *CacheModel) File() file.Cache {
-	return c.cacheFile
+func (d *DataModel) SetColorMode(context *guigui.Context, mode guigui.ColorMode) {
+	log.Info().Any("Theme", mode).Str("DataModel", "SetColorMode").Msg("FileManager")
+	d.file.ColorMode = mode
+	context.SetColorMode(mode)
 }
 
-func (c *CacheModel) Translate() (bool, string) {
-	return c.isTranslate, c.translatedChangelog
-}
-
-func (c *CacheModel) SetCache(cacheFile file.Cache) *debug.Error {
-	cacheFile.Log()
-
-	dErr := cacheFile.Validate(e)
-	if dErr != nil {
-		c.validCacheFile = false
-		return dErr
-	}
-
-	c.validCacheFile = true
-	c.cacheFile = cacheFile
-
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(cacheFile); err != nil {
-		return e.New(err, debug.FSError, debug.ErrCacheSave)
-	}
-
-	dErr = fs.Save(e, configs.CacheFile, buf.Bytes())
-	if dErr != nil {
-		return dErr
-	}
-
+func (d *DataModel) SetUsePreRelease(value bool) *pd.Error {
+	log.Info().Any("Pre-release", value).Str("DateModel", "SetUsePreRelease").Msg("FileManager")
+	d.file.UsePreRelease = value
 	return nil
 }
 
-type LunchStatus int
+func (d *DataModel) SetGameVersion(ver string) *pd.Error {
+	if ver == "" {
+		return nil
+	}
 
-const (
-	LunchStatusInstall LunchStatus = iota
-	LunchStatusUpdate
-	LunchStatusPlay
-)
+	_, err := version.NewVersion(ver)
+	if err != nil {
+		return E.New(err, pd.AppError, pd.ErrGameVersionInvalid)
+	}
 
-type LunchModel struct {
-	status LunchStatus
-	msg    string
+	log.Info().Any("Game Version", ver).Str("DateModel", "SetGameVersion").Msg("FileManager")
+	d.file.GameVersion = ver
+	return nil
 }
 
-func (l *LunchModel) Status() LunchStatus {
-	return l.status
+func (d *DataModel) Save() *pd.Error {
+	log.Info().Str("DataModel", "Save").Msg("FileManager")
+	return SaveData(d.file)
 }
 
-func (l *LunchModel) Msg() string {
-	return l.msg
-}
-
-func (l *LunchModel) Set(value LunchStatus) {
-	l.status = value
-}
-
-func (l *LunchModel) SetMsg(value string) {
-	l.msg = value
+type CacheModel struct {
+	file file.Cache
 }

@@ -19,9 +19,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package p86l
+package app
 
 import (
+	"p86l"
 	"p86l/internal/debug"
 
 	"github.com/atotto/clipboard"
@@ -39,7 +40,7 @@ type Sidebar struct {
 	panelContent sidebarContent
 }
 
-func (s *Sidebar) SetModel(model *Model) {
+func (s *Sidebar) SetModel(model *p86l.Model) {
 	s.panelContent.SetModel(model)
 }
 
@@ -64,10 +65,10 @@ type sidebarContent struct {
 	toastButton basicwidget.Button
 	toastText   basicwidget.Text
 
-	model *Model
+	model *p86l.Model
 }
 
-func (s *sidebarContent) SetModel(model *Model) {
+func (s *sidebarContent) SetModel(model *p86l.Model) {
 	s.model = model
 }
 
@@ -76,23 +77,23 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 
 	items := []basicwidget.ListItem[string]{
 		{
-			Text: T("home.title"),
+			Text: p86l.T("home.title"),
 			ID:   "home",
 		},
 		{
-			Text: T("play.title"),
+			Text: p86l.T("play.title"),
 			ID:   "play",
 		},
 		{
-			Text: T("changelog.title"),
+			Text: p86l.T("changelog.title"),
 			ID:   "changelog",
 		},
 		{
-			Text: T("settings.title"),
+			Text: p86l.T("settings.title"),
 			ID:   "settings",
 		},
 		{
-			Text: T("about.title"),
+			Text: p86l.T("about.title"),
 			ID:   "about",
 		},
 	}
@@ -113,21 +114,21 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 	})
 
 	s.lunchText.SetScale(0.8)
-	s.lunchText.SetValue(s.model.lunch.Msg())
+	//s.lunchText.SetValue(s.model.lunch.Msg())
 	s.lunchPanel.SetContent(&s.lunchText)
 
 	s.toastButton.SetOnDown(func() {
-		if e.ToastErr == nil {
+		if p86l.E.ToastErr == nil {
 			return
 		}
-		err := clipboard.WriteAll(e.String(e.ToastErr))
+		err := clipboard.WriteAll(p86l.E.ToastErr.String())
 		if err != nil {
-			e.SetToast(e.New(err, debug.AppError, debug.ErrClipboardWrite))
+			p86l.E.SetToast(p86l.E.New(err, debug.AppError, debug.ErrClipboardWrite))
 		}
 	})
 
 	s.toastText.SetScale(0.8)
-	s.toastText.SetValue(e.String(e.ToastErr))
+	s.toastText.SetValue(p86l.E.ToastErr.String())
 	s.toastButton.SetText("Copy")
 	s.toastPanel.SetContent(&s.toastText)
 
@@ -150,7 +151,7 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 		},
 		ColumnGap: u / 2,
 	}
-	if e.ToastErr == nil {
+	if p86l.E.ToastErr == nil {
 		return nil
 	}
 	appender.AppendChildWidgetWithBounds(&s.toastButton, glE.CellBounds(0, 0))

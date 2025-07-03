@@ -12,10 +12,11 @@ import (
 )
 
 type Data struct {
-	Locale      string           `json:"locale"`
-	AppScale    int              `json:"app_scale"`
-	ColorMode   guigui.ColorMode `json:"color_mode"`
-	GameVersion string           `json:"game_version"`
+	Locale        string           `json:"locale"`
+	AppScale      int              `json:"app_scale"`
+	ColorMode     guigui.ColorMode `json:"color_mode"`
+	UsePreRelease bool             `json:"use_pre_release"`
+	GameVersion   string           `json:"game_version"`
 }
 
 func (d *Data) Log() {
@@ -25,6 +26,7 @@ func (d *Data) Log() {
 	if d.GameVersion == "" {
 		return
 	}
+	log.Info().Any("Use Pre-release", d.UsePreRelease).Msg("FileManager")
 	log.Info().Any("Game Version", d.GameVersion).Msg("FileManager")
 }
 
@@ -67,7 +69,7 @@ func (a *AppFS) EncodeData(appDebug *pd.Debug, d Data) ([]byte, *pd.Error) {
 	return b, nil
 }
 
-func (a *AppFS) EncodeCache(appDebug *pd.Debug, c Data) ([]byte, *pd.Error) {
+func (a *AppFS) EncodeCache(appDebug *pd.Debug, c Cache) ([]byte, *pd.Error) {
 	b, err := json.Marshal(c)
 	if err != nil {
 		return nil, appDebug.New(err, pd.FSError, pd.ErrDataSave)
@@ -96,4 +98,3 @@ func (a *AppFS) DecodeCache(appDebug *pd.Debug, b []byte) (Cache, *pd.Error) {
 	}
 	return c, nil
 }
-

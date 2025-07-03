@@ -22,8 +22,7 @@
 package p86l
 
 import (
-	"context"
-	"p86l/internal/debug"
+	pd "p86l/internal/debug"
 	"p86l/internal/file"
 
 	translator "github.com/Conight/go-googletrans"
@@ -36,7 +35,7 @@ type debugMode struct {
 	Logs    bool
 }
 
-var aLicense = `Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+var ALicense = `Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
 Copyright (C) 2025 Project 86 Community
 
 This program is free software: you can redistribute it and/or modify
@@ -54,25 +53,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.`
 
 var (
 	TheDebugMode debugMode
-	ctx          = context.Background()
 	githubClient = github.NewClient(nil)
 
-	lBundle    *i18n.Bundle
-	lLocalizer *i18n.Localizer
-	t          = translator.New()
+	LBundle    *i18n.Bundle
+	LLocalizer *i18n.Localizer
+	Tl          = translator.New()
 
-	e  = &debug.Debug{} // Debugger
-	fs *file.AppFS      // Filesystem
+	E  = &pd.Debug{} // Debugger
+	FS *file.AppFS      // Filesystem
 
-	gErr *debug.Error
+	GErr *pd.Error
 )
 
-type DownloadType int
-
-const (
-	GameDownloadType DownloadType = iota
-)
-
-func GetError() *debug.Error {
-	return gErr
-}

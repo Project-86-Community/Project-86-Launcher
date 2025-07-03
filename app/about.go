@@ -19,10 +19,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package p86l
+package app
 
 import (
 	"cmp"
+	"p86l"
 	"p86l/assets"
 
 	"github.com/hajimehoshi/guigui"
@@ -41,11 +42,11 @@ type About struct {
 }
 
 func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	img1, err1 := assets.TheImageCache.Get(e, "lead")
-	img2, err2 := assets.TheImageCache.Get(e, "dev")
+	img1, err1 := assets.TheImageCache.Get(p86l.E, "lead")
+	img2, err2 := assets.TheImageCache.Get(p86l.E, "dev")
 
 	if err := cmp.Or(err1, err2); err != nil {
-		gErr = err
+		p86l.GErr = err
 		return err.Err
 	}
 
@@ -54,11 +55,11 @@ func (a *About) Build(context *guigui.Context, appender *guigui.ChildWidgetAppen
 
 	a.leadText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
 	a.leadText.SetScale(1.2)
-	a.leadText.SetValue(T("about.lead"))
+	a.leadText.SetValue(p86l.T("about.lead"))
 
 	a.devText.SetScale(1.2)
 	a.devText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
-	a.devText.SetValue(T("about.dev"))
+	a.devText.SetValue(p86l.T("about.dev"))
 
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
@@ -104,14 +105,14 @@ func (a *aboutContent) Build(context *guigui.Context, appender *guigui.ChildWidg
 	a.infoText.SetAutoWrap(true)
 	a.infoText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 	a.infoText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
-	a.infoText.SetValue(T("about.info"))
+	a.infoText.SetValue(p86l.T("about.info"))
 
 	a.licenseText.SetAutoWrap(true)
 	a.licenseText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 	a.licenseText.SetVerticalAlign(basicwidget.VerticalAlignBottom)
 	a.licenseText.SetScale(0.6)
 	context.SetOpacity(&a.licenseText, 0.5)
-	a.licenseText.SetValue(aLicense)
+	a.licenseText.SetValue(p86l.ALicense)
 
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{

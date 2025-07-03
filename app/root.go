@@ -1,0 +1,224 @@
+/*
+ * SPDX-License-Identifier: GPL-3.0-only
+ * SPDX-FileCopyrightText: 2025 Project 86 Community
+ *
+ * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Copyright (C) 2025 Project 86 Community
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package app
+
+import (
+	"cmp"
+	"slices"
+	"golang.org/x/text/language"
+	"image"
+	"p86l"
+	"p86l/assets"
+	p86lLocale "p86l/assets/locale"
+	pd "p86l/internal/debug"
+	"p86l/internal/file"
+	"runtime"
+	"sync"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/guigui"
+	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/hajimehoshi/guigui/layout"
+	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/rs/zerolog/log"
+)
+
+type Root struct {
+	guigui.DefaultWidget
+
+	background rootBackground
+	sidebar    Sidebar
+	play       Play
+	//changelog  Changelog
+	settings Settings
+	about    About
+
+	model p86l.Model
+	
+	locales           []language.Tag
+	faceSourceEntries []basicwidget.FaceSourceEntry
+	
+	sync sync.Once
+	err  *pd.Error
+}
+
+func (r *Root) runApp() *pd.Error {
+	iconImages, err1 := assets.GetIconImages(p86l.E)
+	afs, err2 := file.NewFS(p86l.E)
+	bundle, err3 := p86lLocale.GetLocales(p86l.E, language.English)
+
+	if err := cmp.Or(err1, err2, err3); err != nil {
+		return err
+	}
+
+	ebiten.SetWindowIcon(iconImages)
+	p86l.FS = afs
+	p86l.LBundle = bundle
+	p86l.LLocalizer = i18n.NewLocalizer(bundle, "en")
+
+	return nil
+}
+
+func (r *Root) updateFontFaceSources(context *guigui.Context) {
+	r.locales = slices.Delete(r.locales, 0, len(r.locales))
+	r.locales = context.AppendLocales(r.locales)
+
+	r.faceSourceEntries = slices.Delete(r.faceSourceEntries, 0, len(r.faceSourceEntries))
+	r.faceSourceEntries = AppendRecommendedFaceSourceEntries(r.faceSourceEntries, r.locales)
+	basicwidget.SetFaceSources(r.faceSourceEntries)
+}
+
+func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	r.sync.Do(func() {
+		err1 := r.runApp()
+		err2 := p86l.LoadB(context, &r.model, "data")
+		err3 := p86l.LoadB(context, &r.model, "cache")
+
+		if err := cmp.Or(err1, err2, err3); err != nil {
+			r.err = err
+			return
+		}
+
+		var gpuInfo ebiten.DebugInfo
+		ebiten.ReadDebugInfo(&gpuInfo)
+
+		log.Info().Msg("..:: GuiGui GUI Framework Alpha ::..")
+		log.Info().Str("Version", p86l.TheDebugMode.Version).Msg("P86L - Project 86 Launcher")
+		log.Info().Str("Detected OS", runtime.GOOS).Msg("Operating System")
+		log.Info().Str("Graphics API", gpuInfo.GraphicsLibrary.String()).Msg("GPU")
+		log.Warn().Str("LICENSE", p86l.ALicense).Msg("README")
+	})
+
+	if r.err != nil {
+		p86l.GErr = r.err
+		return r.err.Err
+	}
+	r.updateFontFaceSources(context)
+	
+	r.background.SetModel(&r.model)
+	r.sidebar.SetModel(&r.model)
+	r.play.SetModel(&r.model)
+	//r.changelog.SetModel(&r.model)
+	r.settings.SetModel(&r.model)
+
+	r.background.SetSidebar(&r.sidebar)
+
+	gl := layout.GridLayout{
+		Bounds: context.Bounds(r),
+		Widths: []layout.Size{
+			layout.FixedSize(8 * basicwidget.UnitSize(context)),
+			layout.FlexibleSize(1),
+		},
+	}
+	r.background.SetBgBounds(gl.CellBounds(1, 0))
+	appender.AppendChildWidgetWithBounds(&r.background, context.Bounds(r))
+
+	appender.AppendChildWidgetWithBounds(&r.sidebar, gl.CellBounds(0, 0))
+
+	switch r.model.Mode() {
+	case "play":
+		appender.AppendChildWidgetWithBounds(&r.play, gl.CellBounds(1, 0))
+	case "changelog":
+		//appender.AppendChildWidgetWithBounds(&r.changelog, gl.CellBounds(1, 0))
+	case "settings":
+		appender.AppendChildWidgetWithBounds(&r.settings, gl.CellBounds(1, 0))
+	case "about":
+		appender.AppendChildWidgetWithBounds(&r.about, gl.CellBounds(1, 0))
+	}
+
+	return nil
+}
+
+type rootBackground struct {
+	guigui.DefaultWidget
+
+	bgImage    basicwidget.Image
+	background basicwidget.Background
+	border     basicwidget.Background
+
+	model    *p86l.Model
+	sidebar  *Sidebar
+	bgBounds image.Rectangle
+
+	err *pd.Error
+}
+
+func (r *rootBackground) SetModel(model *p86l.Model) {
+	r.model = model
+}
+
+func (r *rootBackground) SetSidebar(sidebar *Sidebar) {
+	r.sidebar = sidebar
+}
+
+func (r *rootBackground) SetBgBounds(bounds image.Rectangle) {
+	r.bgBounds = bounds
+}
+
+func (r *rootBackground) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	img, err := assets.TheImageCache.Get(p86l.E, "banner")
+	r.err = err
+
+	if r.err != nil {
+		p86l.GErr = r.err
+		return r.err.Err
+	}
+
+	r.bgImage.SetImage(img)
+	context.SetOpacity(&r.background, 0.9)
+	context.SetOpacity(&r.border, 0.8)
+
+	imgWidth := img.Bounds().Dx()
+	imgHeight := img.Bounds().Dy()
+	aspectRatio := float64(imgHeight) / float64(imgWidth)
+
+	windowSize := context.ActualSize(r)
+	availableWidth := windowSize.X
+
+	newHeight := int(float64(availableWidth) * aspectRatio)
+
+	if newHeight < windowSize.Y {
+		newHeight = windowSize.Y
+		availableWidth = int(float64(newHeight) / aspectRatio)
+	}
+
+	context.SetSize(&r.bgImage, image.Pt(availableWidth+2, newHeight+2))
+
+	yOffset := 0
+	if newHeight > windowSize.Y {
+		yOffset = -(newHeight - windowSize.Y) / 2
+	}
+
+	imgPosition := image.Pt(00, yOffset)
+	appender.AppendChildWidgetWithPosition(&r.bgImage, imgPosition)
+
+	borderBounds := context.Bounds(r)
+	borderBounds.Min.X = context.ActualSize(r.sidebar).X - (basicwidget.UnitSize(context) / 8)
+	borderBounds.Max.X = context.ActualSize(r.sidebar).X
+
+	if r.model.Mode() != "home" {
+		appender.AppendChildWidgetWithBounds(&r.background, r.bgBounds)
+		appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
+	}
+
+	return nil
+}

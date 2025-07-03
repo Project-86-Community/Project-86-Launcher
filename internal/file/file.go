@@ -30,6 +30,7 @@ import (
 	pd "p86l/internal/debug"
 	"path/filepath"
 
+	"github.com/rs/zerolog/log"
 	"github.com/skratchdot/open-golang/open"
 )
 
@@ -92,6 +93,7 @@ func (a *AppFS) OpenFileManager(appDebug *pd.Debug, path string) *pd.Error {
 	if err := open.Run(path); err != nil {
 		return appDebug.New(err, pd.FSError, pd.ErrFSOpenFileManagerInvalid)
 	}
+	log.Info().Str("Path", path).Str("AppFS", "OpenFileManager").Msg("FileManager")
 	return nil
 }
 
@@ -173,4 +175,3 @@ func (a *AppFS) FileDataPath() string {
 func (a *AppFS) FileCachePath() string {
 	return filepath.Join(a.DirAppPath(), configs.CacheFile)
 }
-

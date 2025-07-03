@@ -19,45 +19,44 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package main
+package app
 
 import (
-	"os"
 	"p86l"
-	"p86l/app"
-	"p86l/cmd/p86l/isrelease"
-	"p86l/configs"
 
 	"github.com/hajimehoshi/guigui"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/pkgerrors"
+	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/hajimehoshi/guigui/layout"
 )
 
-var version = "dev"
+type Changelog struct {
+	guigui.DefaultWidget
 
-func init() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+	infoText  basicwidget.Text
+	form      basicwidget.Form
+	gtlText   basicwidget.Text
+	gtlToggle basicwidget.Toggle
+	urlButton basicwidget.Button
 
-	isrelease.Run()
-	p86l.TheDebugMode.Version = version
-
-	if !p86l.TheDebugMode.Logs {
-		zerolog.SetGlobalLevel(zerolog.Disabled)
-	}
+	model *p86l.Model
 }
 
-func main() {
-	op := &guigui.RunOptions{
-		Title:         configs.AppTitle,
-		WindowMinSize: configs.AppWindowMinSize,
-	}
-	if err := guigui.Run(&app.Root{}, op); err != nil {
-		gErr := p86l.GErr
-		if gErr != nil {
-			gErr.LogErrStack("main", "guigui.Run")
-		}
-		os.Exit(1)
-	}
+func (c *Changelog) SetModel(model *p86l.Model) {
+	c.model = model
 }
 
+func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	u := basicwidget.UnitSize(context)
+	gl := layout.GridLayout{
+		Bounds: context.Bounds(c).Inset(u / 2),
+		Heights: []layout.Size{
+			layout.FlexibleSize(1),
+			layout.FlexibleSize(1),
+		},
+		RowGap: u / 2,
+	}
+	appender.AppendChildWidgetWithBounds(&c.infoText, gl.CellBounds(0, 0))
+	appender.AppendChildWidgetWithBounds(&c.form, gl.CellBounds(0, 1))
+
+	return nil
+}

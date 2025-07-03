@@ -1,3 +1,6 @@
+//go:build !cjk
+// +build !cjk
+
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
@@ -19,45 +22,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package main
+package app
 
 import (
-	"os"
-	"p86l"
-	"p86l/app"
-	"p86l/cmd/p86l/isrelease"
-	"p86l/configs"
-
-	"github.com/hajimehoshi/guigui"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/pkgerrors"
+	"github.com/hajimehoshi/guigui/basicwidget"
+	"golang.org/x/text/language"
 )
 
-var version = "dev"
-
-func init() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-
-	isrelease.Run()
-	p86l.TheDebugMode.Version = version
-
-	if !p86l.TheDebugMode.Logs {
-		zerolog.SetGlobalLevel(zerolog.Disabled)
-	}
-}
-
-func main() {
-	op := &guigui.RunOptions{
-		Title:         configs.AppTitle,
-		WindowMinSize: configs.AppWindowMinSize,
-	}
-	if err := guigui.Run(&app.Root{}, op); err != nil {
-		gErr := p86l.GErr
-		if gErr != nil {
-			gErr.LogErrStack("main", "guigui.Run")
-		}
-		os.Exit(1)
-	}
+func AppendRecommendedFaceSourceEntries(faceSourceEntries []basicwidget.FaceSourceEntry, locales []language.Tag) []basicwidget.FaceSourceEntry {
+	return faceSourceEntries
 }
 

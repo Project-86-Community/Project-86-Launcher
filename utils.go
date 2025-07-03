@@ -23,25 +23,65 @@ package p86l
 
 import (
 	"fmt"
-	"io"
-	"os"
-	"p86l/internal/debug"
-	"time"
+	pd "p86l/internal/debug"
+	"p86l/internal/file"
 
-	"github.com/dustin/go-humanize"
-	"github.com/hashicorp/go-getter"
-	version "github.com/hashicorp/go-version"
+	"github.com/hajimehoshi/guigui"
 	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/browser"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/text/language"
 )
 
+func LoadB(context *guigui.Context, model *Model, loadType string) *pd.Error {
+	switch loadType {
+	case "data":
+		if err := FS.IsDirR(E, FS.FileDataPath()); err != nil {
+			log.Info().Str("Data", "data not found, creating data...").Str("utils", "loadB").Msg("FileManager")
+			d := NewData()
+			d.Log()
+			model.data.file = d
+			return model.data.Save()
+		}
+	case "cache":
+		if err := FS.IsDirR(E, FS.FileCachePath()); err != nil {
+			log.Info().Str("Cache", "cache not found").Str("utils", "loadB").Msg("FileManager")
+			return nil
+		}
+	}
+
+	switch loadType {
+	case "data":
+		d, err := LoadData()
+		if err != nil {
+			return err
+		}
+
+		tag, rErr := language.Parse(d.Locale)
+		if rErr != nil {
+			return E.New(rErr, pd.DataError, pd.ErrDataLocaleInvalid)
+		}
+		model.data.SetLocale(context, tag)
+		model.data.SetAppScale(context, d.AppScale)
+		model.data.SetColorMode(context, d.ColorMode)
+		model.data.SetUsePreRelease(d.UsePreRelease)
+		return model.data.SetGameVersion(d.GameVersion)
+	case "cache":
+		c, err := LoadCache()
+		if err != nil {
+			return err
+		}
+		model.cache.file = *c
+	}
+	return nil
+}
+
 func SetLanguage(lang string) {
-	lLocalizer = i18n.NewLocalizer(lBundle, lang)
+	LLocalizer = i18n.NewLocalizer(LBundle, lang)
 }
 
 func T(key string) string {
-	lMsg, err := lLocalizer.Localize(&i18n.LocalizeConfig{
+	lMsg, err := LLocalizer.Localize(&i18n.LocalizeConfig{
 		MessageID: key,
 	})
 	if err != nil {
@@ -54,106 +94,64 @@ func T(key string) string {
 func OpenBrowser(url string) {
 	log.Info().Str("Url", url).Msg("OpenBrowser")
 	if err := browser.OpenURL(url); err != nil {
-		e.SetPopup(e.New(err, debug.AppError, debug.ErrBrowserOpen))
+		E.SetPopup(E.New(err, pd.AppError, pd.ErrBrowserOpen))
 	}
 }
 
-func IsNewVersion(currentVersion, newVersion string) (bool, error) {
-	current, err := version.NewVersion(currentVersion)
+// -- Funcs for loading and saving --
+
+func LoadData() (*file.Data, *pd.Error) {
+	b, err := FS.Load(E, FS.FileDataPath())
 	if err != nil {
-		return false, fmt.Errorf("invalid current version: %w", err)
+		return nil, err
 	}
 
-	newer, err := version.NewVersion(newVersion)
+	d, err := FS.DecodeData(E, b)
 	if err != nil {
-		return false, fmt.Errorf("invalid new version: %w", err)
+		return nil, err
 	}
 
-	return newer.GreaterThan(current), nil
+	return &d, nil
 }
 
-type ProgressTracker struct {
-	Model *Model
-}
-
-func (p *ProgressTracker) TrackProgress(src string, currentSize, totalSize int64, stream io.ReadCloser) io.ReadCloser {
-	return &readProgress{
-		Model:      p.Model,
-		ReadCloser: stream,
-		current:    currentSize,
-		total:      totalSize,
-		source:     src,
-		startTime:  time.Now(),
-		lastTime:   time.Now(),
-		lastBytes:  currentSize,
-	}
-}
-
-type readProgress struct {
-	Model *Model
-	io.ReadCloser
-	current   int64
-	total     int64
-	source    string
-	startTime time.Time
-	lastTime  time.Time
-	lastBytes int64
-}
-
-func (r *readProgress) Read(p []byte) (n int, err error) {
-	n, err = r.ReadCloser.Read(p)
-	if n > 0 {
-		now := time.Now()
-		r.current += int64(n)
-
-		// Calculate speed and ETA
-		timeElapsed := now.Sub(r.lastTime).Seconds()
-		if timeElapsed > 0.1 { // Update stats every 100ms to smooth fluctuations
-			bytesSinceLast := r.current - r.lastBytes
-			speed := float64(bytesSinceLast) / timeElapsed
-
-			remainingBytes := r.total - r.current
-			eta := time.Duration(float64(remainingBytes)/speed) * time.Second
-
-			msg := fmt.Sprintf("- Downloading <%s>: %s/%s, %s -",
-				r.source,
-				humanize.Bytes(uint64(r.current)),
-				humanize.Bytes(uint64(r.total)),
-				eta.Round(time.Second),
-			)
-
-			r.Model.lunch.SetMsg(msg)
-			r.lastTime = now
-			r.lastBytes = r.current
-		}
-	}
-
-	return
-}
-
-func DownloadFile(model *Model, dest, sourceUrl string, dType DownloadType) *debug.Error {
-	switch dType {
-	case GameDownloadType:
-		if fs.IsDir(e, fs.DirGamePath()) == nil {
-			err := os.RemoveAll(fs.DirGamePath())
-			if err != nil {
-				return e.New(err, debug.FSError, debug.ErrFSDirRemove)
-			}
-		}
-	}
-
-	client := &getter.Client{
-		Src:              sourceUrl,
-		Dst:              dest,
-		Mode:             getter.ClientModeDir,
-		ProgressListener: &ProgressTracker{Model: model},
-	}
-
-	err := client.Get()
+func LoadCache() (*file.Cache, *pd.Error) {
+	b, err := FS.Load(E, FS.FileCachePath())
 	if err != nil {
-		return e.New(err, debug.InternetError, debug.ErrInternetRequestInvalid)
+		return nil, err
 	}
 
-	model.lunch.SetMsg("")
+	c, err := FS.DecodeCache(E, b)
+	if err != nil {
+		return nil, err
+	}
+
+	return &c, nil
+}
+
+func SaveData(d file.Data) *pd.Error {
+	b, err := FS.EncodeData(E, d)
+	if err != nil {
+		return err
+	}
+
+	err = FS.Save(E, FS.FileDataPath(), b)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func SaveCache(c file.Cache) *pd.Error {
+	b, err := FS.EncodeCache(E, c)
+	if err != nil {
+		return err
+	}
+
+	err = FS.Save(E, FS.FileCachePath(), b)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
