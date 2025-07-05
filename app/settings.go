@@ -126,6 +126,7 @@ func (s *settingsData) Build(context *guigui.Context, appender *guigui.ChildWidg
 		if item.ID == language.English {
 			data.SetLocale(context, language.English)
 			context.SetAppLocales(nil)
+			s.err = data.Save()
 			return
 		}
 		data.SetLocale(context, item.ID)

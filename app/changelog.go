@@ -72,7 +72,9 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 
 	c.form.SetItems([]basicwidget.FormItem{
 		{
-			PrimaryWidget:   &c.viewText,
+			PrimaryWidget: &c.viewText,
+		},
+		{
 			SecondaryWidget: &c.viewButton,
 		},
 	})
