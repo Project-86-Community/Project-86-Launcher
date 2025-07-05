@@ -53,7 +53,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.`
 
 var (
 	TheDebugMode debugMode
-	githubClient = github.NewClient(nil)
+	GithubClient = github.NewClient(nil)
 
 	LBundle    *i18n.Bundle
 	LLocalizer *i18n.Localizer

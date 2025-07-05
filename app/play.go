@@ -34,8 +34,8 @@ import (
 type Play struct {
 	guigui.DefaultWidget
 
-	links        playLinks
-	actionButton basicwidget.Button
+	content playContent
+	links   playLinks
 
 	model *p86l.Model
 }
@@ -45,8 +45,6 @@ func (p *Play) SetModel(model *p86l.Model) {
 }
 
 func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	p.actionButton.SetText("PLAY")
-
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
 		Bounds: context.Bounds(p).Inset(u / 2),
@@ -56,23 +54,36 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		},
 		RowGap: u / 2,
 	}
-	{
-		glB := layout.GridLayout{
-			Bounds: gl.CellBounds(0, 0),
-			Heights: []layout.Size{
-				layout.FlexibleSize(1),
-				layout.FixedSize(2 * u),
-				layout.FlexibleSize(1),
-			},
-			Widths: []layout.Size{
-				layout.FlexibleSize(1),
-				layout.FlexibleSize(1),
-				layout.FlexibleSize(1),
-			},
-		}
-		appender.AppendChildWidgetWithBounds(&p.actionButton, glB.CellBounds(1, 1))
-	}
+	appender.AppendChildWidgetWithBounds(&p.content, gl.CellBounds(0, 0))
 	appender.AppendChildWidgetWithBounds(&p.links, gl.CellBounds(0, 1))
+
+	return nil
+}
+
+type playContent struct {
+	guigui.DefaultWidget
+
+	actionButton basicwidget.Button
+}
+
+func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	p.actionButton.SetText(p86l.T("play.play"))
+	
+	u := basicwidget.UnitSize(context)
+	gl := layout.GridLayout{
+		Bounds: context.Bounds(p),
+		Heights: []layout.Size{
+			layout.FlexibleSize(1),
+			layout.FixedSize(2 * u),
+			layout.FlexibleSize(1),
+		},
+		Widths: []layout.Size{
+			layout.FlexibleSize(1),
+			layout.FlexibleSize(1),
+			layout.FlexibleSize(1),
+		},
+	}
+	appender.AppendChildWidgetWithBounds(&p.actionButton, gl.CellBounds(1, 1))
 
 	return nil
 }

@@ -32,11 +32,10 @@ import (
 type Changelog struct {
 	guigui.DefaultWidget
 
-	infoText  basicwidget.Text
-	form      basicwidget.Form
-	gtlText   basicwidget.Text
-	gtlToggle basicwidget.Toggle
-	urlButton basicwidget.Button
+	form       basicwidget.Form
+	text       basicwidget.Text
+	viewText   basicwidget.Text
+	viewButton basicwidget.Button
 
 	model *p86l.Model
 }
@@ -46,16 +45,44 @@ func (c *Changelog) SetModel(model *p86l.Model) {
 }
 
 func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	c.text.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+	c.text.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+	c.text.SetAutoWrap(true)
+
+	if cache := c.model.Cache(); cache.IsValid() {
+		c.text.SetValue(cache.File().Repo.GetBody())
+		c.viewText.SetValue(cache.File().Repo.GetHTMLURL())
+		context.SetEnabled(&c.viewButton, true)
+	} else {
+		c.text.SetValue("...")
+		c.viewText.SetValue("?")
+		context.SetEnabled(&c.viewButton, false)
+	}
+
+	c.viewButton.SetOnDown(func() {
+		if value := c.viewText.Value(); value != "?" {
+			p86l.OpenBrowser(value)
+		}
+	})
+	c.viewButton.SetText("View")
+
+	c.form.SetItems([]basicwidget.FormItem{
+		{
+			PrimaryWidget:   &c.viewText,
+			SecondaryWidget: &c.viewButton,
+		},
+	})
+
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
 		Bounds: context.Bounds(c).Inset(u / 2),
 		Heights: []layout.Size{
 			layout.FlexibleSize(1),
+			layout.FixedSize(c.form.DefaultSize(context).Y),
 			layout.FlexibleSize(1),
 		},
-		RowGap: u / 2,
 	}
-	appender.AppendChildWidgetWithBounds(&c.infoText, gl.CellBounds(0, 0))
+	appender.AppendChildWidgetWithBounds(&c.text, gl.CellBounds(0, 0))
 	appender.AppendChildWidgetWithBounds(&c.form, gl.CellBounds(0, 1))
 
 	return nil

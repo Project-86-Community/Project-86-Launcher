@@ -23,16 +23,20 @@ package app
 
 import (
 	"cmp"
-	"slices"
-	"golang.org/x/text/language"
+	gctx "context"
 	"image"
 	"p86l"
 	"p86l/assets"
 	p86lLocale "p86l/assets/locale"
+	"p86l/configs"
 	pd "p86l/internal/debug"
 	"p86l/internal/file"
 	"runtime"
+	"slices"
 	"sync"
+	"time"
+
+	"golang.org/x/text/language"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
@@ -46,17 +50,20 @@ type Root struct {
 	guigui.DefaultWidget
 
 	background rootBackground
+	info       rootInfo
 	sidebar    Sidebar
 	play       Play
-	//changelog  Changelog
-	settings Settings
-	about    About
+	changelog  Changelog
+	settings   Settings
+	about      About
 
-	model p86l.Model
-	
+	cacheCheckDebounce bool
+	lastTick           int64
+	model              p86l.Model
+
 	locales           []language.Tag
 	faceSourceEntries []basicwidget.FaceSourceEntry
-	
+
 	sync sync.Once
 	err  *pd.Error
 }
@@ -113,14 +120,13 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		return r.err.Err
 	}
 	r.updateFontFaceSources(context)
-	
+
 	r.background.SetModel(&r.model)
+	r.info.SetModel(&r.model)
 	r.sidebar.SetModel(&r.model)
 	r.play.SetModel(&r.model)
-	//r.changelog.SetModel(&r.model)
+	r.changelog.SetModel(&r.model)
 	r.settings.SetModel(&r.model)
-
-	r.background.SetSidebar(&r.sidebar)
 
 	gl := layout.GridLayout{
 		Bounds: context.Bounds(r),
@@ -129,6 +135,7 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 			layout.FlexibleSize(1),
 		},
 	}
+	r.background.SetSidebar(&r.sidebar)
 	r.background.SetBgBounds(gl.CellBounds(1, 0))
 	appender.AppendChildWidgetWithBounds(&r.background, context.Bounds(r))
 
@@ -138,11 +145,37 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	case "play":
 		appender.AppendChildWidgetWithBounds(&r.play, gl.CellBounds(1, 0))
 	case "changelog":
-		//appender.AppendChildWidgetWithBounds(&r.changelog, gl.CellBounds(1, 0))
+		appender.AppendChildWidgetWithBounds(&r.changelog, gl.CellBounds(1, 0))
 	case "settings":
 		appender.AppendChildWidgetWithBounds(&r.settings, gl.CellBounds(1, 0))
 	case "about":
 		appender.AppendChildWidgetWithBounds(&r.about, gl.CellBounds(1, 0))
+	}
+	appender.AppendChildWidgetWithBounds(&r.info, context.Bounds(r))
+
+	return nil
+}
+
+func (r *Root) Tick(context *guigui.Context) error {
+	if ebiten.Tick()-r.lastTick >= int64(ebiten.TPS()*5) {
+		r.lastTick = ebiten.Tick()
+
+		if cache := r.model.Cache(); (!cache.IsValid() && !r.cacheCheckDebounce) || time.Now().After(cache.File().Timestamp.Add(cache.File().ExpiresIn) )  {
+			log.Info().Msg("Pinged Github Lol")
+			r.cacheCheckDebounce = true
+			go func() {
+				ctx := gctx.Background()
+				release, _, rErr := p86l.GithubClient.Repositories.GetLatestRelease(ctx, configs.RepoOwner, configs.RepoName)
+				if rErr != nil {
+					log.Error().Any("Release", rErr).Msg("NetworkManager")
+				}
+				err := cache.SetRepo(release)
+				if err != nil {
+					p86l.E.SetToast(err)
+				}
+				r.cacheCheckDebounce = false
+			}()
+		}
 	}
 
 	return nil
@@ -219,6 +252,37 @@ func (r *rootBackground) Build(context *guigui.Context, appender *guigui.ChildWi
 		appender.AppendChildWidgetWithBounds(&r.background, r.bgBounds)
 		appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
 	}
+
+	return nil
+}
+
+type rootInfo struct {
+	guigui.DefaultWidget
+
+	text basicwidget.Text
+
+	model *p86l.Model
+}
+
+func (r *rootInfo) SetModel(model *p86l.Model) {
+	r.model = model
+}
+
+func (r *rootInfo) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	r.text.SetHorizontalAlign(basicwidget.HorizontalAlignStart)
+	r.text.SetVerticalAlign(basicwidget.VerticalAlignBottom)
+	r.text.SetScale(0.8)
+	r.text.SetValue("Server API ratelimit: -/-")
+
+	u := basicwidget.UnitSize(context)
+	gl := layout.GridLayout{
+		Bounds: context.Bounds(r).Inset(u / 2),
+		Heights: []layout.Size{
+			layout.FlexibleSize(1),
+			layout.FixedSize(u),
+		},
+	}
+	appender.AppendChildWidgetWithBounds(&r.text, gl.CellBounds(0, 1))
 
 	return nil
 }

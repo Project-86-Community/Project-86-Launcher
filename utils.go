@@ -71,6 +71,9 @@ func LoadB(context *guigui.Context, model *Model, loadType string) *pd.Error {
 		if err != nil {
 			return err
 		}
+		if err := c.Validate(E); err == nil {
+			model.cache.valid = true
+		}
 		model.cache.file = *c
 	}
 	return nil
@@ -155,3 +158,4 @@ func SaveCache(c file.Cache) *pd.Error {
 
 	return nil
 }
+

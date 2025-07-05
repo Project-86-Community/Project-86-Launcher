@@ -24,7 +24,9 @@ package p86l
 import (
 	pd "p86l/internal/debug"
 	"p86l/internal/file"
+	"time"
 
+	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hashicorp/go-version"
 	"github.com/rs/zerolog/log"
@@ -52,6 +54,10 @@ func (m *Model) SetMode(mode string) {
 
 func (m *Model) Data() *DataModel {
 	return &m.data
+}
+
+func (m *Model) Cache() *CacheModel {
+	return &m.cache
 }
 
 // -- DataModel: handles data for app --
@@ -158,6 +164,30 @@ func (d *DataModel) Save() *pd.Error {
 	return SaveData(d.file)
 }
 
+// -- CacheModel --
+
 type CacheModel struct {
-	file file.Cache
+	valid bool
+	file  file.Cache
 }
+
+func (c *CacheModel) File() *file.Cache {
+	return &c.file
+}
+
+func (c *CacheModel) IsValid() bool {
+	return c.valid
+}
+
+func (c *CacheModel) SetRepo(repo *github.RepositoryRelease) *pd.Error {
+	c.file.Repo = repo
+	c.file.Timestamp = time.Now()
+	c.file.ExpiresIn = time.Hour
+	if err := c.file.Validate(E); err != nil {
+		c.valid = false
+	} else {
+		c.valid = true
+	}
+	return SaveCache(c.file)
+}
+
