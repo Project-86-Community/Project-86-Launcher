@@ -94,6 +94,14 @@ func T(key string) string {
 	return lMsg
 }
 
+func translateGT(body string, target string) string {
+	result, err := t.Translate(body, "auto", target)
+	if err != nil {
+		return "?"
+	}
+	return result.Text
+}
+
 func OpenBrowser(url string) {
 	log.Info().Str("Url", url).Msg("OpenBrowser")
 	if err := browser.OpenURL(url); err != nil {
@@ -158,4 +166,3 @@ func SaveCache(c file.Cache) *pd.Error {
 
 	return nil
 }
-

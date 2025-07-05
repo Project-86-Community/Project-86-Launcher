@@ -96,6 +96,7 @@ func (s *settingsData) SetModel(model *p86l.Model) {
 
 func (s *settingsData) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	data := s.model.Data()
+	cache := s.model.Cache()
 
 	s.localeText.SetValue(p86l.T("settings.locale"))
 	s.colorModeText.SetValue(p86l.T("settings.colormode"))
@@ -128,6 +129,7 @@ func (s *settingsData) Build(context *guigui.Context, appender *guigui.ChildWidg
 			return
 		}
 		data.SetLocale(context, item.ID)
+		cache.Translate(item.ID.String())
 		s.err = data.Save()
 	})
 	if !s.localeDropdownList.IsPopupOpen() {

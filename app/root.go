@@ -105,6 +105,7 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 			return
 		}
 
+		r.model.Cache().Translate(r.model.Data().File().Locale)
 		var gpuInfo ebiten.DebugInfo
 		ebiten.ReadDebugInfo(&gpuInfo)
 
@@ -172,7 +173,7 @@ func (r *Root) Tick(context *guigui.Context) error {
 					r.cacheCheckDebounce = false
 					return
 				}
-				err := cache.SetRepo(release)
+				err := cache.SetRepo(release, r.model.Data().File().Locale)
 				if err != nil {
 					p86l.E.SetToast(err)
 				}

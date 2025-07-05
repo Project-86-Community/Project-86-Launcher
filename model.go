@@ -167,8 +167,9 @@ func (d *DataModel) Save() *pd.Error {
 // -- CacheModel --
 
 type CacheModel struct {
-	valid bool
-	file  file.Cache
+	valid          bool
+	file           file.Cache
+	TranslatedBody string
 }
 
 func (c *CacheModel) File() *file.Cache {
@@ -179,7 +180,7 @@ func (c *CacheModel) IsValid() bool {
 	return c.valid
 }
 
-func (c *CacheModel) SetRepo(repo *github.RepositoryRelease) *pd.Error {
+func (c *CacheModel) SetRepo(repo *github.RepositoryRelease, locale string) *pd.Error {
 	c.file.Repo = repo
 	c.file.Timestamp = time.Now()
 	c.file.ExpiresIn = time.Hour
@@ -188,6 +189,18 @@ func (c *CacheModel) SetRepo(repo *github.RepositoryRelease) *pd.Error {
 	} else {
 		c.valid = true
 	}
+	log.Info().Str("CacheModel", "SetRepo").Msg(pd.FileManager)
 	return SaveCache(c.file)
 }
 
+func (c *CacheModel) Translate(locale string) {
+	if !c.valid {
+		return
+	}
+
+	if body := c.file.Repo.GetBody(); body != "" && locale != "en" {
+		go func() {
+			c.TranslatedBody = translateGT(body, locale)
+		}()
+	}
+}

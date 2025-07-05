@@ -57,7 +57,7 @@ var (
 
 	LBundle    *i18n.Bundle
 	LLocalizer *i18n.Localizer
-	Tl          = translator.New()
+	t          = translator.New()
 
 	E  = &pd.Debug{} // Debugger
 	FS *file.AppFS      // Filesystem

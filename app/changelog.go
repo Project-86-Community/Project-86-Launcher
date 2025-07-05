@@ -50,7 +50,11 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 	c.text.SetAutoWrap(true)
 
 	if cache := c.model.Cache(); cache.IsValid() {
-		c.text.SetValue(cache.File().Repo.GetBody())
+		if locale := c.model.Data().File().Locale; locale != "en" {
+			c.text.SetValue(cache.TranslatedBody)
+		} else {
+			c.text.SetValue(cache.File().Repo.GetBody())
+		}
 		c.viewText.SetValue(cache.File().Repo.GetHTMLURL())
 		context.SetEnabled(&c.viewButton, true)
 	} else {
