@@ -28,15 +28,21 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const (
+	ErrorManager   = "ErrorManager"
+	FileManager    = "FileManager"
+	NetworkManager = "NetworkManager"
+)
+
 type ErrorType string
 
 const (
-	UnknownError  ErrorType = "unknown"
-	AppError      ErrorType = "app"
-	FSError       ErrorType = "filesystem"
-	DataError     ErrorType = "data"
-	CacheError    ErrorType = "cache"
-	InternetError ErrorType = "internet"
+	UnknownError ErrorType = "unknown"
+	AppError     ErrorType = "app"
+	FSError      ErrorType = "filesystem"
+	DataError    ErrorType = "data"
+	CacheError   ErrorType = "cache"
+	NetworkError ErrorType = "network"
 )
 
 const (
@@ -88,12 +94,14 @@ const (
 )
 
 const (
-	// // Internet errors (5001-5999)
-	ErrInternetRateLimitInvalid int = iota + 5001
-	ErrInternetRequestInvalid
-	ErrInternetRequestNew
-	ErrInternetRequestClose
-	ErrInternetCacheInvalid
+	// // Network errors (5001-5999)
+	ErrNetworkRateLimitInvalid int = iota + 5001
+	ErrNetworkCacheRequest
+
+	// ErrInternetRequestInvalid
+	// ErrInternetRequestNew
+	// ErrInternetRequestClose
+	// ErrInternetCacheInvalid
 
 	// ErrConnection
 	// ErrStatusCode
@@ -135,20 +143,19 @@ func (e *Error) String() string {
 }
 
 func (e *Error) LogErr(place, who string) {
-	log.Error().Int("Code", e.Code).Any("Type", e.Type).Err((e.Err)).Str(place, who).Msg("ErrorManager")
+	log.Error().Int("Code", e.Code).Any("Type", e.Type).Err((e.Err)).Str(place, who).Msg(ErrorManager)
 }
 
 func (e *Error) LogErrStack(place, who string) {
-	log.Error().Stack().Int("Code", e.Code).Any("Type", e.Type).Err((e.Err)).Str(place, who).Msg("ErrorManager")
+	log.Error().Stack().Int("Code", e.Code).Any("Type", e.Type).Err((e.Err)).Str(place, who).Msg(ErrorManager)
 }
 
 func (d *Debug) SetToast(err *Error) {
-	log.Warn().Stack().Int("Code", err.Code).Any("Type", err.Type).Err(err.Err).Str("Debug", "SetToast").Msg("ErrorManager")
+	log.Warn().Stack().Int("Code", err.Code).Any("Type", err.Type).Err(err.Err).Str("Debug", "SetToast").Msg(ErrorManager)
 	d.ToastErr = err
 }
 
 func (d *Debug) SetPopup(err *Error) {
-	log.Warn().Stack().Int("Code", err.Code).Any("Type", err.Type).Err(err.Err).Str("Debug", "SetPopup").Msg("ErrorManager")
+	log.Warn().Stack().Int("Code", err.Code).Any("Type", err.Type).Err(err.Err).Str("Debug", "SetPopup").Msg(ErrorManager)
 	d.PopupErr = err
 }
-

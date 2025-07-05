@@ -37,7 +37,7 @@ func LoadB(context *guigui.Context, model *Model, loadType string) *pd.Error {
 	switch loadType {
 	case "data":
 		if err := FS.IsDirR(E, FS.FileDataPath()); err != nil {
-			log.Info().Str("Data", "data not found, creating data...").Str("utils", "loadB").Msg("FileManager")
+			log.Info().Str("Data", "data not found, creating data...").Str("utils", "loadB").Msg(pd.FileManager)
 			d := NewData()
 			d.Log()
 			model.data.file = d
@@ -45,7 +45,7 @@ func LoadB(context *guigui.Context, model *Model, loadType string) *pd.Error {
 		}
 	case "cache":
 		if err := FS.IsDirR(E, FS.FileCachePath()); err != nil {
-			log.Info().Str("Cache", "cache not found").Str("utils", "loadB").Msg("FileManager")
+			log.Info().Str("Cache", "cache not found").Str("utils", "loadB").Msg(pd.FileManager)
 			return nil
 		}
 	}

@@ -120,26 +120,26 @@ func (d *DataModel) GetAppScaleF(scale int) float64 {
 }
 
 func (d *DataModel) SetLocale(context *guigui.Context, locale language.Tag) {
-	log.Info().Any("Translation", locale).Str("DataModel", "SetLocale").Msg("FileManager")
+	log.Info().Any("Translation", locale).Str("DataModel", "SetLocale").Msg(pd.FileManager)
 	d.file.Locale = locale.String()
 	context.SetAppLocales([]language.Tag{locale})
 	SetLanguage(locale.String())
 }
 
 func (d *DataModel) SetAppScale(context *guigui.Context, scale int) {
-	log.Info().Any("Scaling", scale).Str("DataModel", "SetAppScale").Msg("FileManager")
+	log.Info().Any("Scaling", scale).Str("DataModel", "SetAppScale").Msg(pd.FileManager)
 	d.file.AppScale = scale
 	context.SetAppScale(d.GetAppScaleF(scale))
 }
 
 func (d *DataModel) SetColorMode(context *guigui.Context, mode guigui.ColorMode) {
-	log.Info().Any("Theme", mode).Str("DataModel", "SetColorMode").Msg("FileManager")
+	log.Info().Any("Theme", mode).Str("DataModel", "SetColorMode").Msg(pd.FileManager)
 	d.file.ColorMode = mode
 	context.SetColorMode(mode)
 }
 
 func (d *DataModel) SetUsePreRelease(value bool) *pd.Error {
-	log.Info().Any("Pre-release", value).Str("DateModel", "SetUsePreRelease").Msg("FileManager")
+	log.Info().Any("Pre-release", value).Str("DateModel", "SetUsePreRelease").Msg(pd.FileManager)
 	d.file.UsePreRelease = value
 	return nil
 }
@@ -154,13 +154,13 @@ func (d *DataModel) SetGameVersion(ver string) *pd.Error {
 		return E.New(err, pd.AppError, pd.ErrGameVersionInvalid)
 	}
 
-	log.Info().Any("Game Version", ver).Str("DateModel", "SetGameVersion").Msg("FileManager")
+	log.Info().Any("Game Version", ver).Str("DateModel", "SetGameVersion").Msg(pd.FileManager)
 	d.file.GameVersion = ver
 	return nil
 }
 
 func (d *DataModel) Save() *pd.Error {
-	log.Info().Str("DataModel", "Save").Msg("FileManager")
+	log.Info().Str("DataModel", "Save").Msg(pd.FileManager)
 	return SaveData(d.file)
 }
 

@@ -160,14 +160,17 @@ func (r *Root) Tick(context *guigui.Context) error {
 	if ebiten.Tick()-r.lastTick >= int64(ebiten.TPS()*5) {
 		r.lastTick = ebiten.Tick()
 
-		if cache := r.model.Cache(); (!cache.IsValid() && !r.cacheCheckDebounce) || time.Now().After(cache.File().Timestamp.Add(cache.File().ExpiresIn) )  {
-			log.Info().Msg("Pinged Github Lol")
+		if cache := r.model.Cache(); (!cache.IsValid() && !r.cacheCheckDebounce) || time.Now().After(cache.File().Timestamp.Add(cache.File().ExpiresIn)) {
 			r.cacheCheckDebounce = true
+			log.Info().Str("Cache", "cache is invalid").Str("Root", "Tick").Msg(pd.NetworkManager)
 			go func() {
 				ctx := gctx.Background()
 				release, _, rErr := p86l.GithubClient.Repositories.GetLatestRelease(ctx, configs.RepoOwner, configs.RepoName)
 				if rErr != nil {
-					log.Error().Any("Release", rErr).Msg("NetworkManager")
+					log.Error().Any("Release", rErr).Msg(pd.NetworkManager)
+					p86l.E.SetToast(p86l.E.New(rErr, pd.NetworkError, pd.ErrNetworkCacheRequest))
+					r.cacheCheckDebounce = false
+					return
 				}
 				err := cache.SetRepo(release)
 				if err != nil {
