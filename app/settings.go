@@ -55,6 +55,7 @@ func (s *Settings) Build(context *guigui.Context, appender *guigui.ChildWidgetAp
 	}
 
 	s.data.SetModel(s.model)
+	s.reset.SetModel(s.model)
 
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
@@ -282,12 +283,34 @@ type settingsReset struct {
 	dataButton  basicwidget.Button
 	cacheButton basicwidget.Button
 	resetButton basicwidget.Button
+
+	model *p86l.Model
+}
+
+func (s *settingsReset) SetModel(model *p86l.Model) {
+	s.model = model
 }
 
 func (s *settingsReset) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	data := s.model.Data()
+	cache := s.model.Cache()
+
 	s.dataButton.SetText(p86l.T("settings.resetdata"))
 	s.cacheButton.SetText(p86l.T("settings.resetcache"))
 	s.resetButton.SetText(p86l.T("settings.reset"))
+
+	s.dataButton.SetOnDown(func() {
+		d := p86l.NewData()
+		data.SetFile(d)
+		err := p86l.LoadB(context, s.model, "data")
+		if err != nil {
+			p86l.E.SetPopup(err)
+		}
+	})
+	s.cacheButton.SetOnDown(func() {
+		cache.SetValid(false)
+	})
+	// TODO: reset
 
 	s.form.SetItems([]basicwidget.FormItem{
 		{

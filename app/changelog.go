@@ -65,7 +65,7 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 
 	c.viewButton.SetOnDown(func() {
 		if value := c.viewText.Value(); value != "?" {
-			p86l.OpenBrowser(value)
+			go p86l.OpenBrowser(value)
 		}
 	})
 	c.viewButton.SetText("View")

@@ -159,6 +159,12 @@ func (d *DataModel) SetGameVersion(ver string) *pd.Error {
 	return nil
 }
 
+func (d *DataModel) SetFile(file file.Data) *pd.Error {
+	log.Info().Str("DataModel", "SetFile").Msg(pd.FileManager)
+	d.file = file
+	return d.Save()
+}
+
 func (d *DataModel) Save() *pd.Error {
 	log.Info().Str("DataModel", "Save").Msg(pd.FileManager)
 	return SaveData(d.file)
@@ -178,6 +184,10 @@ func (c *CacheModel) File() *file.Cache {
 
 func (c *CacheModel) IsValid() bool {
 	return c.valid
+}
+
+func (c *CacheModel) SetValid(value bool) {
+	c.valid = value
 }
 
 func (c *CacheModel) SetRepo(repo *github.RepositoryRelease, locale string) *pd.Error {

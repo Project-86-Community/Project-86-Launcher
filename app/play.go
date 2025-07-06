@@ -25,6 +25,7 @@ import (
 	"cmp"
 	"p86l"
 	"p86l/assets"
+	"p86l/configs"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -68,7 +69,7 @@ type playContent struct {
 
 func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	p.actionButton.SetText(p86l.T("play.play"))
-	
+
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
 		Bounds: context.Bounds(p),
@@ -117,6 +118,19 @@ func (p *playLinks) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 	p.githubButton.SetText(p86l.T("play.github"))
 	p.discordButton.SetText(p86l.T("play.discord"))
 	p.patreonButton.SetText(p86l.T("play.patreon"))
+
+	p.websiteButton.SetOnDown(func() {
+		go p86l.OpenBrowser(configs.Website)
+	})
+	p.githubButton.SetOnDown(func() {
+		go p86l.OpenBrowser(configs.Github)
+	})
+	p.discordButton.SetOnDown(func() {
+		go p86l.OpenBrowser(configs.Discord)
+	})
+	p.patreonButton.SetOnDown(func() {
+		go p86l.OpenBrowser(configs.Patreon)
+	})
 
 	u := basicwidget.UnitSize(context)
 	var gl layout.GridLayout
