@@ -222,7 +222,6 @@ type rootBackground struct {
 
 	bgImage    basicwidget.Image
 	background basicwidget.Background
-	border     basicwidget.Background
 
 	model    *p86l.Model
 	sidebar  *Sidebar
@@ -254,7 +253,6 @@ func (r *rootBackground) Build(context *guigui.Context, appender *guigui.ChildWi
 
 	r.bgImage.SetImage(img)
 	context.SetOpacity(&r.background, 0.9)
-	context.SetOpacity(&r.border, 0.8)
 
 	imgWidth := img.Bounds().Dx()
 	imgHeight := img.Bounds().Dy()
@@ -280,13 +278,8 @@ func (r *rootBackground) Build(context *guigui.Context, appender *guigui.ChildWi
 	imgPosition := image.Pt(00, yOffset)
 	appender.AppendChildWidgetWithPosition(&r.bgImage, imgPosition)
 
-	borderBounds := context.Bounds(r)
-	borderBounds.Min.X = context.ActualSize(r.sidebar).X - (basicwidget.UnitSize(context) / 8)
-	borderBounds.Max.X = context.ActualSize(r.sidebar).X
-
 	if r.model.Mode() != "home" {
 		appender.AppendChildWidgetWithBounds(&r.background, r.bgBounds)
-		appender.AppendChildWidgetWithBounds(&r.border, borderBounds)
 	}
 
 	return nil
