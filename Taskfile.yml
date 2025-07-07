@@ -13,7 +13,7 @@ tasks:
     cmds:
       - P86L_DEBUG=logs go run ./cmd/p86l
 
-  build:
+  build:debug:
     cmds:
       - go build -tags release -ldflags "-s -w" -trimpath -o ./bin/ ./cmd/p86l
 

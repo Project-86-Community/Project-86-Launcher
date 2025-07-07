@@ -64,11 +64,27 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 type playContent struct {
 	guigui.DefaultWidget
 
-	actionButton basicwidget.Button
+	installButton  basicwidget.Button
+	playButton     basicwidget.Button
+	updateButton   basicwidget.Button
+	launcherButton basicwidget.Button
+
+	state int
 }
 
 func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	p.actionButton.SetText(p86l.T("play.play"))
+	p.installButton.SetText(p86l.T("play.install"))
+	p.playButton.SetText(p86l.T("play.play"))
+	p.updateButton.SetText(p86l.T("play.update"))
+	p.launcherButton.SetText("Update Launcher")
+
+	if err := p86l.FS.IsDirR(p86l.E, p86l.FS.DirGamePath()); err == nil {
+		// play
+		p.state = 1
+	} else {
+		// install
+		p.state = 0
+	}
 
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
@@ -84,7 +100,12 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 			layout.FlexibleSize(1),
 		},
 	}
-	appender.AppendChildWidgetWithBounds(&p.actionButton, gl.CellBounds(1, 1))
+	switch p.state {
+	case 0:
+		appender.AppendChildWidgetWithBounds(&p.installButton, gl.CellBounds(1, 1))
+	case 1:
+		appender.AppendChildWidgetWithBounds(&p.playButton, gl.CellBounds(1, 1))
+	}
 
 	return nil
 }

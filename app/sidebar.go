@@ -23,14 +23,11 @@ package app
 
 import (
 	"p86l"
-	"p86l/internal/debug"
 
-	"github.com/atotto/clipboard"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/hajimehoshi/guigui/layout"
 )
 
 type Sidebar struct {
@@ -47,6 +44,9 @@ func (s *Sidebar) SetModel(model *p86l.Model) {
 func (s *Sidebar) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	context.SetOpacity(&s.panel, 0.9)
 	s.panel.SetStyle(basicwidget.PanelStyleSide)
+	s.panel.SetBorder(basicwidget.PanelBorder{
+		End: true,
+	})
 	context.SetSize(&s.panelContent, context.ActualSize(s))
 	s.panel.SetContent(&s.panelContent)
 
@@ -59,12 +59,7 @@ type sidebarContent struct {
 	guigui.DefaultWidget
 
 	list        basicwidget.List[string]
-	lunchPanel  basicwidget.Panel
-	lunchText   basicwidget.Text
-	toastPanel  basicwidget.Panel
-	toastButton basicwidget.Button
-	toastText   basicwidget.Text
-
+	
 	model *p86l.Model
 }
 
@@ -113,50 +108,8 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 		s.model.SetMode(item.ID)
 	})
 
-	s.lunchText.SetScale(0.8)
-	//s.lunchText.SetValue(s.model.lunch.Msg())
-	s.lunchPanel.SetContent(&s.lunchText)
-
-	s.toastButton.SetOnDown(func() {
-		if p86l.E.ToastErr == nil {
-			return
-		}
-		err := clipboard.WriteAll(p86l.E.ToastErr.String())
-		if err != nil {
-			p86l.E.SetToast(p86l.E.New(err, debug.AppError, debug.ErrClipboardWrite))
-		}
-	})
-
-	s.toastText.SetScale(0.8)
-	s.toastText.SetValue(p86l.E.ToastErr.String())
-	s.toastButton.SetText("Copy")
-	s.toastPanel.SetContent(&s.toastText)
-
-	u := basicwidget.UnitSize(context)
-	gl := layout.GridLayout{
-		Bounds: context.Bounds(s),
-		Heights: []layout.Size{
-			layout.FixedSize(s.list.DefaultSize(context).Y + (u * 2)),
-			layout.FixedSize(s.lunchText.DefaultSize(context).Y + (u / 2)),
-			layout.FixedSize(s.toastText.DefaultSize(context).Y + (u / 2)),
-		},
-	}
-	appender.AppendChildWidgetWithBounds(&s.list, gl.CellBounds(0, 0))
-	appender.AppendChildWidgetWithBounds(&s.lunchPanel, gl.CellBounds(0, 1))
-	glE := layout.GridLayout{
-		Bounds: gl.CellBounds(0, 2),
-		Widths: []layout.Size{
-			layout.FixedSize(s.toastButton.DefaultSize(context).Y + u),
-			layout.FlexibleSize(1),
-		},
-		ColumnGap: u / 2,
-	}
-	if p86l.E.ToastErr == nil {
-		return nil
-	}
-	appender.AppendChildWidgetWithBounds(&s.toastButton, glE.CellBounds(0, 0))
-	appender.AppendChildWidgetWithBounds(&s.toastPanel, glE.CellBounds(1, 0))
-
+	appender.AppendChildWidgetWithBounds(&s.list, context.Bounds(s))
+	
 	return nil
 }
 

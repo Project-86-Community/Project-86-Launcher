@@ -69,6 +69,7 @@ type DataModel struct {
 
 func NewData() file.Data {
 	return file.Data{
+		V: 0,
 		Locale:        language.English.String(),
 		AppScale:      2,
 		ColorMode:     guigui.ColorModeLight,
@@ -191,6 +192,7 @@ func (c *CacheModel) SetValid(value bool) {
 }
 
 func (c *CacheModel) SetRepo(repo *github.RepositoryRelease, locale string) *pd.Error {
+	c.file.V = 0
 	c.file.Repo = repo
 	c.file.Timestamp = time.Now()
 	c.file.ExpiresIn = time.Hour
