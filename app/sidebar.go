@@ -22,12 +22,17 @@
 package app
 
 import (
+	gctx "context"
+	"fmt"
 	"p86l"
+	"time"
 
+	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/hajimehoshi/guigui/layout"
 )
 
 type Sidebar struct {
@@ -58,8 +63,9 @@ func (s *Sidebar) Build(context *guigui.Context, appender *guigui.ChildWidgetApp
 type sidebarContent struct {
 	guigui.DefaultWidget
 
-	list        basicwidget.List[string]
-	
+	list  basicwidget.List[string]
+	stats sidebarStats
+
 	model *p86l.Model
 }
 
@@ -108,8 +114,16 @@ func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWi
 		s.model.SetMode(item.ID)
 	})
 
-	appender.AppendChildWidgetWithBounds(&s.list, context.Bounds(s))
-	
+	gl := layout.GridLayout{
+		Bounds: context.Bounds(s),
+		Heights: []layout.Size{
+			layout.FlexibleSize(1),
+			layout.FlexibleSize(1),
+		},
+	}
+	appender.AppendChildWidgetWithBounds(&s.list, gl.CellBounds(0, 0))
+	appender.AppendChildWidgetWithBounds(&s.stats, gl.CellBounds(0, 1))
+
 	return nil
 }
 
@@ -169,6 +183,73 @@ func (s *sidebarContent) Tick(context *guigui.Context) error {
 			}
 			context.SetFocused(&s.list, true)
 		}
+	}
+
+	return nil
+}
+
+type sidebarStats struct {
+	guigui.DefaultWidget
+
+	downloadProgressText basicwidget.Text
+	toastErrText         basicwidget.Text
+	ratelimitText        basicwidget.Text
+
+	ratelimitLeft int
+	inProgress    bool
+	lastTick      int64
+}
+
+func githubRateLimit(ctx gctx.Context) *github.RateLimits {
+	limits, _, err := p86l.GithubClient.RateLimit.Get(ctx)
+	if err != nil {
+		return nil
+	}
+	return limits
+}
+
+func (s *sidebarStats) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	if p86l.E.ToastErr != nil {
+		s.toastErrText.SetValue(p86l.E.ToastErr.String())
+	} else {
+		s.toastErrText.SetValue("")
+	}
+
+	s.ratelimitText.SetValue(fmt.Sprintf("Ratelimit: %d / 60", s.ratelimitLeft))
+
+	gl := layout.GridLayout{
+		Bounds: context.Bounds(s),
+		Heights: []layout.Size{
+			layout.FlexibleSize(1),
+			layout.FlexibleSize(1),
+			layout.FlexibleSize(1),
+		},
+	}
+	appender.AppendChildWidgetWithBounds(&s.downloadProgressText, gl.CellBounds(0, 0))
+	appender.AppendChildWidgetWithBounds(&s.toastErrText, gl.CellBounds(0, 1))
+	appender.AppendChildWidgetWithBounds(&s.ratelimitText, gl.CellBounds(0, 2))
+
+	return nil
+}
+
+func (s *sidebarStats) Tick(context *guigui.Context) error {
+	if ebiten.Tick()-s.lastTick >= int64(ebiten.TPS()*2) && !s.inProgress {
+		s.lastTick = ebiten.Tick()
+		s.inProgress = true
+
+		go func() {
+			ctx, cancel := gctx.WithTimeout(gctx.Background(), time.Second*5)
+			limits := githubRateLimit(ctx)
+			defer cancel()
+
+			if limits != nil {
+				s.ratelimitLeft = limits.Core.Remaining
+			} else {
+				s.ratelimitLeft = -1
+			}
+
+			s.inProgress = false
+		}()
 	}
 
 	return nil

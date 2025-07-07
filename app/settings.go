@@ -22,6 +22,7 @@
 package app
 
 import (
+	"fmt"
 	"p86l"
 	"p86l/configs"
 	pd "p86l/internal/debug"
@@ -311,6 +312,9 @@ func (s *settingsReset) Build(context *guigui.Context, appender *guigui.ChildWid
 		cache.SetValid(false)
 	})
 	// TODO: reset
+	s.resetButton.SetOnDown(func() {
+		p86l.E.SetToast(p86l.E.New(fmt.Errorf("Lena pic missing"), pd.AppError, pd.ErrBrowserOpen))
+	})
 
 	s.form.SetItems([]basicwidget.FormItem{
 		{

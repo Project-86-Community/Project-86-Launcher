@@ -50,12 +50,15 @@ type Root struct {
 	guigui.DefaultWidget
 
 	background rootBackground
-	info       rootInfo
 	sidebar    Sidebar
 	play       Play
 	changelog  Changelog
 	settings   Settings
 	about      About
+
+	popup         basicwidget.Popup
+	popupContent  rootPopupContent
+	popupDebounce bool
 
 	cacheCheckDebounce bool
 	lastTick           int64
@@ -123,16 +126,16 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	r.updateFontFaceSources(context)
 
 	r.background.SetModel(&r.model)
-	r.info.SetModel(&r.model)
 	r.sidebar.SetModel(&r.model)
 	r.play.SetModel(&r.model)
 	r.changelog.SetModel(&r.model)
 	r.settings.SetModel(&r.model)
 
+	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
 		Bounds: context.Bounds(r),
 		Widths: []layout.Size{
-			layout.FixedSize(8 * basicwidget.UnitSize(context)),
+			layout.FixedSize(8 * u),
 			layout.FlexibleSize(1),
 		},
 	}
@@ -152,7 +155,36 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 	case "about":
 		appender.AppendChildWidgetWithBounds(&r.about, gl.CellBounds(1, 0))
 	}
-	appender.AppendChildWidgetWithBounds(&r.info, context.Bounds(r))
+
+	// -- popup --
+
+	r.popup.SetOnClosed(func(reason basicwidget.PopupClosedReason) {
+		p86l.E.PopupErr = nil
+		r.popupDebounce = false
+	})
+	if p86l.E.PopupErr != nil && !r.popupDebounce {
+		r.popupDebounce = true
+		r.popup.Open(context)
+	}
+	
+	r.popupContent.popup = &r.popup
+	r.popup.SetContent(&r.popupContent)
+	r.popup.SetBackgroundBlurred(true)
+	r.popup.SetCloseByClickingOutside(true)
+	r.popup.SetAnimationDuringFade(false)
+
+	appBounds := context.AppBounds()
+	contentSize := image.Pt(int(12*u), int(6*u))
+	popupPosition := image.Point{
+		X: appBounds.Min.X + (appBounds.Dx()-contentSize.X)/2,
+		Y: appBounds.Min.Y + (appBounds.Dy()-contentSize.Y)/2,
+	}
+	popupBounds := image.Rectangle{
+		Min: popupPosition,
+		Max: popupPosition.Add(contentSize),
+	}
+	context.SetSize(&r.popupContent, popupBounds.Size())
+	appender.AppendChildWidgetWithBounds(&r.popup, popupBounds)
 
 	return nil
 }
@@ -260,33 +292,49 @@ func (r *rootBackground) Build(context *guigui.Context, appender *guigui.ChildWi
 	return nil
 }
 
-type rootInfo struct {
+type rootPopupContent struct {
 	guigui.DefaultWidget
 
-	text basicwidget.Text
+	popup *basicwidget.Popup
 
-	model *p86l.Model
+	titleText   basicwidget.Text
+	closeButton basicwidget.Button
 }
 
-func (r *rootInfo) SetModel(model *p86l.Model) {
-	r.model = model
-}
-
-func (r *rootInfo) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	r.text.SetHorizontalAlign(basicwidget.HorizontalAlignStart)
-	r.text.SetVerticalAlign(basicwidget.VerticalAlignBottom)
-	r.text.SetScale(0.8)
-	r.text.SetValue("Server API ratelimit: -/-")
-
+func (r *rootPopupContent) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	u := basicwidget.UnitSize(context)
+
+	r.titleText.SetValue("Hello!")
+	r.titleText.SetBold(true)
+
+	r.closeButton.SetText("Close")
+	r.closeButton.SetOnUp(func() {
+		r.popup.Close()
+	})
+
 	gl := layout.GridLayout{
 		Bounds: context.Bounds(r).Inset(u / 2),
 		Heights: []layout.Size{
 			layout.FlexibleSize(1),
-			layout.FixedSize(u),
+			layout.LazySize(func(row int) layout.Size {
+				if row != 1 {
+					return layout.FixedSize(0)
+				}
+				return layout.FixedSize(r.closeButton.DefaultSize(context).Y)
+			}),
 		},
 	}
-	appender.AppendChildWidgetWithBounds(&r.text, gl.CellBounds(0, 1))
+	appender.AppendChildWidgetWithBounds(&r.titleText, gl.CellBounds(0, 0))
+	{
+		gl := layout.GridLayout{
+			Bounds: gl.CellBounds(0, 1),
+			Widths: []layout.Size{
+				layout.FlexibleSize(1),
+				layout.FixedSize(r.closeButton.DefaultSize(context).X),
+			},
+		}
+		appender.AppendChildWidgetWithBounds(&r.closeButton, gl.CellBounds(1, 0))
+	}
 
 	return nil
 }

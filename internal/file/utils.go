@@ -12,7 +12,7 @@ import (
 )
 
 type Data struct {
-	V             int           `json:"v"`
+	V             int              `json:"v"`
 	Locale        string           `json:"locale"`
 	AppScale      int              `json:"app_scale"`
 	ColorMode     guigui.ColorMode `json:"color_mode"`
@@ -32,7 +32,7 @@ func (d *Data) Log() {
 }
 
 type Cache struct {
-	V         int                    `json:"v"`
+	V         int                       `json:"v"`
 	Repo      *github.RepositoryRelease `json:"repo"`
 	Timestamp time.Time                 `json:"time_stamp"`
 	ExpiresIn time.Duration             `json:"expires_in"`
