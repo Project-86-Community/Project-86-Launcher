@@ -74,6 +74,8 @@ func (s *sidebarContent) SetModel(model *p86l.Model) {
 }
 
 func (s *sidebarContent) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	s.stats.SetModel(s.model)
+
 	s.list.SetStyle(basicwidget.ListStyleSidebar)
 
 	items := []basicwidget.ListItem[string]{
@@ -191,13 +193,15 @@ func (s *sidebarContent) Tick(context *guigui.Context) error {
 type sidebarStats struct {
 	guigui.DefaultWidget
 
-	downloadProgressText basicwidget.Text
-	toastErrText         basicwidget.Text
-	ratelimitText        basicwidget.Text
+	progressTextInput basicwidget.TextInput
+	toastTextInput    basicwidget.TextInput
+	ratelimitText     basicwidget.Text
 
 	ratelimitLeft int
 	inProgress    bool
 	lastTick      int64
+
+	model *p86l.Model
 }
 
 func githubRateLimit(ctx gctx.Context) *github.RateLimits {
@@ -208,26 +212,45 @@ func githubRateLimit(ctx gctx.Context) *github.RateLimits {
 	return limits
 }
 
+func (s *sidebarStats) SetModel(model *p86l.Model) {
+	s.model = model
+}
+
 func (s *sidebarStats) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
+	s.progressTextInput.SetValue(s.model.Progress())
+	s.progressTextInput.SetMultiline(true)
+	s.progressTextInput.SetAutoWrap(true)
+	s.progressTextInput.SetEditable(false)
+
 	if p86l.E.ToastErr != nil {
-		s.toastErrText.SetValue(p86l.E.ToastErr.String())
+		s.toastTextInput.SetValue(p86l.E.ToastErr.String())
 	} else {
-		s.toastErrText.SetValue("")
+		s.toastTextInput.SetValue("")
 	}
+	s.toastTextInput.SetMultiline(true)
+	s.toastTextInput.SetAutoWrap(true)
+	s.toastTextInput.SetEditable(false)
 
 	s.ratelimitText.SetValue(fmt.Sprintf("Ratelimit: %d / 60", s.ratelimitLeft))
 
+	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
 		Bounds: context.Bounds(s),
 		Heights: []layout.Size{
 			layout.FlexibleSize(1),
-			layout.FlexibleSize(1),
-			layout.FlexibleSize(1),
+			layout.FlexibleSize(3),
+			layout.FixedSize(s.ratelimitText.DefaultSize(context).Y),
 		},
+		Widths: []layout.Size{
+			layout.FixedSize(u / 4),
+			layout.FlexibleSize(1),
+			layout.FixedSize(u / 2),
+		},
+		RowGap: u / 2,
 	}
-	appender.AppendChildWidgetWithBounds(&s.downloadProgressText, gl.CellBounds(0, 0))
-	appender.AppendChildWidgetWithBounds(&s.toastErrText, gl.CellBounds(0, 1))
-	appender.AppendChildWidgetWithBounds(&s.ratelimitText, gl.CellBounds(0, 2))
+	appender.AppendChildWidgetWithBounds(&s.progressTextInput, gl.CellBounds(1, 0))
+	appender.AppendChildWidgetWithBounds(&s.toastTextInput, gl.CellBounds(1, 1))
+	appender.AppendChildWidgetWithBounds(&s.ratelimitText, gl.CellBounds(1, 2))
 
 	return nil
 }

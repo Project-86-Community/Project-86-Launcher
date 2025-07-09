@@ -36,6 +36,8 @@ import (
 type Model struct {
 	mode string
 
+	progress string
+
 	data  DataModel
 	cache CacheModel
 }
@@ -47,9 +49,17 @@ func (m *Model) Mode() string {
 	return m.mode
 }
 
+func (m *Model) Progress() string {
+	return m.progress
+}
+
 func (m *Model) SetMode(mode string) {
 	log.Info().Str("Page", mode).Msg("Sidebar")
 	m.mode = mode
+}
+
+func (m *Model) SetProgress(progress string) {
+	m.progress = progress
 }
 
 func (m *Model) Data() *DataModel {
@@ -69,7 +79,7 @@ type DataModel struct {
 
 func NewData() file.Data {
 	return file.Data{
-		V: 0,
+		V:             0,
 		Locale:        language.English.String(),
 		AppScale:      2,
 		ColorMode:     guigui.ColorModeLight,
