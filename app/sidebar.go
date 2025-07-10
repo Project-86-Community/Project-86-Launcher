@@ -238,7 +238,7 @@ func (s *sidebarStats) Build(context *guigui.Context, appender *guigui.ChildWidg
 		Bounds: context.Bounds(s),
 		Heights: []layout.Size{
 			layout.FlexibleSize(1),
-			layout.FlexibleSize(3),
+			layout.FlexibleSize(1),
 			layout.FixedSize(s.ratelimitText.DefaultSize(context).Y),
 		},
 		Widths: []layout.Size{

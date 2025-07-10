@@ -49,23 +49,32 @@ const (
 	// App errors (1001-1999)
 	ErrUnknown int = iota + 1001
 	ErrBrowserOpen
-	ErrClipboardWrite
 	ErrGameVersionInvalid
+	ErrGameNotExist
 )
 
 const (
 	// Filesystem errors (2001-2999)
-	ErrFSFileInvalid int = iota + 2001
+	ErrFSOpenFileManagerInvalid int = iota + 2001
+
 	ErrFSDirInvalid
-	ErrFSDirNotExist
 	ErrFSDirNew
+	ErrFSDirNotExist
+	ErrFSDirRead
+	ErrFSDirRename
 	ErrFSDirRemove
+
+	ErrFSFileInvalid
 	ErrFSNewFileInvalid
 	ErrFSFileNotExist
-	ErrFSOpenFileManagerInvalid
+
+	// -- root --
+
 	ErrFSRootInvalid
+
 	ErrFSRootDirInvalid
 	ErrFSRootDirNew
+
 	ErrFSRootFileInvalid
 	ErrFSRootFileNew
 	ErrFSRootFileNotExist
@@ -97,6 +106,7 @@ const (
 	// // Network errors (5001-5999)
 	ErrNetworkRateLimitInvalid int = iota + 5001
 	ErrNetworkCacheRequest
+	ErrNetworkDownloadRequest
 
 	// ErrInternetRequestInvalid
 	// ErrInternetRequestNew
@@ -137,7 +147,7 @@ func (d *Debug) New(err error, errType ErrorType, code int) *Error {
 
 func (e *Error) String() string {
 	if e != nil {
-		return fmt.Sprintf("Code: %d, Type: %s, Err: %s", e.Code, string(e.Type), e.Err.Error())
+		return fmt.Sprintf("Code: ( %d ), Type: ( %s ), Err: ( %s )", e.Code, string(e.Type), e.Err.Error())
 	}
 	return ""
 }

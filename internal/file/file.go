@@ -162,9 +162,21 @@ func (a *AppFS) DirAppPath() string {
 }
 
 // /Project-86-Launcher/build/
-func (a *AppFS) DirGamePath() string {
+func (a *AppFS) DirBuildPath() string {
 	return "build"
 }
+
+// /Project-86-Launcher/build/game
+func (a *AppFS) DirGamePath() string {
+	return filepath.Join(a.DirBuildPath(), "game")
+}
+
+// /Project-86-Launcher/build/prerelease
+func (a *AppFS) DirPreReleasePath() string {
+	return filepath.Join(a.DirBuildPath(), "prerelease")
+}
+
+// -- files --
 
 // /Project-86-Launcher/data.json
 func (a *AppFS) FileDataPath() string {

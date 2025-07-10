@@ -297,7 +297,8 @@ type rootPopupContent struct {
 func (r *rootPopupContent) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
 	u := basicwidget.UnitSize(context)
 
-	r.titleText.SetValue("Hello!")
+	r.titleText.SetValue(p86l.E.PopupErr.String())
+	r.titleText.SetAutoWrap(true)
 	r.titleText.SetBold(true)
 
 	r.closeButton.SetText("Close")

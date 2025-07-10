@@ -23,10 +23,15 @@ package p86l
 
 import (
 	"fmt"
+	"os"
 	pd "p86l/internal/debug"
 	"p86l/internal/file"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/hajimehoshi/guigui"
+	"github.com/hashicorp/go-getter"
 	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/browser"
 	"github.com/rs/zerolog/log"
@@ -107,6 +112,84 @@ func OpenBrowser(url string) {
 	if err := browser.OpenURL(url); err != nil {
 		E.SetPopup(E.New(err, pd.AppError, pd.ErrBrowserOpen))
 	}
+}
+
+func IsValidGameFile(filename string) bool {
+	return strings.Contains(filename, "Project86-v") &&
+		strings.Contains(filename, ".zip") &&
+		!strings.Contains(filename, "dev")
+}
+
+// -- downloading --
+
+func DownloadGame(model *Model, src string) *pd.Error {
+	model.SetProgress("Downloading...")
+	buildDir := filepath.Join(FS.CompanyDirPath, "build")
+
+	err := DownloadFile(model, src, buildDir, getter.ClientModeDir)
+	if err != nil {
+		return err
+	}
+
+	// Find the downloaded folder (assuming it's the only or newest folder in buildDir).
+	entries, readErr := os.ReadDir(buildDir)
+	if readErr != nil {
+		return E.New(readErr, pd.FSError, pd.ErrFSDirRead)
+	}
+
+	// Find the folder that matches the pattern or just the most recently modified one.
+	var downloadedFolder string
+	var newestTime time.Time
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			// Option 1: If you know it follows a pattern like "Project86-v*".
+			if strings.HasPrefix(entry.Name(), "Project86-v") {
+				downloadedFolder = entry.Name()
+				break
+			}
+
+			// Option 2: Use the most recently modified folder.
+			info, _ := entry.Info()
+			if info.ModTime().After(newestTime) {
+				newestTime = info.ModTime()
+				downloadedFolder = entry.Name()
+			}
+		}
+	}
+
+	if downloadedFolder == "" {
+		return E.New(fmt.Errorf("downloaded folder not found"), pd.FSError, pd.ErrFSDirNotExist)
+	}
+
+	// Rename the folder
+	oldPath := filepath.Join(buildDir, downloadedFolder)
+	newPath := filepath.Join(buildDir, "game")
+
+	if renameErr := os.Rename(oldPath, newPath); renameErr != nil {
+		return E.New(renameErr, pd.FSError, pd.ErrFSDirRename)
+	}
+
+	model.SetProgress("")
+
+	return nil
+}
+
+func DownloadFile(model *Model, src, dest string, mode getter.ClientMode) *pd.Error {
+	progressTracker := &DownloadProgressTracker{Model: model}
+	client := &getter.Client{
+		Src:              src,
+		Dst:              dest,
+		Mode:             mode,
+		ProgressListener: progressTracker,
+	}
+
+	err := client.Get()
+	if err != nil {
+		return E.New(err, pd.NetworkError, pd.ErrNetworkDownloadRequest)
+	}
+
+	return nil
 }
 
 // -- Funcs for loading and saving --
