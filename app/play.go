@@ -28,6 +28,7 @@ import (
 	"p86l/assets"
 	"p86l/configs"
 	pd "p86l/internal/debug"
+	"path/filepath"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -100,8 +101,9 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 				assets := cache.File().Repo.Assets
 				for _, asset := range assets {
 					if name := asset.GetName(); p86l.IsValidGameFile(name) {
-						log.Info().Any("Asset", []string{asset.GetName(), asset.GetBrowserDownloadURL()}).Str("Play", "playContent").Msg(pd.NetworkManager)
-						err := p86l.DownloadGame(p.model, asset.GetName(), "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip")
+						downloadUrl := asset.GetBrowserDownloadURL()
+						log.Info().Any("Asset", []string{name, downloadUrl}).Str("Play", "playContent").Msg(pd.NetworkManager)
+						err := p86l.DownloadGame(p.model, name, downloadUrl)
 						if err != nil {
 							p86l.E.SetPopup(err)
 						}
@@ -139,7 +141,7 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 	p.updateButton.SetText(p86l.T("play.update"))
 	p.launcherButton.SetText("Update Launcher")
 
-	if err := p86l.FS.IsDirR(p86l.E, p86l.FS.DirBuildPath()); err == nil {
+	if err := p86l.FS.IsDirR(p86l.E, filepath.Join(p86l.FS.DirGamePath(), "Project-86.exe")); err == nil {
 		// play.
 		p.state = 1
 	} else {

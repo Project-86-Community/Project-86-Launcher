@@ -81,6 +81,7 @@ const (
 	ErrFSRootFileNotExist
 	ErrFSRootFileRead
 	ErrFSRootFileWrite
+	ErrFSRootFileRemove
 )
 
 const (

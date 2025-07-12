@@ -30,6 +30,7 @@ import (
 	pd "p86l/internal/debug"
 	"p86l/internal/file"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -126,51 +127,18 @@ func IsValidGameFile(filename string) bool {
 
 func DownloadGame(model *Model, filename, src string) *pd.Error {
 	model.SetProgress("Downloading...")
-	//buildDir := filepath.Join(FS.CompanyDirPath, "build")
 
 	err := DownloadFile(model, filename, src, "game.zip")
 	if err != nil {
 		return err
 	}
 
-	// // Find the downloaded folder (assuming it's the only or newest folder in buildDir).
-	// entries, readErr := os.ReadDir(buildDir)
-	// if readErr != nil {
-	// 	return E.New(readErr, pd.FSError, pd.ErrFSDirRead)
-	// }
+	model.SetProgress("Extracting...")
 
-	// // Find the folder that matches the pattern or just the most recently modified one.
-	// var downloadedFolder string
-	// var newestTime time.Time
-
-	// for _, entry := range entries {
-	// 	if entry.IsDir() {
-	// 		// Option 1: If you know it follows a pattern like "Project86-v*".
-	// 		if strings.HasPrefix(entry.Name(), "Project86-v") {
-	// 			downloadedFolder = entry.Name()
-	// 			break
-	// 		}
-
-	// 		// Option 2: Use the most recently modified folder.
-	// 		info, _ := entry.Info()
-	// 		if info.ModTime().After(newestTime) {
-	// 			newestTime = info.ModTime()
-	// 			downloadedFolder = entry.Name()
-	// 		}
-	// 	}
-	// }
-
-	// if downloadedFolder == "" {
-	// 	return E.New(fmt.Errorf("downloaded folder not found"), pd.FSError, pd.ErrFSDirNotExist)
-	// }
-
-	// // Rename the folder
-	// oldPath := filepath.Join(buildDir, downloadedFolder)
-	// newPath := filepath.Join(buildDir, "game")
-
-	// if renameErr := os.Rename(oldPath, newPath); renameErr != nil {
-	// 	return E.New(renameErr, pd.FSError, pd.ErrFSDirRename)
-	// }
+	err = unzip(filepath.Join(FS.CompanyDirPath, "game.zip"), filepath.Join(FS.CompanyDirPath, "build", "game"))
+	if err != nil {
+		return err
+	}
 
 	model.SetProgress("")
 
@@ -178,6 +146,86 @@ func DownloadGame(model *Model, filename, src string) *pd.Error {
 }
 
 func DownloadFile(model *Model, filename, src, dest string) *pd.Error {
+	var resumePos int64 = 0
+	if info, err := FS.Root.Stat(dest); err == nil {
+		resumePos = info.Size()
+	}
+
+	var out io.WriteCloser
+	var err error
+	if resumePos > 0 {
+		out, err = FS.Root.OpenFile(dest, os.O_WRONLY|os.O_APPEND, 0644)
+	} else {
+		out, err = FS.Root.Create(dest)
+	}
+	if err != nil {
+		return E.New(err, pd.FSError, pd.ErrFSRootFileNew)
+	}
+	defer out.Close()
+
+	req, err := http.NewRequest("GET", src, nil)
+	if err != nil {
+		return E.New(err, pd.NetworkError, pd.ErrNetworkDownloadRequest)
+	}
+
+	if resumePos > 0 {
+		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", resumePos))
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return E.New(err, pd.NetworkError, pd.ErrNetworkDownloadRequest)
+	}
+	defer resp.Body.Close()
+
+	expectedStatus := http.StatusOK
+	if resumePos > 0 {
+		expectedStatus = http.StatusPartialContent
+	}
+
+	if resp.StatusCode != expectedStatus {
+		if resumePos > 0 && resp.StatusCode != http.StatusPartialContent {
+			out.Close()
+			return DownloadFileFromScratch(model, filename, src, dest)
+		}
+		return E.New(fmt.Errorf("bad status: %s", resp.Status), pd.NetworkError, pd.ErrNetworkStatusNotOk)
+	}
+
+	var totalSize int64
+	if resumePos > 0 {
+		if contentRange := resp.Header.Get("Content-Range"); contentRange != "" {
+			if parts := strings.Split(contentRange, "/"); len(parts) == 2 {
+				if size, err := strconv.ParseInt(parts[1], 10, 64); err == nil {
+					totalSize = size
+				}
+			}
+		}
+	} else {
+		totalSize = resp.ContentLength
+	}
+
+	p := &ProgressTracker{
+		model:       model,
+		filename:    filename,
+		totalSize:   totalSize,
+		currentSize: resumePos,
+		startTime:   time.Now(),
+	}
+
+	_, err = io.Copy(out, io.TeeReader(resp.Body, p))
+	if err != nil {
+		return E.New(err, pd.FSError, pd.ErrFSRootFileWrite)
+	}
+
+	return nil
+}
+
+func DownloadFileFromScratch(model *Model, filename, src, dest string) *pd.Error {
+	// Remove existing file
+	FS.Root.Remove(dest)
+
+	// Create new file
 	out, err := FS.Root.Create(dest)
 	if err != nil {
 		return E.New(err, pd.FSError, pd.ErrFSRootFileNew)
@@ -194,18 +242,18 @@ func DownloadFile(model *Model, filename, src, dest string) *pd.Error {
 		return E.New(fmt.Errorf("bad status: %s", resp.Status), pd.NetworkError, pd.ErrNetworkStatusNotOk)
 	}
 
-	size := resp.ContentLength
-
 	p := &ProgressTracker{
-		model:     model,
-		filename:  filename,
-		totalSize: size,
-		startTime: time.Now(),
+		model:       model,
+		filename:    filename,
+		totalSize:   resp.ContentLength,
+		currentSize: 0,
+		startTime:   time.Now(),
 	}
 
 	_, err = io.Copy(out, io.TeeReader(resp.Body, p))
 	if err != nil {
-		E.New(err, pd.FSError, pd.ErrFSRootFileWrite)
+		FS.Root.Remove(dest)
+		return E.New(err, pd.FSError, pd.ErrFSRootFileWrite)
 	}
 
 	return nil
@@ -214,7 +262,7 @@ func DownloadFile(model *Model, filename, src, dest string) *pd.Error {
 func unzip(src, dest string) *pd.Error {
 	r, err := zip.OpenReader(src)
 	if err != nil {
-		E.New(err, pd.FSError, pd.ErrFSRootFileRead)
+		return E.New(err, pd.FSError, pd.ErrFSRootFileRead)
 	}
 	defer r.Close()
 
@@ -222,33 +270,64 @@ func unzip(src, dest string) *pd.Error {
 		return E.New(err, pd.FSError, pd.ErrFSDirNew)
 	}
 
-	extractAndWriteFile := func(f *zip.File) error {
+	// Find common root directory if it exists
+	var rootDir string
+	if len(r.File) > 0 {
+		firstPath := r.File[0].Name
+		rootDir = strings.Split(firstPath, "/")[0] + "/"
+
+		// Verify all files have this common root
+		for _, f := range r.File {
+			if !strings.HasPrefix(f.Name, rootDir) {
+				rootDir = "" // No common root
+				break
+			}
+		}
+	}
+
+	extractAndWriteFile := func(f *zip.File) *pd.Error {
+		// Skip the root directory itself
+		if f.Name == rootDir || f.Name == strings.TrimSuffix(rootDir, "/") {
+			return nil
+		}
+
 		rc, err := f.Open()
 		if err != nil {
-			return err
+			return E.New(err, pd.FSError, pd.ErrFSFileInvalid)
 		}
 		defer rc.Close()
 
-		path := filepath.Join(dest, f.Name)
+		// Strip the root directory from the path
+		relPath := f.Name
+		if rootDir != "" {
+			relPath = strings.TrimPrefix(f.Name, rootDir)
+		}
+
+		path := filepath.Join(dest, relPath)
 
 		// Check for ZipSlip vulnerability.
 		if !strings.HasPrefix(path, filepath.Clean(dest)+string(os.PathSeparator)) {
-			return fmt.Errorf("illegal file path: %s", path)
+			return E.New(fmt.Errorf("illegal file path: %s", path), pd.FSError, pd.ErrFSFileInvalid)
 		}
 
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(path, f.Mode())
-		} else {
-			os.MkdirAll(filepath.Dir(path), f.Mode())
-			f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-			if err != nil {
-				return err
+			if err := os.MkdirAll(path, f.Mode()); err != nil {
+				return E.New(err, pd.FSError, pd.ErrFSDirNew)
 			}
-			defer f.Close()
+		} else {
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				return E.New(err, pd.FSError, pd.ErrFSDirNew)
+			}
 
-			_, err = io.Copy(f, rc)
+			fi, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 			if err != nil {
-				return err
+				return E.New(err, pd.FSError, pd.ErrFSFileInvalid)
+			}
+			defer fi.Close()
+
+			_, err = io.Copy(fi, rc)
+			if err != nil {
+				return E.New(err, pd.FSError, pd.ErrFSFileWrite)
 			}
 		}
 		return nil
@@ -257,7 +336,7 @@ func unzip(src, dest string) *pd.Error {
 	for _, f := range r.File {
 		err := extractAndWriteFile(f)
 		if err != nil {
-			return E.New(err, pd.FSError, pd.ErrFSFileWrite)
+			return err
 		}
 	}
 

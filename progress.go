@@ -24,6 +24,7 @@ package p86l
 import (
 	"fmt"
 	pd "p86l/internal/debug"
+	"sync"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -31,45 +32,50 @@ import (
 )
 
 type ProgressTracker struct {
-	model *Model
-
-	filename   string
-	totalSize  int64
-	downloaded int64
-	startTime  time.Time
+	model       *Model
+	filename    string
+	totalSize   int64
+	currentSize int64
+	startTime   time.Time
+	mu          sync.Mutex
 }
 
-func (p *ProgressTracker) Write(b []byte) (int, error) {
-	n := len(b)
-	p.downloaded += int64(n)
+func (p *ProgressTracker) Write(data []byte) (int, error) {
+	p.mu.Lock()
+	p.currentSize += int64(len(data))
 	p.PrintProgress()
-	return n, nil
+	p.mu.Unlock()
+	return len(data), nil
 }
 
 func (p *ProgressTracker) PrintProgress() {
 	// Calculate progress.
-	currentSize := humanize.Bytes(uint64(p.downloaded))
+	currentSize := humanize.Bytes(uint64(p.currentSize))
 	totalSize := humanize.Bytes(uint64(p.totalSize))
 
 	// Calculate remaining time.
 	elapsed := time.Since(p.startTime).Seconds()
-	speed := float64(p.downloaded) / elapsed
-	remaining := float64(p.totalSize-p.downloaded) / speed
+	if elapsed == 0 {
+		elapsed = 0.001 // or just return early.
+	}
+	speed := float64(p.currentSize) / elapsed
+	remaining := float64(p.totalSize-p.currentSize) / speed
 
-	remainingTime := humanize.Time(time.Now().Add(time.Duration(remaining) * time.Second))
+	remainingDuration := time.Duration(remaining) * time.Second
+	remainingStr := humanize.RelTime(time.Now(), time.Now().Add(remainingDuration), "remaining", "ago")
 
 	// Print the progress.
-	output := fmt.Sprintf("\rDownloading %s: %s/%s @ %s/s, %s remaining      ",
+	output := fmt.Sprintf("Downloading %s: %s/%s @ %s/s, %s",
 		p.filename,
 		currentSize,
 		totalSize,
 		humanize.Bytes(uint64(speed)),
-		remainingTime,
+		remainingStr,
 	)
 	p.model.SetProgress(output)
 
 	// Print newline when done.
-	if p.downloaded == p.totalSize {
+	if p.currentSize == p.totalSize {
 		log.Info().Str("Downloaded file", p.filename).Msg(pd.NetworkManager)
 	}
 }
