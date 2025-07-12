@@ -66,6 +66,7 @@ const (
 
 	ErrFSFileInvalid
 	ErrFSNewFileInvalid
+	ErrFSFileWrite
 	ErrFSFileNotExist
 
 	// -- root --
@@ -107,16 +108,7 @@ const (
 	ErrNetworkRateLimitInvalid int = iota + 5001
 	ErrNetworkCacheRequest
 	ErrNetworkDownloadRequest
-
-	// ErrInternetRequestInvalid
-	// ErrInternetRequestNew
-	// ErrInternetRequestClose
-	// ErrInternetCacheInvalid
-
-	// ErrConnection
-	// ErrStatusCode
-	// ErrNewRequest
-	// ErrFailedDownload
+	ErrNetworkStatusNotOk
 )
 
 type Error struct {

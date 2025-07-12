@@ -101,7 +101,7 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 				for _, asset := range assets {
 					if name := asset.GetName(); p86l.IsValidGameFile(name) {
 						log.Info().Any("Asset", []string{asset.GetName(), asset.GetBrowserDownloadURL()}).Str("Play", "playContent").Msg(pd.NetworkManager)
-						err := p86l.DownloadGame(p.model, asset.GetBrowserDownloadURL())
+						err := p86l.DownloadGame(p.model, asset.GetName(), "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip")
 						if err != nil {
 							p86l.E.SetPopup(err)
 						}

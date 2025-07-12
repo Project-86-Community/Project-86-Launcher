@@ -161,17 +161,17 @@ func (a *AppFS) DirAppPath() string {
 	return configs.AppName
 }
 
-// /Project-86-Launcher/build/
+// /build/
 func (a *AppFS) DirBuildPath() string {
 	return "build"
 }
 
-// /Project-86-Launcher/build/game
+// /build/game
 func (a *AppFS) DirGamePath() string {
 	return filepath.Join(a.DirBuildPath(), "game")
 }
 
-// /Project-86-Launcher/build/prerelease
+// /build/prerelease
 func (a *AppFS) DirPreReleasePath() string {
 	return filepath.Join(a.DirBuildPath(), "prerelease")
 }
