@@ -24,6 +24,8 @@ package app
 import (
 	"cmp"
 	"errors"
+	"fmt"
+	"os/exec"
 	"p86l"
 	"p86l/assets"
 	"p86l/configs"
@@ -81,6 +83,44 @@ type playContent struct {
 	model *p86l.Model
 }
 
+func (p *playContent) handleDownload(context *guigui.Context) {
+	p.inProgress = true
+
+	context.SetEnabled(&p.installButton, false)
+	context.SetEnabled(&p.playButton, false)
+	context.SetEnabled(&p.updateButton, false)
+	context.SetEnabled(&p.launcherButton, false)
+
+	cache := p.model.Cache()
+	assets := cache.File().Repo.Assets
+	for _, asset := range assets {
+		if name := asset.GetName(); p86l.IsValidGameFile(name) {
+			downloadUrl := asset.GetBrowserDownloadURL()
+			log.Info().Any("Asset", []string{name, downloadUrl}).Str("Play", "playContent").Msg(pd.NetworkManager)
+			err := p86l.DownloadGame(p.model, name, downloadUrl)
+			if err != nil {
+				p86l.E.SetPopup(err)
+			}
+
+			if err = p.model.Data().SetGameVersion(cache.File().Repo.GetTagName()); err != nil {
+				p86l.E.SetToast(err)
+				break
+			}
+			if err = p.model.Data().Save(); err != nil {
+				p86l.E.SetToast(err)
+			}
+			break
+		}
+	}
+
+	context.SetEnabled(&p.installButton, true)
+	context.SetEnabled(&p.playButton, true)
+	context.SetEnabled(&p.updateButton, true)
+	context.SetEnabled(&p.launcherButton, true)
+
+	p.inProgress = false
+}
+
 func (p *playContent) SetModel(model *p86l.Model) {
 	p.model = model
 }
@@ -90,39 +130,21 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 
 	p.installButton.SetOnDown(func() {
 		if p.state == 0 && cache.IsValid() {
-			go func() {
-				p.inProgress = true
-
-				context.SetEnabled(&p.installButton, false)
-				context.SetEnabled(&p.playButton, false)
-				context.SetEnabled(&p.updateButton, false)
-				context.SetEnabled(&p.launcherButton, false)
-
-				assets := cache.File().Repo.Assets
-				for _, asset := range assets {
-					if name := asset.GetName(); p86l.IsValidGameFile(name) {
-						downloadUrl := asset.GetBrowserDownloadURL()
-						log.Info().Any("Asset", []string{name, downloadUrl}).Str("Play", "playContent").Msg(pd.NetworkManager)
-						err := p86l.DownloadGame(p.model, name, downloadUrl)
-						if err != nil {
-							p86l.E.SetPopup(err)
-						}
-						break
-					}
-				}
-
-				context.SetEnabled(&p.installButton, true)
-				context.SetEnabled(&p.playButton, true)
-				context.SetEnabled(&p.updateButton, true)
-				context.SetEnabled(&p.launcherButton, true)
-
-				p.inProgress = false
-			}()
+			go p.handleDownload(context)
 		}
 	})
 	p.playButton.SetOnDown(func() {
 		if p.state == 1 {
 			if err := p86l.FS.IsDirR(p86l.E, p86l.FS.DirGamePath()); err == nil {
+				log.Info().Str("Game", "Starting game").Str("Play", "playContent").Msg(pd.FileManager)
+
+				go func() {
+					cmd := exec.Command(filepath.Join(p86l.FS.CompanyDirPath, "build", "game", "Project-86.exe"))
+					rErr := cmd.Run()
+					if rErr != nil {
+						p86l.E.SetPopup(p86l.E.New(rErr, pd.AppError, pd.ErrGameNotExist))
+					}
+				}()
 
 			} else {
 				p86l.E.SetPopup(p86l.E.New(errors.New("Game not found"), pd.AppError, pd.ErrGameNotExist))
@@ -130,7 +152,19 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 		}
 	})
 	p.updateButton.SetOnDown(func() {
-
+		if p.state == 1 && cache.IsValid() {
+			value, err := p86l.CheckNewerVersion(p.model.Data().File().GameVersion, cache.File().Repo.GetTagName())
+			if err != nil {
+				p86l.E.SetPopup(err)
+				return
+			}
+			if value {
+				log.Info().Str("Game", "New version found").Str("Play", "playContent").Msg(pd.NetworkManager)
+				go p.handleDownload(context)
+			} else {
+				p86l.E.SetPopup(p86l.E.New(fmt.Errorf("newer version not found"), pd.AppError, pd.ErrGameVersionInvalid))
+			}
+		}
 	})
 	p.launcherButton.SetOnDown(func() {
 
@@ -182,8 +216,8 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 		appender.AppendChildWidgetWithBounds(&p.installButton, gl.CellBounds(1, 1))
 	case 1:
 		appender.AppendChildWidgetWithBounds(&p.playButton, gl.CellBounds(1, 1))
+		appender.AppendChildWidgetWithBounds(&p.updateButton, gl.CellBounds(2, 1))
 	}
-	appender.AppendChildWidgetWithBounds(&p.updateButton, gl.CellBounds(2, 1))
 
 	return nil
 }

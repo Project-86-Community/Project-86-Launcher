@@ -35,6 +35,7 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/guigui"
+	"github.com/hashicorp/go-version"
 	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pkg/browser"
 	"github.com/rs/zerolog/log"
@@ -123,6 +124,20 @@ func IsValidGameFile(filename string) bool {
 		!strings.Contains(filename, "dev")
 }
 
+func CheckNewerVersion(currentVersion, newVersion string) (bool, *pd.Error) {
+	current, err := version.NewVersion(currentVersion)
+	if err != nil {
+		return false, E.New(fmt.Errorf("invalid current version: %w", err), pd.AppError, pd.ErrGameVersionInvalid)
+	}
+
+	newer, err := version.NewVersion(newVersion)
+	if err != nil {
+		return false, E.New(fmt.Errorf("invalid new version: %w", err), pd.AppError, pd.ErrGameVersionInvalid)
+	}
+
+	return newer.GreaterThan(current), nil
+}
+
 // -- downloading --
 
 func DownloadGame(model *Model, filename, src string) *pd.Error {
@@ -133,11 +148,27 @@ func DownloadGame(model *Model, filename, src string) *pd.Error {
 		return err
 	}
 
+	if FS.IsDirR(E, FS.DirGamePath()) == nil {
+		model.SetProgress("Removing old files...")
+
+		rErr := os.RemoveAll(filepath.Join(FS.CompanyDirPath, "build", "game"))
+		if rErr != nil {
+			return E.New(rErr, pd.FSError, pd.ErrFSDirRemove)
+		}
+	}
+
 	model.SetProgress("Extracting...")
 
 	err = unzip(filepath.Join(FS.CompanyDirPath, "game.zip"), filepath.Join(FS.CompanyDirPath, "build", "game"))
 	if err != nil {
 		return err
+	}
+
+	model.SetProgress("Cleaning...")
+
+	rErr := FS.Root.Remove("game.zip")
+	if rErr != nil {
+		return E.New(rErr, pd.FSError, pd.ErrFSRootFileRemove)
 	}
 
 	model.SetProgress("")
@@ -149,6 +180,30 @@ func DownloadFile(model *Model, filename, src, dest string) *pd.Error {
 	var resumePos int64 = 0
 	if info, err := FS.Root.Stat(dest); err == nil {
 		resumePos = info.Size()
+	}
+
+	if resumePos > 0 {
+		// Make a HEAD request to get the file size without downloading.
+		headReq, err := http.NewRequest("HEAD", src, nil)
+		if err != nil {
+			return E.New(err, pd.NetworkError, pd.ErrNetworkDownloadRequest)
+		}
+
+		client := &http.Client{}
+		headResp, err := client.Do(headReq)
+		if err != nil {
+			return E.New(err, pd.NetworkError, pd.ErrNetworkDownloadRequest)
+		}
+		headResp.Body.Close()
+
+		if headResp.StatusCode == http.StatusOK {
+			contentLength := headResp.ContentLength
+			// If the file size matches, skip download.
+			if contentLength > 0 && resumePos == contentLength {
+				// File is already fully downloaded.
+				return nil
+			}
+		}
 	}
 
 	var out io.WriteCloser

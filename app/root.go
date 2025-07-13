@@ -300,6 +300,7 @@ func (r *rootPopupContent) Build(context *guigui.Context, appender *guigui.Child
 	r.titleText.SetValue(p86l.E.PopupErr.String())
 	r.titleText.SetAutoWrap(true)
 	r.titleText.SetBold(true)
+	r.titleText.SetSelectable(true)
 
 	r.closeButton.SetText("Close")
 	r.closeButton.SetOnUp(func() {
