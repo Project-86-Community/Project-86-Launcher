@@ -23,10 +23,12 @@ package p86l
 
 import (
 	"archive/zip"
+	gctx "context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"p86l/configs"
 	pd "p86l/internal/debug"
 	"p86l/internal/file"
 	"path/filepath"
@@ -34,6 +36,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/go-github/v71/github"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hashicorp/go-version"
 	i18n "github.com/nicksnyder/go-i18n/v2/i18n"
@@ -118,6 +121,11 @@ func OpenBrowser(url string) {
 	}
 }
 
+func IsValidPreGameFile(filename string) bool {
+	return strings.Contains(filename, "Project86-v") &&
+		strings.Contains(filename, ".zip")
+}
+
 func IsValidGameFile(filename string) bool {
 	return strings.Contains(filename, "Project86-v") &&
 		strings.Contains(filename, ".zip") &&
@@ -139,6 +147,73 @@ func CheckNewerVersion(currentVersion, newVersion string) (bool, *pd.Error) {
 }
 
 // -- downloading --
+
+func GetPreRelease() (*github.RepositoryRelease, error) {
+	ctx := gctx.Background()
+	opt := &github.ListOptions{
+		PerPage: 100,
+	}
+
+	for {
+		rs, resp, err := GithubClient.Repositories.ListReleases(ctx, configs.RepoOwner, configs.RepoName, opt)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, r := range rs {
+			if r.Prerelease != nil && *r.Prerelease {
+				return r, nil
+			}
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+
+	return nil, fmt.Errorf("no pre-releases found")
+}
+
+func DownloadPreGame(model *Model, filename, src string) *pd.Error {
+	model.SetProgress("Downloading...")
+
+	err := DownloadFile(model, filename, src, "pregame.zip")
+	if err != nil {
+		model.SetProgress("")
+		return err
+	}
+
+	if FS.IsDirR(E, FS.DirGamePath()) == nil {
+		model.SetProgress("Removing old files...")
+
+		rErr := os.RemoveAll(filepath.Join(FS.CompanyDirPath, "build", "pregame"))
+		if rErr != nil {
+			model.SetProgress("")
+			return E.New(rErr, pd.FSError, pd.ErrFSDirRemove)
+		}
+	}
+
+	model.SetProgress("Extracting...")
+
+	err = unzip(filepath.Join(FS.CompanyDirPath, "game.zip"), filepath.Join(FS.CompanyDirPath, "build", "pregame"))
+	if err != nil {
+		model.SetProgress("")
+		return err
+	}
+
+	model.SetProgress("Cleaning...")
+
+	rErr := FS.Root.Remove("pregame.zip")
+	if rErr != nil {
+		model.SetProgress("")
+		return E.New(rErr, pd.FSError, pd.ErrFSRootFileRemove)
+	}
+
+	model.SetProgress("")
+
+	return nil
+}
 
 func DownloadGame(model *Model, filename, src string) *pd.Error {
 	model.SetProgress("Downloading...")

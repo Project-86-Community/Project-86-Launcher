@@ -92,25 +92,49 @@ func (p *playContent) handleDownload(context *guigui.Context) {
 	context.SetEnabled(&p.launcherButton, false)
 
 	cache := p.model.Cache()
-	assets := cache.File().Repo.Assets
-	for _, asset := range assets {
-		if name := asset.GetName(); p86l.IsValidGameFile(name) {
-			downloadUrl := asset.GetBrowserDownloadURL()
-			log.Info().Any("Asset", []string{name, downloadUrl}).Str("Play", "playContent").Msg(pd.NetworkManager)
-			err := p86l.DownloadGame(p.model, name, downloadUrl)
-			if err != nil {
-				p86l.E.SetPopup(err)
-				break
-			}
 
-			if err = p.model.Data().SetGameVersion(cache.File().Repo.GetTagName()); err != nil {
-				p86l.E.SetToast(err)
+	if p.model.Data().File().UsePreRelease {
+		pr, rErr := p86l.GetPreRelease()
+		if rErr != nil {
+			p86l.E.SetPopup(p86l.E.New(rErr, pd.NetworkError, pd.ErrNetworkDownloadRequest))
+		}
+		assets := pr.Assets
+
+		for _, asset := range assets {
+			if name := asset.GetName(); p86l.IsValidPreGameFile(name) {
+				downloadUrl := asset.GetBrowserDownloadURL()
+				log.Info().Any("Asset", []string{name, downloadUrl}).Str("Play", "playContent").Msg(pd.NetworkManager)
+				err := p86l.DownloadPreGame(p.model, name, downloadUrl)
+				if err != nil {
+					p86l.E.SetPopup(err)
+					break
+				}
+
 				break
 			}
-			if err = p.model.Data().Save(); err != nil {
-				p86l.E.SetToast(err)
+		}
+	} else {
+		assets := cache.File().Repo.Assets
+
+		for _, asset := range assets {
+			if name := asset.GetName(); p86l.IsValidGameFile(name) {
+				downloadUrl := asset.GetBrowserDownloadURL()
+				log.Info().Any("Asset", []string{name, downloadUrl}).Str("Play", "playContent").Msg(pd.NetworkManager)
+				err := p86l.DownloadGame(p.model, name, downloadUrl)
+				if err != nil {
+					p86l.E.SetPopup(err)
+					break
+				}
+
+				if err = p.model.Data().SetGameVersion(cache.File().Repo.GetTagName()); err != nil {
+					p86l.E.SetToast(err)
+					break
+				}
+				if err = p.model.Data().Save(); err != nil {
+					p86l.E.SetToast(err)
+				}
+				break
 			}
-			break
 		}
 	}
 
@@ -171,18 +195,34 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 
 	})
 
-	p.installButton.SetText(p86l.T("play.install"))
+	if p.model.Data().File().UsePreRelease {
+		p.installButton.SetText("Install Pre-release")
+	} else {
+		p.installButton.SetText(p86l.T("play.install"))
+	}
+
 	p.playButton.SetText(p86l.T("play.play"))
 	p.updateButton.SetText(p86l.T("play.update"))
 	p.launcherButton.SetText("Update Launcher")
 
-	if err := p86l.FS.IsDirR(p86l.E, filepath.Join(p86l.FS.DirGamePath(), "Project-86.exe")); err == nil {
-		// play.
-		p.state = 1
+	if p.model.Data().File().UsePreRelease {
+		if err := p86l.FS.IsDirR(p86l.E, filepath.Join(p86l.FS.DirBuildPath(), "pregame", "Project-86.exe")); err == nil {
+			// play.
+			p.state = 1
+		} else {
+			// install.
+			p.state = 0
+		}
 	} else {
-		// install.
-		p.state = 0
+		if err := p86l.FS.IsDirR(p86l.E, filepath.Join(p86l.FS.DirGamePath(), "Project-86.exe")); err == nil {
+			// play.
+			p.state = 1
+		} else {
+			// install.
+			p.state = 0
+		}
 	}
+
 	// if downloading not in progress, do cache stuff.
 	if !p.inProgress {
 		if cache.IsValid() {
@@ -208,16 +248,22 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 			layout.FlexibleSize(1),
 			layout.FlexibleSize(1),
 			layout.FlexibleSize(1),
-			layout.FlexibleSize(1),
 		},
-		ColumnGap: u / 2,
 	}
 	switch p.state {
 	case 0:
 		appender.AppendChildWidgetWithBounds(&p.installButton, gl.CellBounds(1, 1))
 	case 1:
-		appender.AppendChildWidgetWithBounds(&p.playButton, gl.CellBounds(1, 1))
-		appender.AppendChildWidgetWithBounds(&p.updateButton, gl.CellBounds(2, 1))
+		glI := layout.GridLayout{
+			Bounds: gl.CellBounds(1, 1),
+			Widths: []layout.Size{
+				layout.FlexibleSize(1),
+				layout.FlexibleSize(1),
+			},
+			ColumnGap: u / 2,
+		}
+		appender.AppendChildWidgetWithBounds(&p.playButton, glI.CellBounds(0, 0))
+		appender.AppendChildWidgetWithBounds(&p.updateButton, glI.CellBounds(1, 0))
 	}
 
 	return nil

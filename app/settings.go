@@ -22,7 +22,6 @@
 package app
 
 import (
-	"fmt"
 	"p86l"
 	"p86l/configs"
 	pd "p86l/internal/debug"
@@ -283,7 +282,6 @@ type settingsReset struct {
 	form        basicwidget.Form
 	dataButton  basicwidget.Button
 	cacheButton basicwidget.Button
-	resetButton basicwidget.Button
 
 	model *p86l.Model
 }
@@ -298,7 +296,6 @@ func (s *settingsReset) Build(context *guigui.Context, appender *guigui.ChildWid
 
 	s.dataButton.SetText(p86l.T("settings.resetdata"))
 	s.cacheButton.SetText(p86l.T("settings.resetcache"))
-	s.resetButton.SetText(p86l.T("settings.reset"))
 
 	s.dataButton.SetOnDown(func() {
 		d := p86l.NewData()
@@ -311,10 +308,6 @@ func (s *settingsReset) Build(context *guigui.Context, appender *guigui.ChildWid
 	s.cacheButton.SetOnDown(func() {
 		cache.SetValid(false)
 	})
-	// TODO: reset
-	s.resetButton.SetOnDown(func() {
-		p86l.E.SetToast(p86l.E.New(fmt.Errorf("Lena pic missing"), pd.AppError, pd.ErrBrowserOpen))
-	})
 
 	s.form.SetItems([]basicwidget.FormItem{
 		{
@@ -324,10 +317,6 @@ func (s *settingsReset) Build(context *guigui.Context, appender *guigui.ChildWid
 		{
 			PrimaryWidget:   nil,
 			SecondaryWidget: &s.cacheButton,
-		},
-		{
-			PrimaryWidget:   nil,
-			SecondaryWidget: &s.resetButton,
 		},
 	})
 
