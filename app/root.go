@@ -60,9 +60,9 @@ type Root struct {
 	popupContent  rootPopupContent
 	popupDebounce bool
 
-	cacheCheckDebounce bool
-	lastTick           int64
-	model              p86l.Model
+	inProgress bool
+	lastTick   int64
+	model      p86l.Model
 
 	locales           []language.Tag
 	faceSourceEntries []basicwidget.FaceSourceEntry
@@ -166,7 +166,7 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 		r.popupDebounce = true
 		r.popup.Open(context)
 	}
-	
+
 	r.popupContent.popup = &r.popup
 	r.popup.SetContent(&r.popupContent)
 	r.popup.SetBackgroundBlurred(true)
@@ -190,11 +190,11 @@ func (r *Root) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 }
 
 func (r *Root) Tick(context *guigui.Context) error {
-	if ebiten.Tick()-r.lastTick >= int64(ebiten.TPS()*5) {
+	if ebiten.Tick()-r.lastTick >= int64(ebiten.TPS()*5) && !r.inProgress {
 		r.lastTick = ebiten.Tick()
+		r.inProgress = true
 
-		if cache := r.model.Cache(); (!cache.IsValid() && !r.cacheCheckDebounce) || time.Now().After(cache.File().Timestamp.Add(cache.File().ExpiresIn)) {
-			r.cacheCheckDebounce = true
+		if cache := r.model.Cache(); !cache.IsValid() || time.Now().After(cache.File().Timestamp.Add(cache.File().ExpiresIn)) {
 			log.Info().Str("Cache", "cache is invalid").Str("Root", "Tick").Msg(pd.NetworkManager)
 			go func() {
 				ctx := gctx.Background()
@@ -202,14 +202,14 @@ func (r *Root) Tick(context *guigui.Context) error {
 				if rErr != nil {
 					log.Error().Any("Release", rErr).Msg(pd.NetworkManager)
 					p86l.E.SetToast(p86l.E.New(rErr, pd.NetworkError, pd.ErrNetworkCacheRequest))
-					r.cacheCheckDebounce = false
+					r.inProgress = false
 					return
 				}
 				err := cache.SetRepo(release, r.model.Data().File().Locale)
 				if err != nil {
 					p86l.E.SetToast(err)
 				}
-				r.cacheCheckDebounce = false
+				r.inProgress = false
 			}()
 		}
 	}

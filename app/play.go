@@ -100,6 +100,7 @@ func (p *playContent) handleDownload(context *guigui.Context) {
 			err := p86l.DownloadGame(p.model, name, downloadUrl)
 			if err != nil {
 				p86l.E.SetPopup(err)
+				break
 			}
 
 			if err = p.model.Data().SetGameVersion(cache.File().Repo.GetTagName()); err != nil {

@@ -51,7 +51,11 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 
 	if cache := c.model.Cache(); cache.IsValid() {
 		if locale := c.model.Data().File().Locale; locale != "en" {
-			c.text.SetValue(cache.TranslatedBody)
+			if cache.TranslatedBody == "" {
+				c.text.SetValue("...")
+			} else {
+				c.text.SetValue(cache.TranslatedBody)
+			}
 		} else {
 			c.text.SetValue(cache.File().Repo.GetBody())
 		}

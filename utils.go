@@ -145,6 +145,7 @@ func DownloadGame(model *Model, filename, src string) *pd.Error {
 
 	err := DownloadFile(model, filename, src, "game.zip")
 	if err != nil {
+		model.SetProgress("")
 		return err
 	}
 
@@ -153,6 +154,7 @@ func DownloadGame(model *Model, filename, src string) *pd.Error {
 
 		rErr := os.RemoveAll(filepath.Join(FS.CompanyDirPath, "build", "game"))
 		if rErr != nil {
+			model.SetProgress("")
 			return E.New(rErr, pd.FSError, pd.ErrFSDirRemove)
 		}
 	}
@@ -161,6 +163,7 @@ func DownloadGame(model *Model, filename, src string) *pd.Error {
 
 	err = unzip(filepath.Join(FS.CompanyDirPath, "game.zip"), filepath.Join(FS.CompanyDirPath, "build", "game"))
 	if err != nil {
+		model.SetProgress("")
 		return err
 	}
 
@@ -168,6 +171,7 @@ func DownloadGame(model *Model, filename, src string) *pd.Error {
 
 	rErr := FS.Root.Remove("game.zip")
 	if rErr != nil {
+		model.SetProgress("")
 		return E.New(rErr, pd.FSError, pd.ErrFSRootFileRemove)
 	}
 
