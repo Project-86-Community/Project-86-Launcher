@@ -273,7 +273,10 @@ func DownloadFile(model *Model, filename, src, dest string) *pd.Error {
 		if err != nil {
 			return E.New(err, pd.NetworkError, pd.ErrNetworkDownloadRequest)
 		}
-		headResp.Body.Close()
+		err = headResp.Body.Close()
+		if err != nil {
+			return E.New(err, pd.NetworkError, pd.ErrNetworkDownloadRequest)
+		}
 
 		if headResp.StatusCode == http.StatusOK {
 			contentLength := headResp.ContentLength
@@ -295,7 +298,12 @@ func DownloadFile(model *Model, filename, src, dest string) *pd.Error {
 	if err != nil {
 		return E.New(err, pd.FSError, pd.ErrFSRootFileNew)
 	}
-	defer out.Close()
+	defer func() {
+		err := out.Close()
+		if err != nil {
+			E.SetToast(E.New(err, pd.FSError, pd.ErrFSRootFileClose))
+		}
+	}()
 
 	req, err := http.NewRequest("GET", src, nil)
 	if err != nil {
@@ -311,7 +319,12 @@ func DownloadFile(model *Model, filename, src, dest string) *pd.Error {
 	if err != nil {
 		return E.New(err, pd.NetworkError, pd.ErrNetworkDownloadRequest)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			E.SetToast(E.New(err, pd.FSError, pd.ErrFSRootFileClose))
+		}
+	}()
 
 	expectedStatus := http.StatusOK
 	if resumePos > 0 {
@@ -320,7 +333,10 @@ func DownloadFile(model *Model, filename, src, dest string) *pd.Error {
 
 	if resp.StatusCode != expectedStatus {
 		if resumePos > 0 && resp.StatusCode != http.StatusPartialContent {
-			out.Close()
+			err := out.Close()
+			if err != nil {
+				return E.New(err, pd.FSError, pd.ErrFSRootFileClose)
+			}
 			return DownloadFileFromScratch(model, filename, src, dest)
 		}
 		return E.New(fmt.Errorf("bad status: %s", resp.Status), pd.NetworkError, pd.ErrNetworkStatusNotOk)
@@ -357,20 +373,33 @@ func DownloadFile(model *Model, filename, src, dest string) *pd.Error {
 
 func DownloadFileFromScratch(model *Model, filename, src, dest string) *pd.Error {
 	// Remove existing file
-	FS.Root.Remove(dest)
+	err := FS.Root.Remove(dest)
+	if err != nil {
+		return E.New(err, pd.FSError, pd.ErrFSRootFileRemove)
+	}
 
 	// Create new file
 	out, err := FS.Root.Create(dest)
 	if err != nil {
 		return E.New(err, pd.FSError, pd.ErrFSRootFileNew)
 	}
-	defer out.Close()
+	defer func() {
+		err := out.Close()
+		if err != nil {
+			E.SetToast(E.New(err, pd.FSError, pd.ErrFSRootFileClose))
+		}
+	}()
 
 	resp, err := http.Get(src)
 	if err != nil {
 		return E.New(err, pd.NetworkError, pd.ErrNetworkDownloadRequest)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			E.SetToast(E.New(err, pd.FSError, pd.ErrFSRootFileClose))
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return E.New(fmt.Errorf("bad status: %s", resp.Status), pd.NetworkError, pd.ErrNetworkStatusNotOk)
@@ -386,7 +415,10 @@ func DownloadFileFromScratch(model *Model, filename, src, dest string) *pd.Error
 
 	_, err = io.Copy(out, io.TeeReader(resp.Body, p))
 	if err != nil {
-		FS.Root.Remove(dest)
+		err := FS.Root.Remove(dest)
+		if err != nil {
+			return E.New(err, pd.FSError, pd.ErrFSRootFileRemove)
+		}
 		return E.New(err, pd.FSError, pd.ErrFSRootFileWrite)
 	}
 
@@ -398,7 +430,12 @@ func unzip(src, dest string) *pd.Error {
 	if err != nil {
 		return E.New(err, pd.FSError, pd.ErrFSRootFileRead)
 	}
-	defer r.Close()
+	defer func() {
+		err := r.Close()
+		if err != nil {
+			E.SetToast(E.New(err, pd.FSError, pd.ErrFSRootFileClose))
+		}
+	}()
 
 	if err := os.MkdirAll(dest, 0755); err != nil {
 		return E.New(err, pd.FSError, pd.ErrFSDirNew)
@@ -429,7 +466,12 @@ func unzip(src, dest string) *pd.Error {
 		if err != nil {
 			return E.New(err, pd.FSError, pd.ErrFSFileInvalid)
 		}
-		defer rc.Close()
+		defer func() {
+			err := rc.Close()
+			if err != nil {
+				E.SetToast(E.New(err, pd.FSError, pd.ErrFSRootFileClose))
+			}
+		}()
 
 		// Strip the root directory from the path
 		relPath := f.Name
@@ -457,7 +499,12 @@ func unzip(src, dest string) *pd.Error {
 			if err != nil {
 				return E.New(err, pd.FSError, pd.ErrFSFileInvalid)
 			}
-			defer fi.Close()
+			defer func() {
+				err := fi.Close()
+				if err != nil {
+					E.SetToast(E.New(err, pd.FSError, pd.ErrFSRootFileClose))
+				}
+			}()
 
 			_, err = io.Copy(fi, rc)
 			if err != nil {
