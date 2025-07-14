@@ -104,7 +104,7 @@ func (p *playContent) handleDownload(context *guigui.Context) {
 			if name := asset.GetName(); p86l.IsValidPreGameFile(name) {
 				downloadUrl := asset.GetBrowserDownloadURL()
 				log.Info().Any("Asset", []string{name, downloadUrl}).Str("Play", "playContent").Msg(pd.NetworkManager)
-				err := p86l.DownloadPreGame(p.model, name, downloadUrl)
+				err := p86l.DownloadGame(p.model, name, downloadUrl, true)
 				if err != nil {
 					p86l.E.SetPopup(err)
 					break
@@ -120,7 +120,7 @@ func (p *playContent) handleDownload(context *guigui.Context) {
 			if name := asset.GetName(); p86l.IsValidGameFile(name) {
 				downloadUrl := asset.GetBrowserDownloadURL()
 				log.Info().Any("Asset", []string{name, downloadUrl}).Str("Play", "playContent").Msg(pd.NetworkManager)
-				err := p86l.DownloadGame(p.model, name, downloadUrl)
+				err := p86l.DownloadGame(p.model, name, downloadUrl, false)
 				if err != nil {
 					p86l.E.SetPopup(err)
 					break

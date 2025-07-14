@@ -175,10 +175,18 @@ func GetPreRelease() (*github.RepositoryRelease, error) {
 	return nil, fmt.Errorf("no pre-releases found")
 }
 
-func DownloadPreGame(model *Model, filename, src string) *pd.Error {
+func DownloadGame(model *Model, filename, src string, preRelease bool) *pd.Error {
+	var game string
+	if preRelease {
+		game = "pregame"
+	} else {
+		game = "game"
+	}
+	gameZip := fmt.Sprintf("%s.zip", game)
+
 	model.SetProgress("Downloading...")
 
-	err := DownloadFile(model, filename, src, "pregame.zip")
+	err := DownloadFile(model, filename, src, gameZip)
 	if err != nil {
 		model.SetProgress("")
 		return err
@@ -187,7 +195,7 @@ func DownloadPreGame(model *Model, filename, src string) *pd.Error {
 	if FS.IsDirR(E, FS.DirGamePath()) == nil {
 		model.SetProgress("Removing old files...")
 
-		rErr := os.RemoveAll(filepath.Join(FS.CompanyDirPath, "build", "pregame"))
+		rErr := os.RemoveAll(filepath.Join(FS.CompanyDirPath, "build", game))
 		if rErr != nil {
 			model.SetProgress("")
 			return E.New(rErr, pd.FSError, pd.ErrFSDirRemove)
@@ -196,7 +204,7 @@ func DownloadPreGame(model *Model, filename, src string) *pd.Error {
 
 	model.SetProgress("Extracting...")
 
-	err = unzip(filepath.Join(FS.CompanyDirPath, "game.zip"), filepath.Join(FS.CompanyDirPath, "build", "pregame"))
+	err = unzip(filepath.Join(FS.CompanyDirPath, gameZip), filepath.Join(FS.CompanyDirPath, "build", game))
 	if err != nil {
 		model.SetProgress("")
 		return err
@@ -204,47 +212,7 @@ func DownloadPreGame(model *Model, filename, src string) *pd.Error {
 
 	model.SetProgress("Cleaning...")
 
-	rErr := FS.Root.Remove("pregame.zip")
-	if rErr != nil {
-		model.SetProgress("")
-		return E.New(rErr, pd.FSError, pd.ErrFSRootFileRemove)
-	}
-
-	model.SetProgress("")
-
-	return nil
-}
-
-func DownloadGame(model *Model, filename, src string) *pd.Error {
-	model.SetProgress("Downloading...")
-
-	err := DownloadFile(model, filename, src, "game.zip")
-	if err != nil {
-		model.SetProgress("")
-		return err
-	}
-
-	if FS.IsDirR(E, FS.DirGamePath()) == nil {
-		model.SetProgress("Removing old files...")
-
-		rErr := os.RemoveAll(filepath.Join(FS.CompanyDirPath, "build", "game"))
-		if rErr != nil {
-			model.SetProgress("")
-			return E.New(rErr, pd.FSError, pd.ErrFSDirRemove)
-		}
-	}
-
-	model.SetProgress("Extracting...")
-
-	err = unzip(filepath.Join(FS.CompanyDirPath, "game.zip"), filepath.Join(FS.CompanyDirPath, "build", "game"))
-	if err != nil {
-		model.SetProgress("")
-		return err
-	}
-
-	model.SetProgress("Cleaning...")
-
-	rErr := FS.Root.Remove("game.zip")
+	rErr := FS.Root.Remove(gameZip)
 	if rErr != nil {
 		model.SetProgress("")
 		return E.New(rErr, pd.FSError, pd.ErrFSRootFileRemove)

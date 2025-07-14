@@ -37,13 +37,21 @@ type ProgressTracker struct {
 	totalSize   int64
 	currentSize int64
 	startTime   time.Time
+	lastTime    time.Time
+	lastSize    int64
+	lastPrint   time.Time
 	mu          sync.Mutex
 }
 
 func (p *ProgressTracker) Write(data []byte) (int, error) {
 	p.mu.Lock()
 	p.currentSize += int64(len(data))
-	p.PrintProgress()
+
+	if time.Since(p.lastPrint) >= 500*time.Millisecond {
+		p.PrintProgress()
+		p.lastPrint = time.Now()
+	}
+
 	p.mu.Unlock()
 	return len(data), nil
 }
@@ -53,16 +61,27 @@ func (p *ProgressTracker) PrintProgress() {
 	currentSize := humanize.Bytes(uint64(p.currentSize))
 	totalSize := humanize.Bytes(uint64(p.totalSize))
 
-	// Calculate remaining time.
-	elapsed := time.Since(p.startTime).Seconds()
-	if elapsed == 0 {
-		elapsed = 0.001 // or just return early.
-	}
-	speed := float64(p.currentSize) / elapsed
-	remaining := float64(p.totalSize-p.currentSize) / speed
+	now := time.Now()
+	var speed float64
 
-	remainingDuration := time.Duration(remaining) * time.Second
-	remainingStr := humanize.RelTime(time.Now(), time.Now().Add(remainingDuration), "remaining", "ago")
+	if !p.lastTime.IsZero() {
+		elapsed := now.Sub(p.lastTime).Seconds()
+		if elapsed > 0 {
+			speed = float64(p.currentSize-p.lastSize) / elapsed
+		}
+	}
+
+	p.lastTime = now
+	p.lastSize = p.currentSize
+
+	var remainingStr string
+	if speed > 0 {
+		remaining := float64(p.totalSize-p.currentSize) / speed
+		remainingDuration := time.Duration(remaining) * time.Second
+		remainingStr = humanize.RelTime(time.Now(), time.Now().Add(remainingDuration), "remaining", "ago")
+	} else {
+		remainingStr = "calculating..."
+	}
 
 	// Print the progress.
 	output := fmt.Sprintf("Downloading %s: %s/%s @ %s/s, %s",
