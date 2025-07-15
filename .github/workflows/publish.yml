@@ -1,0 +1,123 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+
+      - name: Build Windows versions
+        run: task build:windows
+
+      - name: Get version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create ZIPs
+        run: |
+          cd bin
+          for exe in *.exe; do
+            zip "${exe%.exe}.zip" "$exe"
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: builds
+          path: bin/*.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: read
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: builds
+          path: ./artifacts
+
+      - name: Get version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.VERSION }}';
+            
+            // Find milestone matching the version
+            const milestones = await github.rest.issues.listMilestones({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all'
+            });
+            
+            const milestone = milestones.data.find(m => 
+              m.title === version || m.title === version.replace('v', '')
+            );
+            
+            if (!milestone) {
+              return '## Changelog\n\nNo milestone found for this release.';
+            }
+            
+            // Get closed issues for this milestone
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              milestone: milestone.number,
+              state: 'closed',
+              per_page: 100
+            });
+            
+            let changelog = `## Changelog\n\n`;
+            
+            if (issues.data.length === 0) {
+              changelog += 'No issues fixed in this release.\n';
+            } else {
+              changelog += '### Issues Fixed\n\n';
+              issues.data.forEach(issue => {
+                changelog += `- ${issue.title} (#${issue.number})\n`;
+              });
+            }
+            
+            return changelog;
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.version.outputs.VERSION }}
+          body: ${{ steps.changelog.outputs.result }}
+          files: artifacts/*.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
