@@ -72,7 +72,7 @@ func (c *Changelog) Build(context *guigui.Context, appender *guigui.ChildWidgetA
 			go p86l.OpenBrowser(value)
 		}
 	})
-	c.viewButton.SetText("View")
+	c.viewButton.SetText(p86l.T("changelog.view"))
 
 	c.form.SetItems([]basicwidget.FormItem{
 		{

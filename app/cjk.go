@@ -30,7 +30,13 @@ import (
 	"golang.org/x/text/language"
 )
 
+var localeItems = []basicwidget.DropdownListItem[language.Tag]{
+	{
+		Text: "English",
+		ID:   language.English,
+	},
+}
+
 func AppendRecommendedFaceSourceEntries(faceSourceEntries []basicwidget.FaceSourceEntry, locales []language.Tag) []basicwidget.FaceSourceEntry {
 	return cjkfont.AppendRecommendedFaceSourceEntries(faceSourceEntries, locales)
 }
-

@@ -72,10 +72,9 @@ func (p *Play) Build(context *guigui.Context, appender *guigui.ChildWidgetAppend
 type playContent struct {
 	guigui.DefaultWidget
 
-	installButton  basicwidget.Button
-	playButton     basicwidget.Button
-	updateButton   basicwidget.Button
-	launcherButton basicwidget.Button
+	installButton basicwidget.Button
+	playButton    basicwidget.Button
+	updateButton  basicwidget.Button
 
 	state      int
 	inProgress bool
@@ -89,10 +88,8 @@ func (p *playContent) handleDownload(context *guigui.Context) {
 	context.SetEnabled(&p.installButton, false)
 	context.SetEnabled(&p.playButton, false)
 	context.SetEnabled(&p.updateButton, false)
-	context.SetEnabled(&p.launcherButton, false)
 
 	cache := p.model.Cache()
-
 	if p.model.Data().File().UsePreRelease {
 		pr, rErr := p86l.GetPreRelease()
 		if rErr != nil {
@@ -141,7 +138,6 @@ func (p *playContent) handleDownload(context *guigui.Context) {
 	context.SetEnabled(&p.installButton, true)
 	context.SetEnabled(&p.playButton, true)
 	context.SetEnabled(&p.updateButton, true)
-	context.SetEnabled(&p.launcherButton, true)
 
 	p.inProgress = false
 }
@@ -191,19 +187,14 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 			}
 		}
 	})
-	p.launcherButton.SetOnDown(func() {
-
-	})
 
 	if p.model.Data().File().UsePreRelease {
-		p.installButton.SetText("Install Pre-release")
+		p.installButton.SetText(p86l.T("play.prerelease"))
 	} else {
 		p.installButton.SetText(p86l.T("play.install"))
 	}
-
 	p.playButton.SetText(p86l.T("play.play"))
 	p.updateButton.SetText(p86l.T("play.update"))
-	p.launcherButton.SetText("Update Launcher")
 
 	if p.model.Data().File().UsePreRelease {
 		if err := p86l.FS.IsDirR(p86l.E, filepath.Join(p86l.FS.DirBuildPath(), "pregame", "Project-86.exe")); err == nil {
@@ -228,11 +219,9 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 		if cache.IsValid() {
 			context.SetEnabled(&p.installButton, true)
 			context.SetEnabled(&p.updateButton, true)
-			context.SetEnabled(&p.launcherButton, true)
 		} else {
 			context.SetEnabled(&p.installButton, false)
 			context.SetEnabled(&p.updateButton, false)
-			context.SetEnabled(&p.launcherButton, false)
 		}
 	}
 

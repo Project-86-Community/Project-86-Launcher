@@ -104,20 +104,7 @@ func (s *settingsData) Build(context *guigui.Context, appender *guigui.ChildWidg
 	s.scaleText.SetValue(p86l.T("settings.appscale"))
 	s.preReleaseText.SetValue(p86l.T("settings.prerelease"))
 
-	s.localeDropdownList.SetItems([]basicwidget.DropdownListItem[language.Tag]{
-		{
-			Text: "English",
-			ID:   language.English,
-		},
-		{
-			Text: "French",
-			ID:   language.French,
-		},
-		{
-			Text: "Japanese",
-			ID:   language.Japanese,
-		},
-	})
+	s.localeDropdownList.SetItems(localeItems)
 	s.localeDropdownList.SetOnItemSelected(func(index int) {
 		item, ok := s.localeDropdownList.ItemByIndex(index)
 		if !ok {
@@ -245,10 +232,10 @@ type settingsOpen struct {
 }
 
 func (s *settingsOpen) Build(context *guigui.Context, appender *guigui.ChildWidgetAppender) error {
-	s.companyFolderText.SetValue(p86l.T("settings.copenfolder"))
-	s.companyFolderButton.SetText(p86l.T("settings.open"))
-	s.launcherFolderText.SetValue(p86l.T("settings.openfolder"))
-	s.launcherFolderButton.SetText(p86l.T("settings.open"))
+	s.companyFolderText.SetValue(p86l.T("settings.company"))
+	s.companyFolderButton.SetText(p86l.T("common.open"))
+	s.launcherFolderText.SetValue(p86l.T("settings.launcher"))
+	s.launcherFolderButton.SetText(p86l.T("common.open"))
 
 	s.companyFolderButton.SetOnDown(func() {
 		go func() {

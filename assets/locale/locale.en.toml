@@ -1,12 +1,15 @@
+[common]
+open = "Open"
+
 [home]
 title = "Home"
 
 [play]
 title = "Play"
 install = "Install"
+prerelease = "Install Pre-release"
 update = "Update"
 play = "Play"
-nointernet = "No connection!"
 website = "Website - Offical website!"
 github = "Github - Help develop the game?"
 discord = "Discord - Meet the community!"
@@ -14,8 +17,7 @@ patreon = "Patreon - Donate to the devs?"
 
 [changelog]
 title = "Changelog"
-gtl = "Translate via Google TL"
-open = "Open"
+view = "View"
 
 [settings]
 title = "Settings"
@@ -23,15 +25,14 @@ locale = "Locale"
 colormode = "Change Launcher to dark-mode"
 appscale = "Change Launcher scale"
 prerelease = "Use Pre-release"
-copenfolder = "Open Company directory"
-openfolder = "Open Launcher directory"
-open = "Open"
+company = "Open Company directory"
+launcher = "Open Launcher directory"
 resetdata = "Reset data"
 resetcache = "Reset cache"
-reset = "Reset app"
 
 [about]
 title = "About"
 lead = "Lead developer - Taliayaya"
 dev = "Launcher developer - Sky"
 info = "Welcome to Project 86 - a fan game in its early stages, with the primary goal of delivering a functional beta swiftly. We invite players to actively participate and provide feedback, steering the game in the right direction."
+
