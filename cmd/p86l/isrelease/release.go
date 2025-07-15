@@ -29,6 +29,7 @@ import (
 	"p86l"
 	"p86l/internal/debug"
 	"p86l/internal/file"
+	"path/filepath"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -41,7 +42,7 @@ func Run() {
 		log.Error().Stack().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Msg("Run")
 	}
 
-	logFile, err := a.Root.Create("log.txt")
+	logFile, err := a.Root.Create(filepath.Join(a.DirAppPath(), "log.txt"))
 	if err != nil {
 		log.Error().Stack().Int("Code", dErr.Code).Str("Type", string(dErr.Type)).Err((dErr.Err)).Msg("Run")
 	}
