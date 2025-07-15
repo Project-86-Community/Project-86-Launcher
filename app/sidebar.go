@@ -195,6 +195,7 @@ type sidebarStats struct {
 
 	progressTextInput basicwidget.TextInput
 	toastTextInput    basicwidget.TextInput
+	versionText       basicwidget.Text
 	ratelimitText     basicwidget.Text
 
 	ratelimitLeft int
@@ -231,6 +232,10 @@ func (s *sidebarStats) Build(context *guigui.Context, appender *guigui.ChildWidg
 	s.toastTextInput.SetAutoWrap(true)
 	s.toastTextInput.SetEditable(false)
 
+	s.versionText.SetValue(p86l.TheDebugMode.Version)
+	s.versionText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+	s.versionText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
+
 	s.ratelimitText.SetValue(fmt.Sprintf("Ratelimit: %d / 60", s.ratelimitLeft))
 
 	u := basicwidget.UnitSize(context)
@@ -239,6 +244,7 @@ func (s *sidebarStats) Build(context *guigui.Context, appender *guigui.ChildWidg
 		Heights: []layout.Size{
 			layout.FlexibleSize(1),
 			layout.FlexibleSize(1),
+			layout.FixedSize(s.versionText.DefaultSize(context).Y),
 			layout.FixedSize(s.ratelimitText.DefaultSize(context).Y),
 		},
 		Widths: []layout.Size{
@@ -250,7 +256,8 @@ func (s *sidebarStats) Build(context *guigui.Context, appender *guigui.ChildWidg
 	}
 	appender.AppendChildWidgetWithBounds(&s.progressTextInput, gl.CellBounds(1, 0))
 	appender.AppendChildWidgetWithBounds(&s.toastTextInput, gl.CellBounds(1, 1))
-	appender.AppendChildWidgetWithBounds(&s.ratelimitText, gl.CellBounds(1, 2))
+	appender.AppendChildWidgetWithBounds(&s.versionText, gl.CellBounds(1, 2))
+	appender.AppendChildWidgetWithBounds(&s.ratelimitText, gl.CellBounds(1, 3))
 
 	return nil
 }
