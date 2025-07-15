@@ -32,6 +32,7 @@ import (
 	pd "p86l/internal/debug"
 	"path/filepath"
 
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/layout"
@@ -159,6 +160,7 @@ func (p *playContent) Build(context *guigui.Context, appender *guigui.ChildWidge
 			if err := p86l.FS.IsDirR(p86l.E, p86l.FS.DirGamePath()); err == nil {
 				log.Info().Str("Game", "Starting game").Str("Play", "playContent").Msg(pd.FileManager)
 
+				ebiten.MinimizeWindow()
 				go func() {
 					cmd := exec.Command(filepath.Join(p86l.FS.CompanyDirPath, "build", "game", "Project-86.exe"))
 					rErr := cmd.Run()
