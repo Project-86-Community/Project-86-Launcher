@@ -9,7 +9,7 @@ vars:
 tasks:
   clean:
     desc: Clean build artifacts
-    deps: [clean:bin, clean:versioninfo]
+    deps: ['clean:bin', 'clean:versioninfo']
 
   clean:bin:
     desc: Clean build directory
@@ -54,7 +54,7 @@ tasks:
       - cmd/p86l/versioninfo.json
       - cmd/p86l/app.manifest
       - cmd/p86l/resource.syso
-      
+
   run:
     cmds:
       - go run cmd/p86l/main.go
@@ -73,17 +73,17 @@ tasks:
 
   build:debug:
     cmds:
-      - go build -ldflags "-s -w -X main.version=release" -trimpath -o bin/ cmd/p86l/main.go
+      - go build -ldflags "-s -w -X main.VERSION=release" -trimpath -o bin/ cmd/p86l/main.go
 
   build:windows:
     cmds:
-      - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.version={{.VERSION}} -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -trimpath -o bin/Project-86-Launcher.exe ./cmd/p86l
+      - GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.VERSION={{.VERSION}} -X=runtime.godebugDefault=asyncpreemptoff=1 -H=windowsgui" -trimpath -o bin/Project-86-Launcher.exe ./cmd/p86l
     generates:
       - bin/Project-86-Launcher.exe
 
   zip:
     desc: Create ZIP archives for Windows executables
-    deps: [zip:assets]
+    deps: ['zip:assets']
     dir: bin
     cmds:
       - |

@@ -28,91 +28,64 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"p86l"
 	"p86l/app"
 	"p86l/configs"
-	pd "p86l/internal/debug"
-	"strings"
+	"p86l/internal/log"
+	"path/filepath"
+	"time"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/pkgerrors"
 )
 
-var version = "dev"
+var VERSION = "dev"
+
+func setupLogger(fsSB *os.Root) (zerolog.Logger, *os.File) {
+	switch VERSION {
+	case "dev":
+		output := zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: time.RFC3339,
+		}
+		logger := zerolog.New(output).With().Timestamp().Logger()
+		return logger, nil
+	default:
+		logFile, err := log.NewLogFile(fsSB, filepath.Join("Project-86-Launcher", "logs"))
+		if err != nil {
+			fmt.Printf("%v", err)
+			os.Exit(1)
+		}
+
+		multiWriter := zerolog.MultiLevelWriter(os.Stdout, logFile)
+		logger := zerolog.New(multiWriter).With().Timestamp().Logger()
+		return logger, logFile
+	}
+}
 
 func main() {
 	port := flag.Int("instance", 54321, "Port to use for single-instance locking")
 	flag.Parse()
 
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-
-	result, newRoot, model := app.NewRoot(version)
-	if !result.Ok {
-		fmt.Println("P86L - app.NewRoot - %w", result.Err)
-		os.Exit(1)
-	}
-	am := model.App()
-	dm := am.Debug()
-	fs := am.FileSystem()
-	defer func() {
-		if err := fs.Root.Close(); err != nil {
-			fmt.Println("Failed to close root: %w", err)
-		}
-	}()
-
-	if version == "dev" {
-		output := zerolog.ConsoleWriter{
-			Out:        os.Stderr,
-			TimeFormat: "2006/01/02 15:04:05",
-		}
-		newLog := zerolog.New(output).With().Timestamp().Logger()
-		dm.SetLog(&newLog)
-
-		for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
-			switch token {
-			case "log":
-				am.SetLogsEnabled(true)
-			case "box":
-				am.SetBoxesEnabled(true)
-			}
-		}
-	} else {
-		logFile, err := p86l.NewLogFile(fs.Root, fs.PathDirLogs())
-		if err != nil {
-			fmt.Println("Failed to create new log file: %w", err)
-			os.Exit(1)
-		}
-		defer func() {
-			if err := logFile.Close(); err != nil {
-				fmt.Println("Failed to close log file: %w", err)
-			}
-		}()
-
-		if err := p86l.RotateLogFiles(fs.Root, fs.CompanyDirPath, fs.PathDirLogs()); err != nil {
-			fmt.Println("Log rotation warning: %w", err)
-			os.Exit(1)
-		}
-
-		multi := zerolog.MultiLevelWriter(os.Stdout, logFile)
-		newLog := zerolog.New(multi).With().Timestamp().Logger()
-		dm.SetLog(&newLog)
-		am.SetLogsEnabled(true)
-	}
-
-	// After this use zerolog, its now available.
-	if !am.LogsEnabled() {
-		zerolog.SetGlobalLevel(zerolog.Disabled)
-	}
-	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
+	fsSB, err := os.OpenRoot(".")
 	if err != nil {
-		dm.Log().Error().Err(fmt.Errorf("Another instance is already running (or port %d is in use): %w", *port, err)).Msg(pd.NetworkManager)
+		fmt.Println("%v", err)
 		os.Exit(1)
 	}
+	logger, logFile := setupLogger(fsSB)
+
+	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
+	if err != nil {
+		logger.Error().Err(fmt.Errorf("Another instance is already running (or port %d is in use): %w", *port, err)).Msg(log.NetworkManager.String())
+		os.Exit(1)
+	}
+
+	app := &app.Root{}
+	app.SetListener(listener)
+	app.SetLog(logger, logFile)
+
 	defer func() {
-		if err := l.Close(); err != nil {
-			dm.Log().Error().Err(fmt.Errorf("Failed to close instance: %w", err)).Msg(pd.ErrorManager)
+		if err := app.Close(); err != nil {
+			fmt.Println(err)
 		}
 	}()
 
@@ -120,10 +93,8 @@ func main() {
 		Title:         configs.AppTitle,
 		WindowMinSize: configs.AppWindowMinSize,
 	}
-	if err := guigui.Run(newRoot, op); err != nil {
-		if result := am.Error(); !result.Ok {
-			result.Err.LogErrStack(am.Debug().Log(), "main", "guigui.Run", pd.ErrorManager)
-		}
+	if err := guigui.Run(app, op); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

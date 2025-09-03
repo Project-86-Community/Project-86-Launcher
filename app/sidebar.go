@@ -22,14 +22,10 @@
 package app
 
 import (
-	"fmt"
 	"p86l"
-	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/hajimehoshi/guigui/layout"
 )
 
 type Sidebar struct {
@@ -44,7 +40,6 @@ func (s *Sidebar) AppendChildWidgets(context *guigui.Context, appender *guigui.C
 }
 
 func (s *Sidebar) Build(context *guigui.Context) error {
-	context.SetOpacity(&s.panel, 0.9)
 	s.panel.SetStyle(basicwidget.PanelStyleSide)
 	s.panel.SetBorder(basicwidget.PanelBorder{
 		End: true,
@@ -60,40 +55,33 @@ func (s *Sidebar) Build(context *guigui.Context) error {
 type sidebarContent struct {
 	guigui.DefaultWidget
 
-	list  basicwidget.List[string]
-	stats sidebarStats
+	list basicwidget.List[string]
 }
 
 func (s *sidebarContent) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	appender.AppendChildWidget(&s.list)
-	appender.AppendChildWidget(&s.stats)
 }
 
 func (s *sidebarContent) Build(context *guigui.Context) error {
 	model := context.Model(s, modelKeyModel).(*p86l.Model)
-	am := model.App()
 
 	s.list.SetStyle(basicwidget.ListStyleSidebar)
 
 	items := []basicwidget.ListItem[string]{
 		{
-			Text:  am.T("home.title"),
+			Text:  "Home",
 			Value: "home",
 		},
 		{
-			Text:  am.T("play.title"),
+			Text:  "Play",
 			Value: "play",
 		},
 		{
-			Text:  am.T("changelog.title"),
-			Value: "changelog",
-		},
-		{
-			Text:  am.T("settings.title"),
+			Text:  "Settings",
 			Value: "settings",
 		},
 		{
-			Text:  am.T("about.title"),
+			Text:  "About",
 			Value: "about",
 		},
 	}
@@ -107,94 +95,10 @@ func (s *sidebarContent) Build(context *guigui.Context) error {
 			model.SetMode("")
 			return
 		}
-		if item.Value == model.Mode() {
-			return
-		}
 		model.SetMode(item.Value)
 	})
 
-	gl := layout.GridLayout{
-		Bounds: context.Bounds(s),
-		Heights: []layout.Size{
-			layout.FlexibleSize(2),
-			layout.FlexibleSize(3),
-		},
-	}
-	context.SetBounds(&s.list, gl.CellBounds(0, 0), s)
-	context.SetBounds(&s.stats, gl.CellBounds(0, 1), s)
-
-	return nil
-}
-
-type sidebarStats struct {
-	guigui.DefaultWidget
-
-	progressText   basicwidget.Text
-	toastTextInput basicwidget.TextInput
-	versionText    basicwidget.Text
-	ratelimitText  basicwidget.Text
-}
-
-func (s *sidebarStats) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	appender.AppendChildWidget(&s.progressText)
-	appender.AppendChildWidget(&s.toastTextInput)
-	appender.AppendChildWidget(&s.versionText)
-	appender.AppendChildWidget(&s.ratelimitText)
-}
-
-func (s *sidebarStats) Build(context *guigui.Context) error {
-	model := context.Model(s, modelKeyModel).(*p86l.Model)
-	am := model.App()
-	dm := am.Debug()
-	play := model.Play()
-	cache := model.Cache()
-
-	s.progressText.SetValue(play.Progress())
-	s.progressText.SetAutoWrap(true)
-
-	if toast := dm.Toast(); toast != nil {
-		s.toastTextInput.SetValue(toast.String())
-	} else {
-		s.toastTextInput.SetValue("")
-	}
-	s.toastTextInput.SetMultiline(true)
-	s.toastTextInput.SetAutoWrap(true)
-	s.toastTextInput.SetEditable(false)
-
-	s.versionText.SetValue(am.PlainVersion())
-	s.versionText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
-	s.versionText.SetVerticalAlign(basicwidget.VerticalAlignMiddle)
-
-	if limit := cache.File().RateLimit; limit == nil {
-		s.ratelimitText.SetValue("...")
-	} else {
-		rLeft := limit.Core.Remaining
-		rTime := humanize.RelTime(time.Now(), limit.Core.Reset.Time, "remaining", "ago")
-		s.ratelimitText.SetValue(fmt.Sprintf("%d / 60 requests - %s", rLeft, rTime))
-	}
-	s.ratelimitText.SetAutoWrap(true)
-	s.ratelimitText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
-
-	u := basicwidget.UnitSize(context)
-	gl := layout.GridLayout{
-		Bounds: context.Bounds(s),
-		Widths: []layout.Size{
-			layout.FixedSize(u / 4),
-			layout.FlexibleSize(1),
-			layout.FixedSize(u / 2),
-		},
-		Heights: []layout.Size{
-			layout.FlexibleSize(1),
-			layout.FlexibleSize(1),
-			layout.FixedSize(s.versionText.DefaultSize(context).Y),
-			layout.FixedSize(u * 2),
-		},
-		RowGap: u / 2,
-	}
-	context.SetBounds(&s.progressText, gl.CellBounds(1, 0), s)
-	context.SetBounds(&s.toastTextInput, gl.CellBounds(1, 1), s)
-	context.SetBounds(&s.versionText, gl.CellBounds(1, 2), s)
-	context.SetBounds(&s.ratelimitText, gl.CellBounds(1, 3), s)
+	context.SetBounds(&s.list, context.Bounds(s), s)
 
 	return nil
 }

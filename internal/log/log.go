@@ -1,6 +1,3 @@
-//go:build cjk
-// +build cjk
-
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
@@ -22,21 +19,43 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package app
+package log
 
 import (
-	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/hajimehoshi/guigui/basicwidget/cjkfont"
-	"golang.org/x/text/language"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
 )
 
-var localeItems = []basicwidget.DropdownListItem[language.Tag]{
-	{
-		Text:  "English",
-		Value: language.English,
-	},
+var ErrLogFileInvalid = errors.New("failed to create log file")
+
+type Manager int
+
+const (
+	UnknownManager Manager = iota
+	AppManager
+	ErrorManager
+	FileManager
+	NetworkManager
+)
+
+func (m Manager) String() string {
+	list := []string{"Unknown", "App", "Error", "File", "Network"}
+	return list[m] + "Manager"
 }
 
-func AppendRecommendedFaceSourceEntries(faceSourceEntries []basicwidget.FaceSourceEntry, locales []language.Tag) []basicwidget.FaceSourceEntry {
-	return cjkfont.AppendRecommendedFaceSourceEntries(faceSourceEntries, locales)
+// -- utils --
+
+func NewLogFile(root *os.Root, path string) (*os.File, error) {
+	timestamp := time.Now().UTC().Unix()
+	filename := fmt.Sprintf("log-%d.txt", timestamp)
+
+	file, err := root.Create(filepath.Join(path, filename))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrLogFileInvalid, err)
+	}
+
+	return file, nil
 }

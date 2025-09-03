@@ -21,7 +21,16 @@
 
 package p86l
 
+import (
+	"errors"
+	"net"
+	"p86l/internal/log"
+)
+
 type Model struct {
+	listener net.Listener
+	log      LogModel
+
 	mode string
 
 	rateLimit RateLimitModel
@@ -29,6 +38,25 @@ type Model struct {
 	app       AppModel
 	data      DataModel
 	cache     CacheModel
+}
+
+// -- new --
+func (m *Model) Listener() net.Listener {
+	return m.listener
+}
+
+func (m *Model) Log() *LogModel {
+	return &m.log
+}
+
+func (m *Model) SetListener(listener net.Listener) {
+	m.listener = listener
+}
+
+// -- new - common --
+
+func (m *Model) Close() error {
+	return errors.Join(m.listener.Close(), m.Log().Close())
 }
 
 // -- Getters for Model --
@@ -43,8 +71,7 @@ func (m *Model) Mode() string {
 // -- Setters for Model --
 
 func (m *Model) SetMode(mode string) {
-	d := m.app.Debug()
-	d.Log().Info().Str("Page", mode).Msg("Sidebar")
+	m.Log().logger.Info().Str("Page", mode).Msg(log.AppManager.String())
 	m.mode = mode
 }
 
