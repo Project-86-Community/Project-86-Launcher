@@ -22,9 +22,11 @@
 package app
 
 import (
+	"image"
 	"net"
 	"os"
 	"p86l"
+	"p86l/assets"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -41,8 +43,9 @@ const (
 type Root struct {
 	guigui.DefaultWidget
 
-	background basicwidget.Background
-	sidebar    Sidebar
+	backgroundImage basicwidget.Image
+	sidebar         Sidebar
+	home            Home
 
 	model p86l.Model
 }
@@ -67,12 +70,19 @@ func (r *Root) Model(key any) any {
 }
 
 func (r *Root) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	appender.AppendChildWidget(&r.background)
+	appender.AppendChildWidget(&r.backgroundImage)
 	appender.AppendChildWidget(&r.sidebar)
+	switch r.model.Mode() {
+	case "home":
+		appender.AppendChildWidget(&r.home)
+	}
 }
 
 func (r *Root) Build(context *guigui.Context) error {
-	context.SetBounds(&r.background, context.Bounds(r), r)
+	r.backgroundImage.SetImage(assets.Banner)
+	r.handleBackgroundImage(context)
+
+	pages := []guigui.Widget{&r.home}
 
 	u := basicwidget.UnitSize(context)
 	gl := layout.GridLayout{
@@ -83,8 +93,43 @@ func (r *Root) Build(context *guigui.Context) error {
 		},
 	}
 	context.SetBounds(&r.sidebar, gl.CellBounds(0, 0), r)
+	for _, page := range pages {
+		context.SetBounds(page, gl.CellBounds(1, 0), r)
+	}
 
 	return nil
+}
+
+func (r *Root) handleBackgroundImage(context *guigui.Context) {
+	imgWidth := assets.Banner.Bounds().Dx()
+	imgHeight := assets.Banner.Bounds().Dy()
+
+	windowBounds := context.Bounds(r)
+	windowWidth := windowBounds.Dx()
+	windowHeight := windowBounds.Dy()
+
+	imgAspectRatio := float64(imgWidth) / float64(imgHeight)
+	windowAspectRatio := float64(windowWidth) / float64(windowHeight)
+
+	var newWidth, newHeight int
+	var xOffset, yOffset int
+
+	if imgAspectRatio > windowAspectRatio {
+		// The image is wider than the window. Scale by height and crop width.
+		newHeight = windowHeight
+		newWidth = int(float64(windowHeight) * imgAspectRatio)
+		xOffset = (windowWidth - newWidth) / 2
+		yOffset = 0
+	} else {
+		// The image is taller than the window. Scale by width and crop height.
+		newWidth = windowWidth
+		newHeight = int(float64(windowWidth) / imgAspectRatio)
+		xOffset = 0
+		yOffset = (windowHeight - newHeight) / 2
+	}
+
+	context.SetSize(&r.backgroundImage, image.Pt(newWidth, newHeight), r)
+	context.SetPosition(&r.backgroundImage, image.Pt(xOffset, yOffset))
 }
 
 func (r *Root) Close() error {

@@ -1,3 +1,5 @@
+//go:build darwin || linux
+
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
@@ -19,52 +21,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package p86l
+package file
 
 import (
-	"errors"
-	"net"
-	"p86l/internal/log"
+	"fmt"
+	"os"
+	"p86l/configs"
+	"path/filepath"
 )
 
-type Model struct {
-	listener net.Listener
-	log      LogModel
-
-	mode string
-}
-
-// -- new --
-func (m *Model) Listener() net.Listener {
-	return m.listener
-}
-
-func (m *Model) Log() *LogModel {
-	return &m.log
-}
-
-func (m *Model) SetListener(listener net.Listener) {
-	m.listener = listener
-}
-
-// -- new - common --
-
-func (m *Model) Close() error {
-	return errors.Join(m.listener.Close(), m.Log().Close())
-}
-
-// -- Getters for Model --
-
-func (m *Model) Mode() string {
-	if m.mode == "" {
-		return "home"
+func GetCompanyPath(extra ...string) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", ErrCompanyPathAppData, err)
 	}
-	return m.mode
-}
-
-// -- Setters for Model --
-
-func (m *Model) SetMode(mode string) {
-	m.Log().logger.Info().Str("Page", mode).Msg(log.AppManager.String())
-	m.mode = mode
+	companyPath := filepath.Join(home, ".local", "share", configs.CompanyName)
+	// Used for testing only!
+	if len(extra) == 1 && extra[0] != "" {
+		companyPath = fmt.Sprintf("%s_%s", companyPath, extra[0])
+	}
+	if err := mkdirAll(companyPath); err != nil {
+		return "", err
+	}
+	return companyPath, nil
 }

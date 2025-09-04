@@ -19,52 +19,62 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package p86l
+package file_test
 
 import (
-	"errors"
-	"net"
-	"p86l/internal/log"
+	"p86l/internal/file"
+	"testing"
 )
 
-type Model struct {
-	listener net.Listener
-	log      LogModel
-
-	mode string
-}
-
-// -- new --
-func (m *Model) Listener() net.Listener {
-	return m.listener
-}
-
-func (m *Model) Log() *LogModel {
-	return &m.log
-}
-
-func (m *Model) SetListener(listener net.Listener) {
-	m.listener = listener
-}
-
-// -- new - common --
-
-func (m *Model) Close() error {
-	return errors.Join(m.listener.Close(), m.Log().Close())
-}
-
-// -- Getters for Model --
-
-func (m *Model) Mode() string {
-	if m.mode == "" {
-		return "home"
+func setup(t *testing.T) *file.Filesystem {
+	fs, err := file.NewFilesystem("test")
+	if err != nil {
+		t.Fatalf("%v", err)
 	}
-	return m.mode
+	return fs
 }
 
-// -- Setters for Model --
+func TestSaveFile(t *testing.T) {
+	fs := setup(t)
+	defer func() {
+		err := fs.Close()
+		if err != nil {
+			t.Fatalf("Failed to close fs: %v", err)
+		}
+	}()
 
-func (m *Model) SetMode(mode string) {
-	m.Log().logger.Info().Str("Page", mode).Msg(log.AppManager.String())
-	m.mode = mode
+	err := fs.Save("test.txt", []byte(string("test")))
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestExistFile(t *testing.T) {
+	fs := setup(t)
+	defer func() {
+		err := fs.Close()
+		if err != nil {
+			t.Fatalf("Failed to close fs: %v", err)
+		}
+	}()
+
+	value := fs.Exist("test.txt")
+	if !value {
+		t.Fatal("missing test.txt")
+	}
+}
+
+func TestLoadFile(t *testing.T) {
+	fs := setup(t)
+	defer func() {
+		err := fs.Close()
+		if err != nil {
+			t.Fatalf("Failed to close fs: %v", err)
+		}
+	}()
+
+	_, err := fs.Load("test.txt")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 }
