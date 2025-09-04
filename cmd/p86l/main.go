@@ -68,7 +68,7 @@ func main() {
 
 	fsSB, err := os.OpenRoot(".")
 	if err != nil {
-		fmt.Println("%v", err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 	logger, logFile := setupLogger(fsSB)
