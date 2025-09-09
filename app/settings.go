@@ -33,19 +33,25 @@ import (
 type Settings struct {
 	guigui.DefaultWidget
 
-	background                            basicwidget.Background
-	form                                  basicwidget.Form
+	background basicwidget.Background
+
+	form1                                 basicwidget.Form
 	languageText, darkModeText, scaleText basicwidget.Text
 	languageDropdownList                  basicwidget.DropdownList[language.Tag]
 	darkModeToggle                        basicwidget.Toggle
 	scaleSegmentedControl                 basicwidget.SegmentedControl[float64]
+
+	form2                         basicwidget.Form
+	companyText, launcherText     basicwidget.Text
+	companyButton, launcherButton basicwidget.Button
 
 	mainLayout layout.GridLayout
 }
 
 func (s *Settings) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	appender.AppendChildWidget(&s.background)
-	appender.AppendChildWidget(&s.form)
+	appender.AppendChildWidget(&s.form1)
+	appender.AppendChildWidget(&s.form2)
 }
 
 func (s *Settings) Build(context *guigui.Context) error {
@@ -131,7 +137,7 @@ func (s *Settings) Build(context *guigui.Context) error {
 	})
 	s.scaleSegmentedControl.SelectItemByValue(context.AppScale())
 
-	items := []basicwidget.FormItem{
+	items1 := []basicwidget.FormItem{
 		{
 			PrimaryWidget:   &s.languageText,
 			SecondaryWidget: &s.languageDropdownList,
@@ -146,12 +152,30 @@ func (s *Settings) Build(context *guigui.Context) error {
 		},
 	}
 
-	s.form.SetItems(items)
+	s.companyText.SetValue("Open 86-Project Folder")
+	s.launcherText.SetValue("Open launcher Folder")
+	s.companyButton.SetText("Open")
+	s.launcherButton.SetText("Open")
+
+	items2 := []basicwidget.FormItem{
+		{
+			PrimaryWidget:   &s.companyText,
+			SecondaryWidget: &s.companyButton,
+		},
+		{
+			PrimaryWidget:   &s.launcherText,
+			SecondaryWidget: &s.launcherButton,
+		},
+	}
+
+	s.form1.SetItems(items1)
+	s.form2.SetItems(items2)
 	u := basicwidget.UnitSize(context)
 	s.mainLayout = layout.GridLayout{
 		Bounds: context.Bounds(s).Inset(u / 2),
 		Heights: []layout.Size{
-			layout.FixedSize(s.form.Measure(context, guigui.FixedWidthConstraints(context.Bounds(s).Dx()-u)).Y + u/2),
+			layout.FixedSize(s.form1.Measure(context, guigui.FixedWidthConstraints(context.Bounds(s).Dx()-u)).Y + u/2),
+			layout.FixedSize(s.form2.Measure(context, guigui.FixedWidthConstraints(context.Bounds(s).Dx()-u)).Y + u/2),
 		},
 	}
 
@@ -159,11 +183,19 @@ func (s *Settings) Build(context *guigui.Context) error {
 }
 
 func (s *Settings) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
+	u := basicwidget.UnitSize(context)
 	switch widget {
 	case &s.background:
-		return s.mainLayout.CellBounds(0, 0)
-	case &s.form:
-		return s.mainLayout.CellBounds(0, 0).Inset(basicwidget.UnitSize(context) / 4)
+		r1 := s.mainLayout.CellBounds(0, 0)
+		r2 := s.mainLayout.CellBounds(0, 1)
+		return image.Rectangle{
+			Min: r1.Min,
+			Max: image.Pt(max(r1.Max.X, r2.Max.X), max(r1.Max.Y, r2.Max.Y)),
+		}
+	case &s.form1:
+		return s.mainLayout.CellBounds(0, 0).Inset(u / 4)
+	case &s.form2:
+		return s.mainLayout.CellBounds(0, 1).Inset(u / 4)
 	}
 
 	return image.Rectangle{}
