@@ -27,6 +27,7 @@ import (
 	"os"
 	"p86l"
 	"p86l/assets"
+	"p86l/internal/file"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -97,6 +98,10 @@ func (r *Root) SetLog(logger zerolog.Logger, logFile *os.File) {
 	log := r.model.Log()
 	log.SetLogger(logger)
 	log.SetLogFile(logFile)
+}
+
+func (r *Root) SetFS(fs *file.Filesystem) {
+	r.model.File().SetFS(fs)
 }
 
 func (r *Root) Model(key any) any {

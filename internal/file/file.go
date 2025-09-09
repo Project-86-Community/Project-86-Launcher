@@ -80,6 +80,10 @@ func NewFilesystem(extra ...string) (*Filesystem, error) {
 	return &Filesystem{root: root}, nil
 }
 
+func (f *Filesystem) Root() *os.Root {
+	return f.root
+}
+
 func (f *Filesystem) Remove(filePath string) error {
 	err := f.root.Remove(filePath)
 	if err != nil {

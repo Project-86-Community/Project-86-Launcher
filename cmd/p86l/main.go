@@ -30,6 +30,7 @@ import (
 	"os"
 	"p86l/app"
 	"p86l/configs"
+	"p86l/internal/file"
 	"p86l/internal/log"
 	"path/filepath"
 	"time"
@@ -66,22 +67,23 @@ func main() {
 	port := flag.Int("instance", 54321, "Port to use for single-instance locking")
 	flag.Parse()
 
-	fsSB, err := os.OpenRoot(".")
+	fs, err := file.NewFilesystem()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	logger, logFile := setupLogger(fsSB)
+	logger, logFile := setupLogger(fs.Root())
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
 	if err != nil {
-		logger.Error().Err(fmt.Errorf("Another instance is already running (or port %d is in use): %w", *port, err)).Msg(log.NetworkManager.String())
+		logger.Error().Err(fmt.Errorf("another instance is already running (or port %d is in use): %w", *port, err)).Msg(log.NetworkManager.String())
 		os.Exit(1)
 	}
 
 	app := &app.Root{}
 	app.SetListener(listener)
 	app.SetLog(logger, logFile)
+	app.SetFS(fs)
 
 	defer func() {
 		if err := app.Close(); err != nil {

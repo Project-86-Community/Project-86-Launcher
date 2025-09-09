@@ -21,55 +21,22 @@
 
 package p86l
 
-import (
-	"errors"
-	"net"
-	"p86l/internal/log"
-)
+import "p86l/internal/file"
 
-type Model struct {
-	listener net.Listener
-	log      LogModel
-	file     FileModel
-
-	mode string
+type FileModel struct {
+	fs *file.Filesystem
 }
 
-// -- new --
-func (m *Model) Listener() net.Listener {
-	return m.listener
+func (f *FileModel) FS() *file.Filesystem {
+	return f.fs
 }
 
-func (m *Model) Log() *LogModel {
-	return &m.log
+func (f *FileModel) SetFS(fs *file.Filesystem) {
+	f.fs = fs
 }
 
-func (m *Model) File() *FileModel {
-	return &m.file
-}
+// -- common --
 
-func (m *Model) SetListener(listener net.Listener) {
-	m.listener = listener
-}
-
-// -- new - common --
-
-func (m *Model) Close() error {
-	return errors.Join(m.listener.Close(), m.Log().Close(), m.file.Close())
-}
-
-// -- Getters for Model --
-
-func (m *Model) Mode() string {
-	if m.mode == "" {
-		return "home"
-	}
-	return m.mode
-}
-
-// -- Setters for Model --
-
-func (m *Model) SetMode(mode string) {
-	m.Log().logger.Info().Str("Page", mode).Msg(log.AppManager.String())
-	m.mode = mode
+func (f *FileModel) Close() error {
+	return f.fs.Close()
 }
