@@ -32,9 +32,9 @@ import (
 type Home struct {
 	guigui.DefaultWidget
 
-	form                                         basicwidget.Form
-	background                                   basicwidget.Background
-	welcomeText, downloadedText, gameVersionText basicwidget.Text
+	background                                           basicwidget.Background
+	form                                                 basicwidget.Form
+	welcomeText, usernameText, downloadText, versionText basicwidget.Text
 
 	mainLayout layout.GridLayout
 }
@@ -46,26 +46,27 @@ func (h *Home) AppendChildWidgets(context *guigui.Context, appender *guigui.Chil
 
 func (h *Home) Build(context *guigui.Context) error {
 	h.welcomeText.SetValue("Welcome Test")
-	h.downloadedText.SetValue("5000 Downloads")
-	h.gameVersionText.SetValue("I have v15.15.15")
+	h.usernameText.SetValue("USER")
+	h.downloadText.SetValue("Downloaded")
+	h.versionText.SetValue("v15.15.15")
 
 	h.form.SetItems([]basicwidget.FormItem{
 		{
-			PrimaryWidget: &h.welcomeText,
+			PrimaryWidget:   &h.welcomeText,
+			SecondaryWidget: &h.usernameText,
 		},
 		{
-			PrimaryWidget: &h.downloadedText,
-		},
-		{
-			PrimaryWidget: &h.gameVersionText,
+			PrimaryWidget:   &h.downloadText,
+			SecondaryWidget: &h.versionText,
 		},
 	})
 
+	u := basicwidget.UnitSize(context)
 	h.mainLayout = layout.GridLayout{
-		Bounds: context.Bounds(h),
+		Bounds: context.Bounds(h).Inset(u / 2),
 		Heights: []layout.Size{
 			layout.FlexibleSize(2),
-			layout.FlexibleSize(1),
+			layout.FixedSize(h.form.Measure(context, guigui.FixedWidthConstraints(context.Bounds(h).Dx()-u)).Y + u/2),
 		},
 	}
 
@@ -73,11 +74,12 @@ func (h *Home) Build(context *guigui.Context) error {
 }
 
 func (h *Home) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
+	u := basicwidget.UnitSize(context)
 	switch widget {
 	case &h.background:
 		return h.mainLayout.CellBounds(0, 1)
 	case &h.form:
-		return h.mainLayout.CellBounds(0, 1)
+		return h.mainLayout.CellBounds(0, 1).Inset(u / 4)
 	}
 
 	return image.Rectangle{}
