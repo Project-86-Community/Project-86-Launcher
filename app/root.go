@@ -44,60 +44,17 @@ type Root struct {
 	guigui.DefaultWidget
 
 	backgroundImage basicwidget.Image
+	background      basicwidget.Background
 	sidebar         Sidebar
 	home            Home
+	play            Play
+	settings        Settings
+	about           About
 
-	model p86l.Model
-}
-
-func (r *Root) SetListener(listener net.Listener) {
-	r.model.SetListener(listener)
-}
-
-func (r *Root) SetLog(logger zerolog.Logger, logFile *os.File) {
-	log := r.model.Log()
-	log.SetLogger(logger)
-	log.SetLogFile(logFile)
-}
-
-func (r *Root) Model(key any) any {
-	switch key {
-	case modelKeyModel:
-		return &r.model
-	default:
-		return nil
-	}
-}
-
-func (r *Root) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	appender.AppendChildWidget(&r.backgroundImage)
-	appender.AppendChildWidget(&r.sidebar)
-	switch r.model.Mode() {
-	case "home":
-		appender.AppendChildWidget(&r.home)
-	}
-}
-
-func (r *Root) Build(context *guigui.Context) error {
-	r.backgroundImage.SetImage(assets.Banner)
-	r.handleBackgroundImage(context)
-
-	pages := []guigui.Widget{&r.home}
-
-	u := basicwidget.UnitSize(context)
-	gl := layout.GridLayout{
-		Bounds: context.Bounds(r),
-		Widths: []layout.Size{
-			layout.FixedSize(8 * u),
-			layout.FlexibleSize(1),
-		},
-	}
-	context.SetBounds(&r.sidebar, gl.CellBounds(0, 0), r)
-	for _, page := range pages {
-		context.SetBounds(page, gl.CellBounds(1, 0), r)
-	}
-
-	return nil
+	model                   p86l.Model
+	backgroundImageSize     image.Point
+	backgroundImagePosition image.Point
+	mainLayout              layout.GridLayout
 }
 
 func (r *Root) handleBackgroundImage(context *guigui.Context) {
@@ -128,8 +85,88 @@ func (r *Root) handleBackgroundImage(context *guigui.Context) {
 		yOffset = (windowHeight - newHeight) / 2
 	}
 
-	context.SetSize(&r.backgroundImage, image.Pt(newWidth, newHeight), r)
-	context.SetPosition(&r.backgroundImage, image.Pt(xOffset, yOffset))
+	r.backgroundImageSize = image.Pt(newWidth, newHeight)
+	r.backgroundImagePosition = image.Pt(xOffset, yOffset)
+}
+
+func (r *Root) SetListener(listener net.Listener) {
+	r.model.SetListener(listener)
+}
+
+func (r *Root) SetLog(logger zerolog.Logger, logFile *os.File) {
+	log := r.model.Log()
+	log.SetLogger(logger)
+	log.SetLogFile(logFile)
+}
+
+func (r *Root) Model(key any) any {
+	switch key {
+	case modelKeyModel:
+		return &r.model
+	default:
+		return nil
+	}
+}
+
+func (r *Root) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
+	appender.AppendChildWidget(&r.backgroundImage)
+	appender.AppendChildWidget(&r.sidebar)
+	if mode := r.model.Mode(); mode == "home" {
+		appender.AppendChildWidget(&r.home)
+	} else {
+		appender.AppendChildWidget(&r.background)
+		switch mode {
+		case "play":
+			appender.AppendChildWidget(&r.play)
+		case "settings":
+			appender.AppendChildWidget(&r.settings)
+		case "about":
+			appender.AppendChildWidget(&r.about)
+		}
+	}
+}
+
+func (r *Root) Build(context *guigui.Context) error {
+	r.backgroundImage.SetImage(assets.Banner)
+	r.handleBackgroundImage(context)
+	context.SetOpacity(&r.background, 0.9)
+
+	u := basicwidget.UnitSize(context)
+	r.mainLayout = layout.GridLayout{
+		Bounds: context.Bounds(r),
+		Widths: []layout.Size{
+			layout.FixedSize(8 * u),
+			layout.FlexibleSize(1),
+		},
+	}
+
+	return nil
+}
+
+func (r *Root) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
+	switch widget {
+	case &r.backgroundImage:
+		return image.Rect(
+			r.backgroundImagePosition.X,
+			r.backgroundImagePosition.Y,
+			r.backgroundImagePosition.X+r.backgroundImageSize.X,
+			r.backgroundImagePosition.Y+r.backgroundImageSize.Y,
+		)
+	case &r.background:
+		return r.mainLayout.CellBounds(1, 0)
+	case &r.sidebar:
+		return r.mainLayout.CellBounds(0, 0)
+	case &r.home:
+		return r.mainLayout.CellBounds(1, 0)
+	case &r.play:
+		return r.mainLayout.CellBounds(1, 0)
+	case &r.settings:
+		return r.mainLayout.CellBounds(1, 0)
+	case &r.about:
+		return r.mainLayout.CellBounds(1, 0)
+	}
+
+	return image.Rectangle{}
 }
 
 func (r *Root) Close() error {

@@ -22,6 +22,7 @@
 package app
 
 import (
+	"image"
 	"p86l"
 
 	"github.com/hajimehoshi/guigui"
@@ -44,18 +45,31 @@ func (s *Sidebar) Build(context *guigui.Context) error {
 	s.panel.SetBorder(basicwidget.PanelBorder{
 		End: true,
 	})
-	context.SetSize(&s.panelContent, context.ActualSize(s), s)
+	context.SetOpacity(&s.panel, 0.9)
+	s.panelContent.setSize(context.Bounds(s).Size())
 	s.panel.SetContent(&s.panelContent)
 
-	context.SetBounds(&s.panel, context.Bounds(s), s)
-
 	return nil
+}
+
+func (s *Sidebar) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
+	switch widget {
+	case &s.panel:
+		return context.Bounds(s)
+	}
+	return image.Rectangle{}
 }
 
 type sidebarContent struct {
 	guigui.DefaultWidget
 
 	list basicwidget.List[string]
+
+	size image.Point
+}
+
+func (s *sidebarContent) setSize(size image.Point) {
+	s.size = size
 }
 
 func (s *sidebarContent) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
@@ -98,7 +112,17 @@ func (s *sidebarContent) Build(context *guigui.Context) error {
 		model.SetMode(item.Value)
 	})
 
-	context.SetBounds(&s.list, context.Bounds(s), s)
-
 	return nil
+}
+
+func (s *sidebarContent) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
+	switch widget {
+	case &s.list:
+		return context.Bounds(s)
+	}
+	return image.Rectangle{}
+}
+
+func (s *sidebarContent) Measure(context *guigui.Context, constraints guigui.Constraints) image.Point {
+	return s.size
 }

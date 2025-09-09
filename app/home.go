@@ -22,6 +22,8 @@
 package app
 
 import (
+	"image"
+
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/layout"
@@ -33,6 +35,8 @@ type Home struct {
 	form                                         basicwidget.Form
 	background                                   basicwidget.Background
 	welcomeText, downloadedText, gameVersionText basicwidget.Text
+
+	mainLayout layout.GridLayout
 }
 
 func (h *Home) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
@@ -57,15 +61,24 @@ func (h *Home) Build(context *guigui.Context) error {
 		},
 	})
 
-	gl := layout.GridLayout{
+	h.mainLayout = layout.GridLayout{
 		Bounds: context.Bounds(h),
 		Heights: []layout.Size{
 			layout.FlexibleSize(2),
 			layout.FlexibleSize(1),
 		},
 	}
-	context.SetBounds(&h.background, gl.CellBounds(0, 1), h)
-	context.SetBounds(&h.form, gl.CellBounds(0, 1), h)
 
 	return nil
+}
+
+func (h *Home) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
+	switch widget {
+	case &h.background:
+		return h.mainLayout.CellBounds(0, 1)
+	case &h.form:
+		return h.mainLayout.CellBounds(0, 1)
+	}
+
+	return image.Rectangle{}
 }
