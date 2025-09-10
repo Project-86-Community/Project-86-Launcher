@@ -47,10 +47,12 @@ type Root struct {
 	backgroundImage basicwidget.Image
 	background      basicwidget.Background
 	sidebar         Sidebar
+	panelSettings   basicwidget.Panel
+	panelAbout      basicwidget.Panel
 	home            Home
 	play            Play
-	settings        Settings
-	about           About
+	settings        guigui.WidgetWithSize[*Settings]
+	about           guigui.WidgetWithSize[*About]
 
 	model                   p86l.Model
 	backgroundImageSize     image.Point
@@ -124,9 +126,9 @@ func (r *Root) AppendChildWidgets(context *guigui.Context, appender *guigui.Chil
 		case "play":
 			appender.AppendChildWidget(&r.play)
 		case "settings":
-			appender.AppendChildWidget(&r.settings)
+			appender.AppendChildWidget(&r.panelSettings)
 		case "about":
-			appender.AppendChildWidget(&r.about)
+			appender.AppendChildWidget(&r.panelAbout)
 		}
 	}
 }
@@ -137,6 +139,19 @@ func (r *Root) Build(context *guigui.Context) error {
 	context.SetOpacity(&r.background, 0.9)
 
 	u := basicwidget.UnitSize(context)
+	x := r.mainLayout.CellBounds(1, 0).Size().X
+
+	switch r.model.Mode() {
+	case "play":
+		//r.panel.SetContent(&r.play)
+	case "settings":
+		r.settings.SetFixedSize(image.Pt(x, r.settings.Widget().Overflow(context).Y))
+		r.panelSettings.SetContent(&r.settings)
+	case "about":
+		r.about.SetFixedSize(image.Pt(x, r.about.Widget().Overflow(context).Y))
+		r.panelAbout.SetContent(&r.about)
+	}
+
 	r.mainLayout = layout.GridLayout{
 		Bounds: context.Bounds(r),
 		Widths: []layout.Size{
@@ -161,13 +176,13 @@ func (r *Root) Layout(context *guigui.Context, widget guigui.Widget) image.Recta
 		return r.mainLayout.CellBounds(1, 0)
 	case &r.sidebar:
 		return r.mainLayout.CellBounds(0, 0)
+	case &r.panelSettings:
+		return r.mainLayout.CellBounds(1, 0)
+	case &r.panelAbout:
+		return r.mainLayout.CellBounds(1, 0)
 	case &r.home:
 		return r.mainLayout.CellBounds(1, 0)
 	case &r.play:
-		return r.mainLayout.CellBounds(1, 0)
-	case &r.settings:
-		return r.mainLayout.CellBounds(1, 0)
-	case &r.about:
 		return r.mainLayout.CellBounds(1, 0)
 	}
 

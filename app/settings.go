@@ -23,6 +23,7 @@ package app
 
 import (
 	"image"
+	"p86l"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -46,6 +47,10 @@ type Settings struct {
 	companyButton, launcherButton basicwidget.Button
 
 	mainLayout layout.GridLayout
+}
+
+func (s *Settings) Overflow(context *guigui.Context) image.Point {
+	return p86l.MergeRectangles(s.mainLayout.CellBounds(0, 0), s.mainLayout.CellBounds(0, 1)).Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
 }
 
 func (s *Settings) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {

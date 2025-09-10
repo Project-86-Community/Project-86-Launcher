@@ -23,6 +23,7 @@ package app
 
 import (
 	"image"
+	"p86l"
 	"p86l/assets"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -40,6 +41,10 @@ type About struct {
 	image1, image2             aboutIcon
 
 	mainLayout layout.GridLayout
+}
+
+func (a *About) Overflow(context *guigui.Context) image.Point {
+	return p86l.MergeRectangles(a.mainLayout.CellBounds(0, 0), a.mainLayout.CellBounds(0, 1), a.mainLayout.CellBounds(0, 2)).Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
 }
 
 func (a *About) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
@@ -76,6 +81,7 @@ func (a *About) Build(context *guigui.Context) error {
  along with this program.  If not, see <https://www.gnu.org/licenses/>.`)
 	a.text4.SetScale(0.8)
 	a.text4.SetAutoWrap(true)
+	a.text4.SetMultiline(true)
 
 	a.image1.setIcon(assets.LeadDeveloper)
 	a.image2.setIcon(assets.DevDeveloper)
