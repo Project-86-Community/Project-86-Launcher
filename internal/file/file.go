@@ -54,6 +54,7 @@ func mkdirAll(path string) error {
 
 type Filesystem struct {
 	root *os.Root
+	path string
 }
 
 func NewFilesystem(extra ...string) (*Filesystem, error) {
@@ -77,11 +78,15 @@ func NewFilesystem(extra ...string) (*Filesystem, error) {
 		return nil, fmt.Errorf("%w: %w", ErrRootInvalid, err)
 	}
 
-	return &Filesystem{root: root}, nil
+	return &Filesystem{root: root, path: companyPath}, nil
 }
 
 func (f *Filesystem) Root() *os.Root {
 	return f.root
+}
+
+func (f *Filesystem) Path() string {
+	return f.path
 }
 
 func (f *Filesystem) Remove(filePath string) error {
