@@ -36,10 +36,10 @@ type Play struct {
 	guigui.DefaultWidget
 
 	installButton, updateButton, playButton                   basicwidget.Button
+	background                                                basicwidget.Background
 	form                                                      basicwidget.Form
 	prereleaseText                                            basicwidget.Text
 	prereleaseToggle                                          basicwidget.Toggle
-	background                                                basicwidget.Background
 	changelogText                                             basicwidget.Text
 	websiteButton, githubButton, discordButton, patreonButton basicwidget.Button
 
@@ -48,13 +48,16 @@ type Play struct {
 	socialLayout layout.GridLayout
 }
 
+func (p *Play) Overflow(context *guigui.Context) image.Point {
+	return p86l.MergeRectangles(p.mainLayout.CellBounds(0, 0), p.mainLayout.CellBounds(0, 1), p.mainLayout.CellBounds(0, 2), p.mainLayout.CellBounds(0, 3)).Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
+}
+
 func (p *Play) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	appender.AppendChildWidget(&p.installButton)
 	appender.AppendChildWidget(&p.updateButton)
 	appender.AppendChildWidget(&p.playButton)
-	appender.AppendChildWidget(&p.form)
 	appender.AppendChildWidget(&p.background)
-	appender.AppendChildWidget(&p.changelogText)
+	appender.AppendChildWidget(&p.form)
 	appender.AppendChildWidget(&p.websiteButton)
 	appender.AppendChildWidget(&p.githubButton)
 	appender.AppendChildWidget(&p.discordButton)
@@ -68,14 +71,6 @@ func (p *Play) Build(context *guigui.Context) error {
 	p.updateButton.SetText("Update")
 	p.playButton.SetText("Play")
 
-	p.prereleaseText.SetValue("Enable Pre-release")
-	p.form.SetItems([]basicwidget.FormItem{
-		{
-			PrimaryWidget:   &p.prereleaseText,
-			SecondaryWidget: &p.prereleaseToggle,
-		},
-	})
-
 	p.changelogText.SetValue(`TEST
 
 	VER v15.15.15
@@ -83,6 +78,17 @@ func (p *Play) Build(context *guigui.Context) error {
 	GOOD`)
 	p.changelogText.SetAutoWrap(true)
 	p.changelogText.SetMultiline(true)
+
+	p.prereleaseText.SetValue("Enable Pre-release")
+	p.form.SetItems([]basicwidget.FormItem{
+		{
+			PrimaryWidget:   &p.prereleaseText,
+			SecondaryWidget: &p.prereleaseToggle,
+		},
+		{
+			PrimaryWidget: &p.changelogText,
+		},
+	})
 
 	p.websiteButton.SetOnDown(func() { model.Update().OpenURL(configs.Website) })
 	p.githubButton.SetOnDown(func() { model.Update().OpenURL(configs.Github) })
@@ -100,8 +106,7 @@ func (p *Play) Build(context *guigui.Context) error {
 		Heights: []layout.Size{
 			layout.FixedSize(u * 2),
 			layout.FixedSize(u * 2),
-			layout.FixedSize(int(float64(u) * 1.5)),
-			layout.FixedSize(p.changelogText.Measure(context, guigui.FixedWidthConstraints(context.Bounds(p).Dx()-u)).Y + u/2),
+			layout.FixedSize(p.form.Measure(context, guigui.FixedWidthConstraints(context.Bounds(p).Dx()-u)).Y + u/2),
 			layout.FixedSize(int(float64(u) * 1.5)),
 		},
 		RowGap: u / 2,
@@ -121,7 +126,7 @@ func (p *Play) Build(context *guigui.Context) error {
 		ColumnGap: u / 2,
 	}
 	p.socialLayout = layout.GridLayout{
-		Bounds: p.mainLayout.CellBounds(0, 4),
+		Bounds: p.mainLayout.CellBounds(0, 3),
 		Widths: []layout.Size{
 			layout.FlexibleSize(1),
 			layout.FixedSize(int(float64(u) * 1.5)),
@@ -144,12 +149,10 @@ func (p *Play) Layout(context *guigui.Context, widget guigui.Widget) image.Recta
 		return p.buttonLayout.CellBounds(2, 0)
 	case &p.playButton:
 		return p.buttonLayout.CellBounds(3, 0)
-	case &p.form:
-		return p.mainLayout.CellBounds(0, 2)
 	case &p.background:
-		return p.mainLayout.CellBounds(0, 3)
-	case &p.changelogText:
-		return p.mainLayout.CellBounds(0, 3).Inset(basicwidget.UnitSize(context) / 4)
+		return p.mainLayout.CellBounds(0, 2)
+	case &p.form:
+		return p.mainLayout.CellBounds(0, 2).Inset(basicwidget.UnitSize(context) / 4)
 	case &p.websiteButton:
 		return p.socialLayout.CellBounds(1, 0)
 	case &p.githubButton:

@@ -47,10 +47,11 @@ type Root struct {
 	backgroundImage basicwidget.Image
 	background      basicwidget.Background
 	sidebar         Sidebar
+	panelPlay       basicwidget.Panel
 	panelSettings   basicwidget.Panel
 	panelAbout      basicwidget.Panel
 	home            Home
-	play            Play
+	play            guigui.WidgetWithSize[*Play]
 	settings        guigui.WidgetWithSize[*Settings]
 	about           guigui.WidgetWithSize[*About]
 
@@ -128,7 +129,7 @@ func (r *Root) AppendChildWidgets(context *guigui.Context, appender *guigui.Chil
 		appender.AppendChildWidget(&r.background)
 		switch mode {
 		case "play":
-			appender.AppendChildWidget(&r.play)
+			appender.AppendChildWidget(&r.panelPlay)
 		case "settings":
 			appender.AppendChildWidget(&r.panelSettings)
 		case "about":
@@ -147,7 +148,8 @@ func (r *Root) Build(context *guigui.Context) error {
 
 	switch r.model.Mode() {
 	case "play":
-		//r.panel.SetContent(&r.play)
+		r.play.SetFixedSize(image.Pt(x, r.play.Widget().Overflow(context).Y))
+		r.panelPlay.SetContent(&r.play)
 	case "settings":
 		r.settings.SetFixedSize(image.Pt(x, r.settings.Widget().Overflow(context).Y))
 		r.panelSettings.SetContent(&r.settings)
@@ -180,13 +182,13 @@ func (r *Root) Layout(context *guigui.Context, widget guigui.Widget) image.Recta
 		return r.mainLayout.CellBounds(1, 0)
 	case &r.sidebar:
 		return r.mainLayout.CellBounds(0, 0)
+	case &r.panelPlay:
+		return r.mainLayout.CellBounds(1, 0)
 	case &r.panelSettings:
 		return r.mainLayout.CellBounds(1, 0)
 	case &r.panelAbout:
 		return r.mainLayout.CellBounds(1, 0)
 	case &r.home:
-		return r.mainLayout.CellBounds(1, 0)
-	case &r.play:
 		return r.mainLayout.CellBounds(1, 0)
 	}
 
