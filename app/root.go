@@ -54,7 +54,7 @@ type Root struct {
 	settings        guigui.WidgetWithSize[*Settings]
 	about           guigui.WidgetWithSize[*About]
 
-	model                   p86l.Model
+	model                   *p86l.Model
 	backgroundImageSize     image.Point
 	backgroundImagePosition image.Point
 	mainLayout              layout.GridLayout
@@ -92,11 +92,15 @@ func (r *Root) handleBackgroundImage(context *guigui.Context) {
 	r.backgroundImagePosition = image.Pt(xOffset, yOffset)
 }
 
+func (r *Root) SetModel(model *p86l.Model) {
+	r.model = model
+}
+
 func (r *Root) SetListener(listener net.Listener) {
 	r.model.SetListener(listener)
 }
 
-func (r *Root) SetLog(logger zerolog.Logger, logFile *os.File) {
+func (r *Root) SetLog(logger *zerolog.Logger, logFile *os.File) {
 	log := r.model.Log()
 	log.SetLogger(logger)
 	log.SetLogFile(logFile)
@@ -109,7 +113,7 @@ func (r *Root) SetFS(fs *file.Filesystem) {
 func (r *Root) Model(key any) any {
 	switch key {
 	case modelKeyModel:
-		return &r.model
+		return r.model
 	default:
 		return nil
 	}

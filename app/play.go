@@ -23,7 +23,9 @@ package app
 
 import (
 	"image"
+	"p86l"
 	"p86l/assets"
+	"p86l/configs"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -60,6 +62,8 @@ func (p *Play) AppendChildWidgets(context *guigui.Context, appender *guigui.Chil
 }
 
 func (p *Play) Build(context *guigui.Context) error {
+	model := context.Model(p, modelKeyModel).(*p86l.Model)
+
 	p.installButton.SetText("Install")
 	p.updateButton.SetText("Update")
 	p.playButton.SetText("Play")
@@ -79,6 +83,11 @@ func (p *Play) Build(context *guigui.Context) error {
 	GOOD`)
 	p.changelogText.SetAutoWrap(true)
 	p.changelogText.SetMultiline(true)
+
+	p.websiteButton.SetOnDown(func() { model.Update().OpenURL(configs.Website) })
+	p.githubButton.SetOnDown(func() { model.Update().OpenURL(configs.Github) })
+	p.discordButton.SetOnDown(func() { model.Update().OpenURL(configs.Discord) })
+	p.patreonButton.SetOnDown(func() { model.Update().OpenURL(configs.Patreon) })
 
 	p.websiteButton.SetIcon(assets.IE)
 	p.githubButton.SetIcon(assets.Github)

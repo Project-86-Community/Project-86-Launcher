@@ -22,37 +22,31 @@
 package p86l
 
 import (
-	"os"
+	"p86l/internal/log"
 
+	"github.com/pkg/browser"
 	"github.com/rs/zerolog"
 )
 
-type LogModel struct {
-	logger  *zerolog.Logger
-	logFile *os.File
+type UpdateModel struct {
+	urlChan chan string
 }
 
-func (l *LogModel) Logger() *zerolog.Logger {
-	return l.logger
-}
-
-func (l *LogModel) LogFile() *os.File {
-	return l.logFile
-}
-
-func (l *LogModel) SetLogger(logger *zerolog.Logger) {
-	l.logger = logger
-}
-
-func (l *LogModel) SetLogFile(logFile *os.File) {
-	l.logFile = logFile
-}
-
-// -- common --
-
-func (l *LogModel) Close() error {
-	if l.logFile != nil {
-		return l.logFile.Close()
+func (u *UpdateModel) OpenURL(url string) {
+	select {
+	case u.urlChan <- url:
+	default:
 	}
+}
+
+func (u *UpdateModel) Run(logger *zerolog.Logger) error {
+	go func() {
+		for openUrl := range u.urlChan {
+			if err := browser.OpenURL(openUrl); err != nil {
+				logger.Warn().Str("openURL", openUrl).Msg(log.ErrorManager.String())
+			}
+		}
+	}()
+
 	return nil
 }

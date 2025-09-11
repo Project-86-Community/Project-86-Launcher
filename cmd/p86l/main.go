@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"p86l"
 	"p86l/app"
 	"p86l/configs"
 	"p86l/internal/file"
@@ -41,7 +42,7 @@ import (
 
 var VERSION = "dev"
 
-func setupLogger(fsSB *os.Root) (zerolog.Logger, *os.File) {
+func setupLogger(fsSB *os.Root) (*zerolog.Logger, *os.File) {
 	switch VERSION {
 	case "dev":
 		output := zerolog.ConsoleWriter{
@@ -49,7 +50,7 @@ func setupLogger(fsSB *os.Root) (zerolog.Logger, *os.File) {
 			TimeFormat: time.RFC3339,
 		}
 		logger := zerolog.New(output).With().Timestamp().Logger()
-		return logger, nil
+		return &logger, nil
 	default:
 		logFile, err := log.NewLogFile(fsSB, filepath.Join("Project-86-Launcher", "logs"))
 		if err != nil {
@@ -59,7 +60,7 @@ func setupLogger(fsSB *os.Root) (zerolog.Logger, *os.File) {
 
 		multiWriter := zerolog.MultiLevelWriter(os.Stdout, logFile)
 		logger := zerolog.New(multiWriter).With().Timestamp().Logger()
-		return logger, logFile
+		return &logger, logFile
 	}
 }
 
@@ -81,10 +82,11 @@ func main() {
 	}
 
 	app := &app.Root{}
+	model := &p86l.Model{}
+	app.SetModel(model)
 	app.SetListener(listener)
 	app.SetLog(logger, logFile)
 	app.SetFS(fs)
-
 	defer func() {
 		if err := app.Close(); err != nil {
 			fmt.Println(err)
@@ -95,6 +97,7 @@ func main() {
 		Title:         configs.AppTitle,
 		WindowMinSize: configs.AppWindowMinSize,
 	}
+	model.Update().Run(logger)
 	if err := guigui.Run(app, op); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
