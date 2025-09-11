@@ -31,6 +31,7 @@ type Model struct {
 	listener net.Listener
 	log      LogModel
 	file     FileModel
+	cache    CacheModel
 
 	mode string
 }
@@ -47,6 +48,12 @@ func (m *Model) Log() *LogModel {
 func (m *Model) File() *FileModel {
 	return &m.file
 }
+
+func (m *Model) Cache() *CacheModel {
+	return &m.cache
+}
+
+// --
 
 func (m *Model) SetListener(listener net.Listener) {
 	m.listener = listener

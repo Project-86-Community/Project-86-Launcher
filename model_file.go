@@ -38,12 +38,14 @@ func (f *FileModel) FS() *file.Filesystem {
 	return f.fs
 }
 
-func (f *FileModel) SetFS(fs *file.Filesystem) {
-	f.fs = fs
-}
+//
 
 func (f *FileModel) SetLogger(logger *zerolog.Logger) {
 	f.logger = logger
+}
+
+func (f *FileModel) SetFS(fs *file.Filesystem) {
+	f.fs = fs
 }
 
 // -- common --
