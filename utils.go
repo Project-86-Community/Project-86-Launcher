@@ -21,7 +21,27 @@
 
 package p86l
 
-import "image"
+import (
+	"image"
+	"os"
+	"runtime"
+	"strings"
+)
+
+func GetUsername() string {
+	var username string
+	switch runtime.GOOS {
+	case "windows":
+		username = os.Getenv("USERNAME")
+	default:
+		username = os.Getenv("USER")
+	}
+
+	if username == "" {
+		username = os.Getenv("LOGNAME")
+	}
+	return strings.TrimSpace(username)
+}
 
 func MergeRectangles(rects ...image.Rectangle) image.Rectangle {
 	if len(rects) == 0 {
