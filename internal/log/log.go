@@ -46,6 +46,26 @@ func (m Manager) String() string {
 	return list[m] + "Manager"
 }
 
+// -- errors --
+
+var (
+	ErrMkdirAllInvalid    = errors.New("failed to create new folder")
+	ErrCompanyPathAppData = errors.New("failed to get appdata")
+	ErrRootInvalid        = errors.New("failed to open root")
+
+	ErrFileRemove = errors.New("failed to remove file")
+	ErrFileLoad   = errors.New("failed to load file")
+	ErrFileSave   = errors.New("failed to save file")
+
+	ErrCacheRateLimit = errors.New("failed to get ratelimit")
+	ErrCacheLatest    = errors.New("failed to get latest cache")
+
+	ErrRepoEmpty        = errors.New("repo is empty")
+	ErrRepoBodyEmpty    = errors.New("body is empty")
+	ErrRepoHTMLURLEmpty = errors.New("htmlurl is empty")
+	ErrRepoAssetsEmpty  = errors.New("assets are empty")
+)
+
 // -- utils --
 
 func NewLogFile(root *os.Root, path string) (*os.File, error) {

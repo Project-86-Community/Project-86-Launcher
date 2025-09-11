@@ -27,13 +27,14 @@ import (
 	"fmt"
 	"os"
 	"p86l/configs"
+	"p86l/internal/log"
 	"path/filepath"
 )
 
 func GetCompanyPath(extra ...string) (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("%w: %w", ErrCompanyPathAppData, err)
+		return "", fmt.Errorf("%w: %w", log.ErrCompanyPathAppData, err)
 	}
 	companyPath := filepath.Join(home, ".local", "share", configs.CompanyName)
 	// Used for testing only!

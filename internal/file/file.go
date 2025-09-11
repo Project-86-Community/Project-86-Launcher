@@ -27,16 +27,9 @@ import (
 	"io"
 	"io/fs"
 	"os"
-)
-
-var (
-	ErrMkdirAllInvalid    = errors.New("failed to create new folder")
-	ErrCompanyPathAppData = errors.New("failed to get appdata")
-	ErrRootInvalid        = errors.New("failed to open root")
-
-	ErrFileRemove = errors.New("failed to remove file")
-	ErrFileLoad   = errors.New("failed to load file")
-	ErrFileSave   = errors.New("failed to save file")
+	"p86l/configs"
+	"p86l/internal/log"
+	"path/filepath"
 )
 
 // Used to make folders.
@@ -47,7 +40,7 @@ func mkdirAll(path string) error {
 	}
 	err = os.MkdirAll(path, 0755)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrMkdirAllInvalid, err)
+		return fmt.Errorf("%w: %w", log.ErrMkdirAllInvalid, err)
 	}
 	return nil
 }
@@ -75,7 +68,11 @@ func NewFilesystem(extra ...string) (*Filesystem, error) {
 
 	root, err := os.OpenRoot(companyPath)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrRootInvalid, err)
+		return nil, fmt.Errorf("%w: %w", log.ErrRootInvalid, err)
+	}
+
+	if err := mkdirAll(filepath.Join(companyPath, configs.AppName)); err != nil {
+		return nil, fmt.Errorf("%w: %w", log.ErrMkdirAllInvalid, err)
 	}
 
 	return &Filesystem{root: root, path: companyPath}, nil
@@ -92,31 +89,28 @@ func (f *Filesystem) Path() string {
 func (f *Filesystem) Remove(filePath string) error {
 	err := f.root.Remove(filePath)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrFileRemove, err)
+		return fmt.Errorf("%w: %w", log.ErrFileRemove, err)
 	}
 	return nil
 }
 
 func (f *Filesystem) Exist(filePath string) bool {
 	_, err := f.root.Stat(filePath)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (f *Filesystem) Load(filePath string) ([]byte, error) {
 	loadFile, err := f.root.Open(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrFileLoad, err)
+		return nil, fmt.Errorf("%w: %w", log.ErrFileLoad, err)
 	}
 	fileBytes, err := io.ReadAll(loadFile)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrFileLoad, err)
+		return nil, fmt.Errorf("%w: %w", log.ErrFileLoad, err)
 	}
 	err = loadFile.Close()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrFileLoad, err)
+		return nil, fmt.Errorf("%w: %w", log.ErrFileLoad, err)
 	}
 	return fileBytes, nil
 }
@@ -124,15 +118,15 @@ func (f *Filesystem) Load(filePath string) ([]byte, error) {
 func (f *Filesystem) Save(filePath string, fileBytes []byte) error {
 	saveFile, err := f.root.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrFileSave, err)
+		return fmt.Errorf("%w: %w", log.ErrFileSave, err)
 	}
 	_, err = saveFile.Write(fileBytes)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrFileSave, err)
+		return fmt.Errorf("%w: %w", log.ErrFileSave, err)
 	}
 	err = saveFile.Close()
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrFileSave, err)
+		return fmt.Errorf("%w: %w", log.ErrFileSave, err)
 	}
 	return nil
 }

@@ -25,13 +25,14 @@ import (
 	"fmt"
 	"os"
 	"p86l/configs"
+	"p86l/internal/log"
 	"path/filepath"
 )
 
 func GetCompanyPath(extra ...string) (string, error) {
 	appData := os.Getenv("APPDATA")
 	if appData == "" {
-		return "", ErrCompanyPathAppData
+		return "", log.ErrCompanyPathAppData
 	}
 	companyPath := filepath.Join(appData, configs.CompanyName)
 	// Used for testing only!
