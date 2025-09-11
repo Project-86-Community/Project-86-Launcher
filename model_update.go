@@ -39,7 +39,7 @@ func (u *UpdateModel) OpenURL(url string) {
 	}
 }
 
-func (u *UpdateModel) Run(logger *zerolog.Logger) error {
+func (u *UpdateModel) Run(logger *zerolog.Logger) {
 	go func() {
 		for openUrl := range u.urlChan {
 			if err := browser.OpenURL(openUrl); err != nil {
@@ -47,6 +47,4 @@ func (u *UpdateModel) Run(logger *zerolog.Logger) error {
 			}
 		}
 	}()
-
-	return nil
 }
