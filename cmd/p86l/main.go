@@ -34,6 +34,7 @@ import (
 	"p86l/internal/file"
 	"p86l/internal/log"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/hajimehoshi/guigui"
@@ -50,6 +51,11 @@ func setupLogger(fsSB *os.Root) (*zerolog.Logger, *os.File) {
 			TimeFormat: time.RFC3339,
 		}
 		logger := zerolog.New(output).With().Timestamp().Logger()
+		for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
+			if token != "log" {
+				zerolog.SetGlobalLevel(zerolog.Disabled)
+			}
+		}
 		return &logger, nil
 	default:
 		logFile, err := log.NewLogFile(fsSB, filepath.Join("Project-86-Launcher", "logs"))
@@ -83,14 +89,17 @@ func main() {
 
 	model := &p86l.Model{}
 	model.SetListener(listener)
-	model.SetMode("home")
 	model.Log().SetLogger(logger)
 	model.Log().SetLogFile(logFile)
 	model.File().SetFS(fs)
 	model.File().SetLogger(logger)
+	model.Cache().SetLogger(logger)
+	model.SetMode("home")
 
+	model.Cache().Start()
 	app := &app.Root{}
 	app.SetModel(model)
+
 	defer func() {
 		if err := app.Close(); err != nil {
 			fmt.Println(err)
