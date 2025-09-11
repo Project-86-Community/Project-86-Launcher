@@ -23,6 +23,7 @@ package app
 
 import (
 	"image"
+	"p86l"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -46,7 +47,7 @@ func (h *Home) AppendChildWidgets(context *guigui.Context, appender *guigui.Chil
 
 func (h *Home) Build(context *guigui.Context) error {
 	h.welcomeText.SetValue("Welcome Test")
-	h.usernameText.SetValue("USER")
+	h.usernameText.SetValue(p86l.GetUsername())
 	h.downloadText.SetValue("Downloaded")
 	h.versionText.SetValue("v15.15.15")
 

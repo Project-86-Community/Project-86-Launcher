@@ -40,7 +40,7 @@ type Play struct {
 	form                                                      basicwidget.Form
 	prereleaseText                                            basicwidget.Text
 	prereleaseToggle                                          basicwidget.Toggle
-	changelogText                                             basicwidget.Text
+	changelogText                                             guigui.WidgetWithSize[*basicwidget.Text]
 	websiteButton, githubButton, discordButton, patreonButton basicwidget.Button
 
 	mainLayout   layout.GridLayout
@@ -71,13 +71,13 @@ func (p *Play) Build(context *guigui.Context) error {
 	p.updateButton.SetText("Update")
 	p.playButton.SetText("Play")
 
-	p.changelogText.SetValue(`TEST
-
-	VER v15.15.15
-
-	GOOD`)
-	p.changelogText.SetAutoWrap(true)
-	p.changelogText.SetMultiline(true)
+	if cacheData := model.Cache().Data(); cacheData != nil && cacheData.Repo != nil {
+		p.changelogText.Widget().SetValue(cacheData.Repo.GetBody())
+	}
+	p.changelogText.Widget().SetAutoWrap(true)
+	p.changelogText.Widget().SetMultiline(true)
+	p.changelogText.Widget().SetEditable(false)
+	p.changelogText.SetFixedWidth(p.mainLayout.CellBounds(0, 2).Inset(basicwidget.UnitSize(context) / 4).Size().X)
 
 	p.prereleaseText.SetValue("Enable Pre-release")
 	p.form.SetItems([]basicwidget.FormItem{

@@ -23,16 +23,12 @@ package app
 
 import (
 	"image"
-	"net"
-	"os"
 	"p86l"
 	"p86l/assets"
-	"p86l/internal/file"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/layout"
-	"github.com/rs/zerolog"
 )
 
 type modelKey int
@@ -95,20 +91,6 @@ func (r *Root) handleBackgroundImage(context *guigui.Context) {
 
 func (r *Root) SetModel(model *p86l.Model) {
 	r.model = model
-}
-
-func (r *Root) SetListener(listener net.Listener) {
-	r.model.SetListener(listener)
-}
-
-func (r *Root) SetLog(logger *zerolog.Logger, logFile *os.File) {
-	log := r.model.Log()
-	log.SetLogger(logger)
-	log.SetLogFile(logFile)
-}
-
-func (r *Root) SetFS(fs *file.Filesystem) {
-	r.model.File().SetFS(fs)
 }
 
 func (r *Root) Model(key any) any {

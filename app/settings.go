@@ -36,11 +36,12 @@ type Settings struct {
 
 	background basicwidget.Background
 
-	form1                                 basicwidget.Form
-	languageText, darkModeText, scaleText basicwidget.Text
-	languageDropdownList                  basicwidget.DropdownList[language.Tag]
-	darkModeToggle                        basicwidget.Toggle
-	scaleSegmentedControl                 basicwidget.SegmentedControl[float64]
+	form1                                                     basicwidget.Form
+	languageText, darkModeText, scaleText, rememberWindowText basicwidget.Text
+	languageDropdownList                                      basicwidget.DropdownList[language.Tag]
+	darkModeToggle                                            basicwidget.Toggle
+	scaleSegmentedControl                                     basicwidget.SegmentedControl[float64]
+	rememberWindowToggle                                      basicwidget.Toggle
 
 	form2                         basicwidget.Form
 	companyText, launcherText     basicwidget.Text
@@ -65,6 +66,7 @@ func (s *Settings) Build(context *guigui.Context) error {
 	s.languageText.SetValue("Language")
 	s.darkModeText.SetValue("Use darkmode")
 	s.scaleText.SetValue("Scale")
+	s.rememberWindowText.SetValue("Remember window size & position")
 
 	s.languageDropdownList.SetItems([]basicwidget.DropdownListItem[language.Tag]{
 		{
@@ -156,6 +158,10 @@ func (s *Settings) Build(context *guigui.Context) error {
 		{
 			PrimaryWidget:   &s.scaleText,
 			SecondaryWidget: &s.scaleSegmentedControl,
+		},
+		{
+			PrimaryWidget:   &s.rememberWindowText,
+			SecondaryWidget: &s.rememberWindowToggle,
 		},
 	}
 
