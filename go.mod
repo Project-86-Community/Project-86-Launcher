@@ -7,6 +7,7 @@ require (
 	github.com/hajimehoshi/guigui v0.0.0-20250907144934-cfbdfdb42777
 	github.com/kisielk/errcheck v1.9.0
 	github.com/rs/zerolog v1.34.0
+	golang.org/x/text v0.28.0
 	golang.org/x/tools v0.36.0
 )
 
@@ -22,12 +23,10 @@ require (
 	github.com/jezek/xgb v1.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/image v0.30.0 // indirect
 	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
 	howett.net/plist v1.0.1 // indirect
 )

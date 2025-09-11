@@ -21,10 +21,17 @@
 
 package p86l
 
-import "p86l/internal/file"
+import (
+	"p86l/internal/file"
+	"p86l/internal/log"
+	"p86l/internal/open"
+
+	"github.com/rs/zerolog"
+)
 
 type FileModel struct {
-	fs *file.Filesystem
+	logger *zerolog.Logger
+	fs     *file.Filesystem
 }
 
 func (f *FileModel) FS() *file.Filesystem {
@@ -35,7 +42,17 @@ func (f *FileModel) SetFS(fs *file.Filesystem) {
 	f.fs = fs
 }
 
+func (f *FileModel) SetLogger(logger *zerolog.Logger) {
+	f.logger = logger
+}
+
 // -- common --
+
+func (f *FileModel) Open(input string) {
+	if err := open.Open(input); err != nil {
+		f.logger.Warn().Str("FileModel", "Open").Err(err).Msg(log.ErrorManager.String())
+	}
+}
 
 func (f *FileModel) Close() error {
 	return f.fs.Close()

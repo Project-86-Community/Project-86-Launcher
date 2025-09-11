@@ -81,12 +81,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	app := &app.Root{}
 	model := &p86l.Model{}
+	model.SetListener(listener)
+	model.SetMode("home")
+	model.Log().SetLogger(logger)
+	model.Log().SetLogFile(logFile)
+	model.File().SetFS(fs)
+	model.File().SetLogger(logger)
+
+	app := &app.Root{}
 	app.SetModel(model)
-	app.SetListener(listener)
-	app.SetLog(logger, logFile)
-	app.SetFS(fs)
 	defer func() {
 		if err := app.Close(); err != nil {
 			fmt.Println(err)
@@ -97,7 +101,6 @@ func main() {
 		Title:         configs.AppTitle,
 		WindowMinSize: configs.AppWindowMinSize,
 	}
-	model.Update().Run(logger)
 	if err := guigui.Run(app, op); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

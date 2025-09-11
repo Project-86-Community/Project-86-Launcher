@@ -60,6 +60,8 @@ func (s *Settings) AppendChildWidgets(context *guigui.Context, appender *guigui.
 }
 
 func (s *Settings) Build(context *guigui.Context) error {
+	model := context.Model(s, modelKeyModel).(*p86l.Model)
+
 	s.languageText.SetValue("Language")
 	s.darkModeText.SetValue("Use darkmode")
 	s.scaleText.SetValue("Scale")
@@ -157,6 +159,7 @@ func (s *Settings) Build(context *guigui.Context) error {
 		},
 	}
 
+	s.companyButton.SetOnDown(func() { model.File().Open(model.File().FS().Path()) })
 	s.companyText.SetValue("Open 86-Project Folder")
 	s.launcherText.SetValue("Open launcher Folder")
 	s.companyButton.SetText("Open")

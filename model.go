@@ -31,7 +31,6 @@ type Model struct {
 	listener net.Listener
 	log      LogModel
 	file     FileModel
-	update   *UpdateModel
 
 	mode string
 }
@@ -47,15 +46,6 @@ func (m *Model) Log() *LogModel {
 
 func (m *Model) File() *FileModel {
 	return &m.file
-}
-
-func (m *Model) Update() *UpdateModel {
-	if m.update == nil {
-		m.update = &UpdateModel{
-			urlChan: make(chan string, 10),
-		}
-	}
-	return m.update
 }
 
 func (m *Model) SetListener(listener net.Listener) {

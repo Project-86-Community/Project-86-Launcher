@@ -90,10 +90,10 @@ func (p *Play) Build(context *guigui.Context) error {
 		},
 	})
 
-	p.websiteButton.SetOnDown(func() { model.Update().OpenURL(configs.Website) })
-	p.githubButton.SetOnDown(func() { model.Update().OpenURL(configs.Github) })
-	p.discordButton.SetOnDown(func() { model.Update().OpenURL(configs.Discord) })
-	p.patreonButton.SetOnDown(func() { model.Update().OpenURL(configs.Patreon) })
+	p.websiteButton.SetOnDown(func() { model.File().Open(configs.Website) })
+	p.githubButton.SetOnDown(func() { model.File().Open(configs.Github) })
+	p.discordButton.SetOnDown(func() { model.File().Open(configs.Discord) })
+	p.patreonButton.SetOnDown(func() { model.File().Open(configs.Patreon) })
 
 	p.websiteButton.SetIcon(assets.IE)
 	p.githubButton.SetIcon(assets.Github)
