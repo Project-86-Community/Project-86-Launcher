@@ -41,7 +41,7 @@ func GetCompanyPath(extra ...string) (string, error) {
 	if len(extra) == 1 && extra[0] != "" {
 		companyPath = fmt.Sprintf("%s_%s", companyPath, extra[0])
 	}
-	if err := mkdirAll(companyPath); err != nil {
+	if err := mkdirAll(filepath.Join(companyPath, configs.AppName, configs.FolderLogs)); err != nil {
 		return "", err
 	}
 	return companyPath, nil

@@ -27,9 +27,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"p86l/configs"
 	"p86l/internal/log"
-	"path/filepath"
 )
 
 // Used to make folders.
@@ -69,10 +67,6 @@ func NewFilesystem(extra ...string) (*Filesystem, error) {
 	root, err := os.OpenRoot(companyPath)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", log.ErrRootInvalid, err)
-	}
-
-	if err := mkdirAll(filepath.Join(companyPath, configs.AppName)); err != nil {
-		return nil, fmt.Errorf("%w: %w", log.ErrMkdirAllInvalid, err)
 	}
 
 	return &Filesystem{root: root, path: companyPath}, nil
