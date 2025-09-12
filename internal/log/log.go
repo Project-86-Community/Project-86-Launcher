@@ -57,13 +57,18 @@ var (
 	ErrFileLoad   = errors.New("failed to load file")
 	ErrFileSave   = errors.New("failed to save file")
 
+	ErrGithubRequestNew       = errors.New("failed to create new request")
+	ErrGithubRequestDo        = errors.New("failed to execute request")
+	ErrGithubRequestStatus    = errors.New("github api returned status")
+	ErrGithubRequestBodyRead  = errors.New("reading body failed")
+	ErrGithubRequestBodyClose = errors.New("failed to close body")
+
 	ErrCacheRateLimit = errors.New("failed to get ratelimit")
 	ErrCacheLatest    = errors.New("failed to get latest cache")
 
-	ErrRepoEmpty        = errors.New("repo is empty")
-	ErrRepoBodyEmpty    = errors.New("body is empty")
-	ErrRepoHTMLURLEmpty = errors.New("htmlurl is empty")
-	ErrRepoAssetsEmpty  = errors.New("assets are empty")
+	ErrRepoEmpty       = errors.New("repo is empty")
+	ErrRepoBodyEmpty   = errors.New("body is empty")
+	ErrRepoAssetsEmpty = errors.New("assets are empty")
 )
 
 // -- utils --
