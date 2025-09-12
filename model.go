@@ -33,10 +33,12 @@ type Model struct {
 	file     FileModel
 	cache    CacheModel
 
-	mode string
+	mode          string
+	usePreRelease bool
 }
 
-// -- new --
+// -- Getters for Model --
+
 func (m *Model) Listener() net.Listener {
 	return m.listener
 }
@@ -53,20 +55,6 @@ func (m *Model) Cache() *CacheModel {
 	return &m.cache
 }
 
-// --
-
-func (m *Model) SetListener(listener net.Listener) {
-	m.listener = listener
-}
-
-// -- new - common --
-
-func (m *Model) Close() error {
-	return errors.Join(m.listener.Close(), m.Log().Close(), m.file.Close())
-}
-
-// -- Getters for Model --
-
 func (m *Model) Mode() string {
 	if m.mode == "" {
 		return "home"
@@ -74,9 +62,27 @@ func (m *Model) Mode() string {
 	return m.mode
 }
 
+func (m *Model) UsePreRelease() bool {
+	return m.usePreRelease
+}
+
 // -- Setters for Model --
+
+func (m *Model) SetListener(listener net.Listener) {
+	m.listener = listener
+}
 
 func (m *Model) SetMode(mode string) {
 	m.Log().logger.Info().Str("Page", mode).Msg(log.AppManager.String())
 	m.mode = mode
+}
+
+func (m *Model) SetUsePreRelease(value bool) {
+	m.usePreRelease = value
+}
+
+// -- common --
+
+func (m *Model) Close() error {
+	return errors.Join(m.listener.Close(), m.Log().Close(), m.file.Close())
 }

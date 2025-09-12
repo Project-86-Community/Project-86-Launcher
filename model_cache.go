@@ -25,28 +25,24 @@ import (
 	"context"
 	"fmt"
 	"p86l/configs"
+	"p86l/internal/github"
 	"p86l/internal/log"
 	"time"
 
-	"github.com/google/go-github/v74/github"
 	"github.com/rs/zerolog"
 )
 
 type CacheData struct {
-	RateLimit *github.RateLimits        `json:"ratelimit"`
-	Repo      *github.RepositoryRelease `json:"repo"`
-	PreRepo   *github.RepositoryRelease `json:"prerelease_repo"`
+	RateLimit2 *github.RateLimitCore  `json:"ratelimit_2"`
+	Releases   *github.LatestReleases `json:"releases"`
 }
 
 func (c *CacheData) Validate(ghRepo *github.RepositoryRelease) error {
 	if ghRepo == nil {
 		return log.ErrRepoEmpty
 	}
-	if ghRepo.GetBody() == "" {
+	if ghRepo.Body == "" {
 		return log.ErrRepoBodyEmpty
-	}
-	if ghRepo.GetHTMLURL() == "" {
-		return log.ErrRepoHTMLURLEmpty
 	}
 	if len(ghRepo.Assets) < 1 {
 		return log.ErrRepoAssetsEmpty
@@ -56,7 +52,9 @@ func (c *CacheData) Validate(ghRepo *github.RepositoryRelease) error {
 }
 
 type CacheModel struct {
-	logger    *zerolog.Logger
+	logger *zerolog.Logger
+	client *github.Client
+
 	data      *CacheData
 	expiresAt time.Time
 	onRefresh func(*CacheData)
@@ -64,8 +62,19 @@ type CacheModel struct {
 
 // -- Getters for CacheModel --
 
+func (c *CacheModel) Client() *github.Client {
+	if c.client == nil {
+		c.client = github.NewClient(github.Config{})
+	}
+	return c.client
+}
+
 func (c *CacheModel) Data() *CacheData {
 	return c.data
+}
+
+func (c *CacheModel) ExpiresAt() time.Time {
+	return c.expiresAt
 }
 
 // func (c *CacheModel) Load(fs *file.Filesystem) error {
@@ -105,23 +114,22 @@ func (c *CacheModel) SetData(data *CacheData) {
 // -- common --
 
 func (c *CacheModel) fetchData() (*CacheData, error) {
-	githubClient := github.NewClient(nil)
 	ctx1 := context.Background()
 	ctx2 := context.Background()
 
-	limit, _, err := githubClient.RateLimit.Get(ctx1)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", log.ErrCacheRateLimit, err)
-	}
-
-	release, _, err := githubClient.Repositories.GetLatestRelease(ctx2, configs.RepoOwner, configs.RepoName)
+	release, err := c.Client().GetLatestReleases(ctx1, configs.RepoOwner, configs.RepoName)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", log.ErrCacheLatest, err)
 	}
 
+	ratelimit, err := c.Client().GetRateLimit(ctx2)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", log.ErrCacheRateLimit, err)
+	}
+
 	data := &CacheData{
-		RateLimit: limit,
-		Repo:      release,
+		RateLimit2: ratelimit,
+		Releases:   release,
 	}
 	return data, nil
 }
@@ -134,7 +142,7 @@ func (c *CacheModel) refreshData() {
 	}
 
 	c.data = data
-	c.expiresAt = data.RateLimit.Core.Reset.Time
+	c.expiresAt = time.Unix(data.RateLimit2.Reset, 0)
 
 	if c.onRefresh != nil {
 		c.onRefresh(data)
@@ -142,6 +150,10 @@ func (c *CacheModel) refreshData() {
 }
 
 func (c *CacheModel) Start() {
+	if DisableAPI {
+		return
+	}
+
 	c.refreshData()
 
 	go func() {
@@ -153,5 +165,8 @@ func (c *CacheModel) Start() {
 }
 
 func (c *CacheModel) ForceRefresh() {
+	if c.data != nil && c.data.Releases != nil {
+		c.data.Releases = nil
+	}
 	c.refreshData()
 }

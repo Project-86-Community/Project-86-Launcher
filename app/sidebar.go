@@ -22,25 +22,35 @@
 package app
 
 import (
+	"fmt"
 	"image"
 	"p86l"
+	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/hajimehoshi/guigui/layout"
 )
 
 type Sidebar struct {
 	guigui.DefaultWidget
 
-	panel        basicwidget.Panel
-	panelContent sidebarContent
+	panel           basicwidget.Panel
+	panelContent    sidebarContent
+	cacheExpireText basicwidget.Text
+
+	mainLayout layout.GridLayout
 }
 
 func (s *Sidebar) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	appender.AppendChildWidget(&s.panel)
+	appender.AppendChildWidget(&s.cacheExpireText)
 }
 
 func (s *Sidebar) Build(context *guigui.Context) error {
+	model := context.Model(s, modelKeyModel).(*p86l.Model)
+
 	s.panel.SetStyle(basicwidget.PanelStyleSide)
 	s.panel.SetBorder(basicwidget.PanelBorder{
 		End: true,
@@ -49,13 +59,36 @@ func (s *Sidebar) Build(context *guigui.Context) error {
 	s.panelContent.setSize(context.Bounds(s).Size())
 	s.panel.SetContent(&s.panelContent)
 
+	if cacheData := model.Cache().Data(); cacheData != nil && cacheData.RateLimit2 != nil {
+		s.cacheExpireText.SetValue(fmt.Sprintf(
+			"%d / %d - requests - %s",
+			cacheData.RateLimit2.Remaining,
+			cacheData.RateLimit2.Limit,
+			humanize.RelTime(time.Now(), model.Cache().ExpiresAt(), "remaining", "ago"),
+		))
+	}
+	s.cacheExpireText.SetAutoWrap(true)
+	s.cacheExpireText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+
+	u := basicwidget.UnitSize(context)
+	s.mainLayout = layout.GridLayout{
+		Bounds: context.Bounds(s),
+		Heights: []layout.Size{
+			layout.FixedSize(s.panelContent.Measure(context, guigui.FixedWidthConstraints(context.Bounds(s).Dx()-u)).Y),
+			layout.FlexibleSize(1),
+			layout.FixedSize(u * 2),
+		},
+	}
+
 	return nil
 }
 
 func (s *Sidebar) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
 	switch widget {
 	case &s.panel:
-		return context.Bounds(s)
+		return s.mainLayout.CellBounds(0, 0)
+	case &s.cacheExpireText:
+		return s.mainLayout.CellBounds(0, 2).Inset(basicwidget.UnitSize(context) / 4)
 	}
 	return image.Rectangle{}
 }

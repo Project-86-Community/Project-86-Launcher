@@ -3,7 +3,6 @@ module p86l
 go 1.24.2
 
 require (
-	github.com/google/go-github/v74 v74.0.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.16
 	github.com/hajimehoshi/guigui v0.0.0-20250907144934-cfbdfdb42777
 	github.com/kisielk/errcheck v1.9.0
@@ -14,11 +13,12 @@ require (
 
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20250329061421-6d0a8e981e4c // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/ebitengine/purego v0.9.0-alpha.10 // indirect
 	github.com/go-text/typesetting v0.3.0 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/hajimehoshi/oklab v0.1.0 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20250612000132-0ef82f21eade // indirect
 	github.com/jezek/xgb v1.1.1 // indirect

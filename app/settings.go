@@ -24,6 +24,8 @@ package app
 import (
 	"image"
 	"p86l"
+	"p86l/configs"
+	"path/filepath"
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
@@ -43,21 +45,26 @@ type Settings struct {
 	scaleSegmentedControl                                     basicwidget.SegmentedControl[float64]
 	rememberWindowToggle                                      basicwidget.Toggle
 
-	form2                         basicwidget.Form
-	companyText, launcherText     basicwidget.Text
-	companyButton, launcherButton basicwidget.Button
+	form2                                     basicwidget.Form
+	companyText, launcherText, logsText       basicwidget.Text
+	companyButton, launcherButton, logsButton basicwidget.Button
+
+	form3            basicwidget.Form
+	resetCacheText   basicwidget.Text
+	resetCacheButton basicwidget.Button
 
 	mainLayout layout.GridLayout
 }
 
 func (s *Settings) Overflow(context *guigui.Context) image.Point {
-	return p86l.MergeRectangles(s.mainLayout.CellBounds(0, 0), s.mainLayout.CellBounds(0, 1)).Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
+	return p86l.MergeRectangles(s.mainLayout.CellBounds(0, 0), s.mainLayout.CellBounds(0, 1), s.mainLayout.CellBounds(0, 2)).Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
 }
 
 func (s *Settings) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
 	appender.AppendChildWidget(&s.background)
 	appender.AppendChildWidget(&s.form1)
 	appender.AppendChildWidget(&s.form2)
+	appender.AppendChildWidget(&s.form3)
 }
 
 func (s *Settings) Build(context *guigui.Context) error {
@@ -66,7 +73,7 @@ func (s *Settings) Build(context *guigui.Context) error {
 	s.languageText.SetValue("Language")
 	s.darkModeText.SetValue("Use darkmode")
 	s.scaleText.SetValue("Scale")
-	s.rememberWindowText.SetValue("Remember window size & position")
+	s.rememberWindowText.SetValue("Remember window size & position & page")
 
 	s.languageDropdownList.SetItems([]basicwidget.DropdownListItem[language.Tag]{
 		{
@@ -166,10 +173,16 @@ func (s *Settings) Build(context *guigui.Context) error {
 	}
 
 	s.companyButton.SetOnDown(func() { model.File().Open(model.File().FS().Path()) })
-	s.companyText.SetValue("Open 86-Project Folder")
-	s.launcherText.SetValue("Open launcher Folder")
+	s.launcherButton.SetOnDown(func() { model.File().Open(filepath.Join(model.File().FS().Path(), configs.AppName)) })
+	s.logsButton.SetOnDown(func() {
+		model.File().Open(filepath.Join(model.File().FS().Path(), configs.AppName, configs.FolderLogs))
+	})
+	s.companyText.SetValue("Open 86-Project folder")
+	s.launcherText.SetValue("Open launcher folder")
+	s.logsText.SetValue("Open logs folder")
 	s.companyButton.SetText("Open")
 	s.launcherButton.SetText("Open")
+	s.logsButton.SetText("Open")
 
 	items2 := []basicwidget.FormItem{
 		{
@@ -180,16 +193,33 @@ func (s *Settings) Build(context *guigui.Context) error {
 			PrimaryWidget:   &s.launcherText,
 			SecondaryWidget: &s.launcherButton,
 		},
+		{
+			PrimaryWidget:   &s.logsText,
+			SecondaryWidget: &s.logsButton,
+		},
+	}
+
+	s.resetCacheButton.SetOnDown(func() { model.Cache().ForceRefresh() })
+	s.resetCacheText.SetValue("Reset cache")
+	s.resetCacheButton.SetText("Reset")
+
+	items3 := []basicwidget.FormItem{
+		{
+			PrimaryWidget:   &s.resetCacheText,
+			SecondaryWidget: &s.resetCacheButton,
+		},
 	}
 
 	s.form1.SetItems(items1)
 	s.form2.SetItems(items2)
+	s.form3.SetItems(items3)
 	u := basicwidget.UnitSize(context)
 	s.mainLayout = layout.GridLayout{
 		Bounds: context.Bounds(s).Inset(u / 2),
 		Heights: []layout.Size{
 			layout.FixedSize(s.form1.Measure(context, guigui.FixedWidthConstraints(context.Bounds(s).Dx()-u)).Y + u/2),
 			layout.FixedSize(s.form2.Measure(context, guigui.FixedWidthConstraints(context.Bounds(s).Dx()-u)).Y + u/2),
+			layout.FixedSize(s.form3.Measure(context, guigui.FixedWidthConstraints(context.Bounds(s).Dx()-u)).Y + u/2),
 		},
 	}
 
@@ -202,14 +232,17 @@ func (s *Settings) Layout(context *guigui.Context, widget guigui.Widget) image.R
 	case &s.background:
 		r1 := s.mainLayout.CellBounds(0, 0)
 		r2 := s.mainLayout.CellBounds(0, 1)
+		r3 := s.mainLayout.CellBounds(0, 2)
 		return image.Rectangle{
 			Min: r1.Min,
-			Max: image.Pt(max(r1.Max.X, r2.Max.X), max(r1.Max.Y, r2.Max.Y)),
+			Max: image.Pt(max(r1.Max.X, r2.Max.X, r3.Max.X), max(r1.Max.Y, r2.Max.Y, r3.Max.Y)),
 		}
 	case &s.form1:
 		return s.mainLayout.CellBounds(0, 0).Inset(u / 4)
 	case &s.form2:
 		return s.mainLayout.CellBounds(0, 1).Inset(u / 4)
+	case &s.form3:
+		return s.mainLayout.CellBounds(0, 2).Inset(u / 4)
 	}
 
 	return image.Rectangle{}

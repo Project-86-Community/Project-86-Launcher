@@ -43,7 +43,7 @@ import (
 
 var VERSION = "dev"
 
-func setupLogger(fsSB *os.Root) (*zerolog.Logger, *os.File) {
+func setupLogger(fs *os.Root) (*zerolog.Logger, *os.File) {
 	switch VERSION {
 	case "dev":
 		output := zerolog.ConsoleWriter{
@@ -52,13 +52,16 @@ func setupLogger(fsSB *os.Root) (*zerolog.Logger, *os.File) {
 		}
 		logger := zerolog.New(output).With().Timestamp().Logger()
 		for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
-			if token != "log" {
+			switch token {
+			case "log":
 				zerolog.SetGlobalLevel(zerolog.Disabled)
+			case "noapi":
+				p86l.DisableAPI = true
 			}
 		}
 		return &logger, nil
 	default:
-		logFile, err := log.NewLogFile(fsSB, filepath.Join("Project-86-Launcher", "logs"))
+		logFile, err := log.NewLogFile(fs, filepath.Join(configs.AppName, configs.FolderLogs))
 		if err != nil {
 			fmt.Printf("%v", err)
 			os.Exit(1)

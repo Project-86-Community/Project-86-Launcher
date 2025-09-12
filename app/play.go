@@ -22,6 +22,7 @@
 package app
 
 import (
+	"fmt"
 	"image"
 	"p86l"
 	"p86l/assets"
@@ -71,15 +72,35 @@ func (p *Play) Build(context *guigui.Context) error {
 	p.updateButton.SetText("Update")
 	p.playButton.SetText("Play")
 
-	if cacheData := model.Cache().Data(); cacheData != nil && cacheData.Repo != nil {
-		p.changelogText.Widget().SetValue(cacheData.Repo.GetBody())
+	if cacheData := model.Cache().Data(); cacheData != nil && cacheData.Releases != nil {
+		if model.UsePreRelease() {
+			p.changelogText.Widget().SetValue(fmt.Sprintf("%s\n\n%s", cacheData.Releases.PreRelease.Name, cacheData.Releases.PreRelease.Body))
+		} else {
+			p.changelogText.Widget().SetValue(fmt.Sprintf("%s\n\n%s", cacheData.Releases.Stable.Name, cacheData.Releases.Stable.Body))
+		}
+	} else {
+		p.changelogText.Widget().SetValue("...")
 	}
 	p.changelogText.Widget().SetAutoWrap(true)
 	p.changelogText.Widget().SetMultiline(true)
 	p.changelogText.Widget().SetEditable(false)
-	p.changelogText.SetFixedWidth(p.mainLayout.CellBounds(0, 2).Inset(basicwidget.UnitSize(context) / 4).Size().X)
+	p.changelogText.SetFixedWidth(context.Bounds(&p.form).Size().X - basicwidget.UnitSize(context)/2)
 
 	p.prereleaseText.SetValue("Enable Pre-release")
+
+	p.prereleaseToggle.SetOnValueChanged(func(value bool) {
+		if value {
+			model.SetUsePreRelease(true)
+		} else {
+			model.SetUsePreRelease(false)
+		}
+	})
+	if model.UsePreRelease() {
+		p.prereleaseToggle.SetValue(true)
+	} else {
+		p.prereleaseToggle.SetValue(false)
+	}
+
 	p.form.SetItems([]basicwidget.FormItem{
 		{
 			PrimaryWidget:   &p.prereleaseText,
