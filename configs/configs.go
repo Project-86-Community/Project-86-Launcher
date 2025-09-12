@@ -35,11 +35,9 @@ const (
 	RepoOwner = "Taliayaya"
 	RepoName  = "Project-86"
 
-	LoadTypeData  = "data"
-	LoadTypeCache = "cache"
-
-	DataFile  = "data.json"
-	CacheFile = "cache.json"
+	FolderLogs = "logs"
+	FileData   = "data.json"
+	FileCache  = "cache.json"
 
 	Website = "https://project-86-community.github.io/Project-86-Website/"
 	Github  = "https://github.com/Taliayaya/Project-86"
