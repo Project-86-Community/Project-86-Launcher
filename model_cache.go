@@ -154,9 +154,23 @@ func (c *CacheModel) Start() {
 		return
 	}
 
-	c.refreshData()
-
 	go func() {
+		c.refreshData()
+
+		if c.data == nil {
+			ctx := context.Background()
+			ratelimit, err := c.Client().GetRateLimit(ctx)
+			if err != nil {
+				c.logger.Warn().Str("CacheModel", "Start").Err(fmt.Errorf("%w: %w", log.ErrCacheRateLimit, err)).Msg(log.ErrorManager.String())
+			} else {
+				c.data = &CacheData{
+					RateLimit2: ratelimit,
+					Releases:   nil,
+				}
+				c.expiresAt = time.Unix(ratelimit.Reset, 0)
+			}
+		}
+
 		for {
 			time.Sleep(time.Until(c.expiresAt))
 			c.refreshData()
