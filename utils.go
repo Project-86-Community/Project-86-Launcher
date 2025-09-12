@@ -28,6 +28,8 @@ import (
 	"strings"
 )
 
+var DisableAPI bool = false
+
 func GetUsername() string {
 	var username string
 	switch runtime.GOOS {
