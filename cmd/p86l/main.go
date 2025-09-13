@@ -98,10 +98,11 @@ func main() {
 	model.Log().SetLogFile(logFile)
 	model.File().SetFS(fs)
 	model.File().SetLogger(logger)
+	model.Cache().SetFS(fs)
 	model.Cache().SetLogger(logger)
 	model.SetMode("home")
 
-	model.Cache().Start()
+	go model.Cache().Start()
 	app := &app.Root{}
 	app.SetModel(model)
 

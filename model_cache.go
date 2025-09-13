@@ -23,12 +23,16 @@ package p86l
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"p86l/configs"
+	"p86l/internal/file"
 	"p86l/internal/github"
 	"p86l/internal/log"
+	"path/filepath"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/rs/zerolog"
 )
 
@@ -52,12 +56,12 @@ func (c *CacheData) Validate(ghRepo *github.RepositoryRelease) error {
 }
 
 type CacheModel struct {
+	fs     *file.Filesystem
 	logger *zerolog.Logger
 	client *github.Client
 
 	data      *CacheData
 	expiresAt time.Time
-	onRefresh func(*CacheData)
 }
 
 // -- Getters for CacheModel --
@@ -77,38 +81,82 @@ func (c *CacheModel) ExpiresAt() time.Time {
 	return c.expiresAt
 }
 
-// func (c *CacheModel) Load(fs *file.Filesystem) error {
-// 	b, err := fs.Load(filepath.Join(configs.AppName, configs.CacheFile))
-// 	if err != nil {
-// 		return err
-// 	}
+func (c *CacheModel) Path() string {
+	return filepath.Join(configs.AppName, configs.FileCache)
+}
 
-// 	var d CacheData
-// 	if err := json.Unmarshal(b, &d); err != nil {
-// 		return err
-// 	}
+func (c *CacheModel) ExpireTimeFormatted() string {
+	if c.fs.Exist(c.Path()) {
+		if cacheData := c.data; cacheData != nil && cacheData.RateLimit2 != nil {
+			return fmt.Sprintf(
+				"%d / %d - requests - %s",
+				cacheData.RateLimit2.Remaining,
+				cacheData.RateLimit2.Limit,
+				humanize.RelTime(time.Now(), c.expiresAt, "remaining", "ago"),
+			)
+		}
+	}
 
-// 	if err := d.Validate(d.Repo); err != nil {
-// 		return err
-// 	}
-// 	if err := d.Validate(d.PreRepo); err != nil {
-// 		return err
-// 	}
+	return "..."
+}
 
-// 	//c.SetVaild(true)
-// 	//c.SetFile(d)
+func (c *CacheModel) Load() error {
+	b, err := c.fs.Load(c.Path())
+	if err != nil {
+		return err
+	}
 
-// 	return nil
-// }
+	var d *CacheData
+	if err := json.Unmarshal(b, &d); err != nil {
+		return err
+	}
+
+	c.data = d
+
+	// if err := d.Validate(d.Repo); err != nil {
+	// 	return err
+	// }
+	// if err := d.Validate(d.PreRepo); err != nil {
+	// 	return err
+	// }
+
+	//c.SetVaild(true)
+	//c.SetFile(d)
+
+	return nil
+}
 
 // -- Setters for CacheModel --
+
+func (c *CacheModel) SetFS(fs *file.Filesystem) {
+	c.fs = fs
+}
 
 func (c *CacheModel) SetLogger(logger *zerolog.Logger) {
 	c.logger = logger
 }
 
-func (c *CacheModel) SetData(data *CacheData) {
-	c.data = data
+func (c *CacheModel) Save() error {
+	b, err := json.Marshal(c.data)
+	if err != nil {
+		return err
+	}
+
+	err = c.fs.Save(c.Path(), b)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *CacheModel) Remove() error {
+	err := c.fs.Remove(c.Path())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // -- common --
@@ -144,43 +192,55 @@ func (c *CacheModel) refreshData() {
 	c.data = data
 	c.expiresAt = time.Unix(data.RateLimit2.Reset, 0)
 
-	if c.onRefresh != nil {
-		c.onRefresh(data)
+	err = c.Save()
+	if err != nil {
+		c.logger.Warn().Str("CacheModel", "refreshData").Err(fmt.Errorf("failed to save cache: %w", err)).Msg(log.ErrorManager.String())
 	}
 }
 
 func (c *CacheModel) Start() {
+	if c.fs.Exist(c.Path()) {
+		err := c.Load()
+		if err != nil {
+			c.logger.Warn().Str("CacheModel", "Start").Err(fmt.Errorf("cache corrupted: %w", err)).Msg(log.ErrorManager.String())
+		}
+	}
+
 	if DisableAPI {
+		c.logger.Info().Str("CacheModel", "API is disabled now").Msg(log.AppManager.String())
 		return
 	}
 
-	go func() {
+	if !c.fs.Exist(c.Path()) {
 		c.refreshData()
+	}
 
-		if c.data == nil {
-			ctx := context.Background()
-			ratelimit, err := c.Client().GetRateLimit(ctx)
-			if err != nil {
-				c.logger.Warn().Str("CacheModel", "Start").Err(fmt.Errorf("%w: %w", log.ErrCacheRateLimit, err)).Msg(log.ErrorManager.String())
-			} else {
-				c.data = &CacheData{
-					RateLimit2: ratelimit,
-					Releases:   nil,
-				}
-				c.expiresAt = time.Unix(ratelimit.Reset, 0)
+	if c.data == nil {
+		ctx := context.Background()
+		ratelimit, err := c.Client().GetRateLimit(ctx)
+		if err != nil {
+			c.logger.Warn().Str("CacheModel", "Start").Err(fmt.Errorf("%w: %w", log.ErrCacheRateLimit, err)).Msg(log.ErrorManager.String())
+		} else {
+			c.data = &CacheData{
+				RateLimit2: ratelimit,
+				Releases:   nil,
 			}
+			c.expiresAt = time.Unix(ratelimit.Reset, 0)
 		}
+	}
 
-		for {
-			time.Sleep(time.Until(c.expiresAt))
-			c.refreshData()
-		}
-	}()
+	for {
+		time.Sleep(time.Until(c.expiresAt))
+		c.refreshData()
+	}
 }
 
 func (c *CacheModel) ForceRefresh() {
 	if c.data != nil && c.data.Releases != nil {
 		c.data.Releases = nil
+	}
+	if err := c.Remove(); err != nil {
+		c.logger.Warn().Str("CacheModel", "ForceRefresh").Err(fmt.Errorf("failed to remove cache: %w", err))
 	}
 	c.refreshData()
 }

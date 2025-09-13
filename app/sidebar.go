@@ -22,12 +22,9 @@
 package app
 
 import (
-	"fmt"
 	"image"
 	"p86l"
-	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 	"github.com/hajimehoshi/guigui/layout"
@@ -59,14 +56,7 @@ func (s *Sidebar) Build(context *guigui.Context) error {
 	s.panelContent.setSize(context.Bounds(s).Size())
 	s.panel.SetContent(&s.panelContent)
 
-	if cacheData := model.Cache().Data(); cacheData != nil && cacheData.RateLimit2 != nil {
-		s.cacheExpireText.SetValue(fmt.Sprintf(
-			"%d / %d - requests - %s",
-			cacheData.RateLimit2.Remaining,
-			cacheData.RateLimit2.Limit,
-			humanize.RelTime(time.Now(), model.Cache().ExpiresAt(), "remaining", "ago"),
-		))
-	}
+	s.cacheExpireText.SetValue(model.Cache().ExpireTimeFormatted())
 	s.cacheExpireText.SetAutoWrap(true)
 	s.cacheExpireText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 
