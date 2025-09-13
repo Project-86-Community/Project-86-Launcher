@@ -102,25 +102,25 @@ func (r *Root) Model(key any) any {
 	}
 }
 
-func (r *Root) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	appender.AppendChildWidget(&r.backgroundImage)
-	appender.AppendChildWidget(&r.sidebar)
+func (r *Root) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+	adder.AddChild(&r.backgroundImage)
+	adder.AddChild(&r.sidebar)
 	if mode := r.model.Mode(); mode == "home" {
-		appender.AppendChildWidget(&r.home)
+		adder.AddChild(&r.home)
 	} else {
-		appender.AppendChildWidget(&r.background)
+		adder.AddChild(&r.background)
 		switch mode {
 		case "play":
-			appender.AppendChildWidget(&r.panelPlay)
+			adder.AddChild(&r.panelPlay)
 		case "settings":
-			appender.AppendChildWidget(&r.panelSettings)
+			adder.AddChild(&r.panelSettings)
 		case "about":
-			appender.AppendChildWidget(&r.panelAbout)
+			adder.AddChild(&r.panelAbout)
 		}
 	}
 }
 
-func (r *Root) Build(context *guigui.Context) error {
+func (r *Root) Update(context *guigui.Context) error {
 	r.backgroundImage.SetImage(assets.Banner)
 	r.handleBackgroundImage(context)
 	context.SetOpacity(&r.background, 0.9)

@@ -40,12 +40,12 @@ type Home struct {
 	mainLayout layout.GridLayout
 }
 
-func (h *Home) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	appender.AppendChildWidget(&h.background)
-	appender.AppendChildWidget(&h.form)
+func (h *Home) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+	adder.AddChild(&h.background)
+	adder.AddChild(&h.form)
 }
 
-func (h *Home) Build(context *guigui.Context) error {
+func (h *Home) Update(context *guigui.Context) error {
 	h.welcomeText.SetValue("Welcome Test")
 	h.usernameText.SetValue(p86l.GetUsername())
 	h.downloadText.SetValue("Downloaded")

@@ -40,16 +40,16 @@ type Sidebar struct {
 	mainLayout layout.GridLayout
 }
 
-func (s *Sidebar) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	appender.AppendChildWidget(&s.panel)
-	appender.AppendChildWidget(&s.cacheExpireText)
+func (s *Sidebar) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+	adder.AddChild(&s.panel)
+	adder.AddChild(&s.cacheExpireText)
 }
 
-func (s *Sidebar) Build(context *guigui.Context) error {
+func (s *Sidebar) Update(context *guigui.Context) error {
 	model := context.Model(s, modelKeyModel).(*p86l.Model)
 
 	s.panel.SetStyle(basicwidget.PanelStyleSide)
-	s.panel.SetBorder(basicwidget.PanelBorder{
+	s.panel.SetBorders(basicwidget.PanelBorder{
 		End: true,
 	})
 	context.SetOpacity(&s.panel, 0.9)
@@ -95,11 +95,11 @@ func (s *sidebarContent) setSize(size image.Point) {
 	s.size = size
 }
 
-func (s *sidebarContent) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	appender.AppendChildWidget(&s.list)
+func (s *sidebarContent) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+	adder.AddChild(&s.list)
 }
 
-func (s *sidebarContent) Build(context *guigui.Context) error {
+func (s *sidebarContent) Update(context *guigui.Context) error {
 	model := context.Model(s, modelKeyModel).(*p86l.Model)
 
 	s.list.SetStyle(basicwidget.ListStyleSidebar)

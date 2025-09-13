@@ -53,19 +53,19 @@ func (p *Play) Overflow(context *guigui.Context) image.Point {
 	return p86l.MergeRectangles(p.mainLayout.CellBounds(0, 0), p.mainLayout.CellBounds(0, 1), p.mainLayout.CellBounds(0, 2), p.mainLayout.CellBounds(0, 3)).Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
 }
 
-func (p *Play) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	appender.AppendChildWidget(&p.installButton)
-	appender.AppendChildWidget(&p.updateButton)
-	appender.AppendChildWidget(&p.playButton)
-	appender.AppendChildWidget(&p.background)
-	appender.AppendChildWidget(&p.form)
-	appender.AppendChildWidget(&p.websiteButton)
-	appender.AppendChildWidget(&p.githubButton)
-	appender.AppendChildWidget(&p.discordButton)
-	appender.AppendChildWidget(&p.patreonButton)
+func (p *Play) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+	adder.AddChild(&p.installButton)
+	adder.AddChild(&p.updateButton)
+	adder.AddChild(&p.playButton)
+	adder.AddChild(&p.background)
+	adder.AddChild(&p.form)
+	adder.AddChild(&p.websiteButton)
+	adder.AddChild(&p.githubButton)
+	adder.AddChild(&p.discordButton)
+	adder.AddChild(&p.patreonButton)
 }
 
-func (p *Play) Build(context *guigui.Context) error {
+func (p *Play) Update(context *guigui.Context) error {
 	model := context.Model(p, modelKeyModel).(*p86l.Model)
 
 	p.installButton.SetText("Install")

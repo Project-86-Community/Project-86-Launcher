@@ -47,14 +47,14 @@ func (a *About) Overflow(context *guigui.Context) image.Point {
 	return p86l.MergeRectangles(a.mainLayout.CellBounds(0, 0), a.mainLayout.CellBounds(0, 1), a.mainLayout.CellBounds(0, 2)).Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
 }
 
-func (a *About) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	appender.AppendChildWidget(&a.text1)
-	appender.AppendChildWidget(&a.background)
-	appender.AppendChildWidget(&a.form)
-	appender.AppendChildWidget(&a.text4)
+func (a *About) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+	adder.AddChild(&a.text1)
+	adder.AddChild(&a.background)
+	adder.AddChild(&a.form)
+	adder.AddChild(&a.text4)
 }
 
-func (a *About) Build(context *guigui.Context) error {
+func (a *About) Update(context *guigui.Context) error {
 	a.text1.SetValue("A Launcher developed for Project-86 for managing game files.")
 	a.text1.SetAutoWrap(true)
 
@@ -140,11 +140,11 @@ func (a *aboutIcon) setIcon(icon *ebiten.Image) {
 	a.ebitenImage = icon
 }
 
-func (a *aboutIcon) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	appender.AppendChildWidget(&a.image)
+func (a *aboutIcon) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+	adder.AddChild(&a.image)
 }
 
-func (a *aboutIcon) Build(context *guigui.Context) error {
+func (a *aboutIcon) Update(context *guigui.Context) error {
 	a.image.SetImage(a.ebitenImage)
 	u := basicwidget.UnitSize(context)
 	a.mainLayout = layout.GridLayout{

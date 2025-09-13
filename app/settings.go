@@ -60,14 +60,14 @@ func (s *Settings) Overflow(context *guigui.Context) image.Point {
 	return p86l.MergeRectangles(s.mainLayout.CellBounds(0, 0), s.mainLayout.CellBounds(0, 1), s.mainLayout.CellBounds(0, 2)).Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
 }
 
-func (s *Settings) AppendChildWidgets(context *guigui.Context, appender *guigui.ChildWidgetAppender) {
-	appender.AppendChildWidget(&s.background)
-	appender.AppendChildWidget(&s.form1)
-	appender.AppendChildWidget(&s.form2)
-	appender.AppendChildWidget(&s.form3)
+func (s *Settings) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+	adder.AddChild(&s.background)
+	adder.AddChild(&s.form1)
+	adder.AddChild(&s.form2)
+	adder.AddChild(&s.form3)
 }
 
-func (s *Settings) Build(context *guigui.Context) error {
+func (s *Settings) Update(context *guigui.Context) error {
 	model := context.Model(s, modelKeyModel).(*p86l.Model)
 
 	s.languageText.SetValue("Language")
