@@ -199,7 +199,7 @@ func (s *Settings) Build(context *guigui.Context) error {
 		},
 	}
 
-	s.resetCacheButton.SetOnDown(func() { model.Cache().ForceRefresh() })
+	s.resetCacheButton.SetOnDown(func() { go model.Cache().ForceRefresh() })
 	s.resetCacheText.SetValue("Reset cache")
 	s.resetCacheButton.SetText("Reset")
 
