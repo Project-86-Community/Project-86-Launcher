@@ -216,6 +216,10 @@ func (c *CacheModel) Start() {
 		if err != nil {
 			c.logger.Warn().Str("CacheModel", "Start").Err(fmt.Errorf("cache corrupted: %w", err)).Msg(log.ErrorManager.String())
 		}
+		// If timestamp is expired, set ratelimit to nil.
+		if c.data != nil && c.data.RateLimit2 != nil && time.Unix(c.data.RateLimit2.Reset, 0).Before(time.Now()) {
+			c.data.RateLimit2 = nil
+		}
 	}
 
 	if DisableAPI {
@@ -223,7 +227,7 @@ func (c *CacheModel) Start() {
 		return
 	}
 
-	// Refresh data on startup
+	// Refresh data when, on startup and there is no cache.
 	if !c.fs.Exist(c.Path()) {
 		c.refreshData()
 	}
@@ -245,6 +249,13 @@ func (c *CacheModel) Start() {
 
 	// Refresh data when sleep is over.
 	for {
+		// Wait for user to do ForceRefresh,
+		// this situation only happens when,
+		// 1. timestamp is expired.
+		// 2. there is no cache and internet to fetch data.
+		if c.data.RateLimit2 == nil {
+			continue
+		}
 		time.Sleep(time.Until(c.expiresAt))
 		c.refreshData()
 	}
