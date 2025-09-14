@@ -52,12 +52,10 @@ func setupLogger(fs *os.Root) (*zerolog.Logger, *os.File) {
 		}
 		logger := zerolog.New(output).With().Timestamp().Logger()
 		for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
-			if token != "log" {
+			switch {
+			case token != "log":
 				zerolog.SetGlobalLevel(zerolog.Disabled)
-			}
-
-			switch token {
-			case "noapi":
+			case token == "noapi":
 				p86l.DisableAPI = true
 			}
 		}
