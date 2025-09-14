@@ -100,6 +100,17 @@ func (c *CacheModel) ExpireTimeFormatted() string {
 	return "..."
 }
 
+func (c *CacheModel) ChangelogText(value bool) string {
+	if c.data != nil && c.data.Releases != nil {
+		if value {
+			return fmt.Sprintf("%s\n\n%s", c.data.Releases.PreRelease.Name, c.data.Releases.PreRelease.Body)
+		} else {
+			return fmt.Sprintf("%s\n\n%s", c.data.Releases.Stable.Name, c.data.Releases.Stable.Body)
+		}
+	}
+	return "..."
+}
+
 func (c *CacheModel) Load() error {
 	b, err := c.fs.Load(c.Path())
 	if err != nil {
@@ -199,6 +210,7 @@ func (c *CacheModel) refreshData() {
 }
 
 func (c *CacheModel) Start() {
+	// Loads saved data
 	if c.fs.Exist(c.Path()) {
 		err := c.Load()
 		if err != nil {
@@ -211,10 +223,12 @@ func (c *CacheModel) Start() {
 		return
 	}
 
+	// Refresh data on startup
 	if !c.fs.Exist(c.Path()) {
 		c.refreshData()
 	}
 
+	// Gets the ratelimit when api is ratelimited.
 	if c.data == nil {
 		ctx := context.Background()
 		ratelimit, err := c.Client().GetRateLimit(ctx)
@@ -229,12 +243,14 @@ func (c *CacheModel) Start() {
 		}
 	}
 
+	// Refresh data when sleep is over.
 	for {
 		time.Sleep(time.Until(c.expiresAt))
 		c.refreshData()
 	}
 }
 
+// Removes data, but keeps ratelimit saved locally in app.
 func (c *CacheModel) ForceRefresh() {
 	if c.data != nil && c.data.Releases != nil {
 		c.data.Releases = nil

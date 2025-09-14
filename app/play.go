@@ -22,7 +22,6 @@
 package app
 
 import (
-	"fmt"
 	"image"
 	"p86l"
 	"p86l/assets"
@@ -72,15 +71,7 @@ func (p *Play) Update(context *guigui.Context) error {
 	p.updateButton.SetText("Update")
 	p.playButton.SetText("Play")
 
-	if cacheData := model.Cache().Data(); cacheData != nil && cacheData.Releases != nil {
-		if model.UsePreRelease() {
-			p.changelogText.Widget().SetValue(fmt.Sprintf("%s\n\n%s", cacheData.Releases.PreRelease.Name, cacheData.Releases.PreRelease.Body))
-		} else {
-			p.changelogText.Widget().SetValue(fmt.Sprintf("%s\n\n%s", cacheData.Releases.Stable.Name, cacheData.Releases.Stable.Body))
-		}
-	} else {
-		p.changelogText.Widget().SetValue("...")
-	}
+	p.changelogText.Widget().SetValue(model.Cache().ChangelogText(model.UsePreRelease()))
 	p.changelogText.Widget().SetAutoWrap(true)
 	p.changelogText.Widget().SetMultiline(true)
 	p.changelogText.Widget().SetEditable(false)
