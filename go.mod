@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/hajimehoshi/ebiten/v2 v2.9.0-alpha.16
-	github.com/hajimehoshi/guigui v0.0.0-20250913142603-aeb1be249b5b
+	github.com/hajimehoshi/guigui v0.0.0-20250914065550-a1f46fdbb0e2
 	github.com/kisielk/errcheck v1.9.0
 	github.com/rs/zerolog v1.34.0
 	golang.org/x/text v0.29.0
