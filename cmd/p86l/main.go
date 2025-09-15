@@ -100,6 +100,7 @@ func main() {
 	model.Cache().SetLogger(logger)
 
 	go model.Cache().Start()
+	model.StartBGM()
 	app := &app.Root{}
 	app.SetModel(model)
 

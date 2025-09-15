@@ -22,6 +22,7 @@
 package assets
 
 import (
+	_ "embed"
 	"p86l/assets/images"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -36,4 +37,7 @@ var (
 	Patreon       = ebiten.NewImageFromImage(images.ImagePatreon)
 	LeadDeveloper = ebiten.NewImageFromImage(images.ImageLeadDeveloper)
 	DevDeveloper  = ebiten.NewImageFromImage(images.ImageDevDeveloper)
+
+	//go:embed audio/p86l_ost_legion.ogg
+	P86lOst []byte
 )

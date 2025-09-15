@@ -22,8 +22,16 @@
 package p86l
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"net"
+	"p86l/assets"
+	"p86l/internal/log"
+
+	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
+	"github.com/solarlune/resound"
 )
 
 type Model struct {
@@ -63,6 +71,28 @@ func (m *Model) SetListener(listener net.Listener) {
 }
 
 // -- common --
+
+func (m Model) StartBGM() {
+	const sampleRate = 44100
+	audio.NewContext(sampleRate)
+	reader := bytes.NewReader(assets.P86lOst)
+
+	stream, err := vorbis.DecodeWithSampleRate(sampleRate, reader)
+	if err != nil {
+		m.Log().Logger().Err(fmt.Errorf("vorbis decoder: %w", err)).Msg(log.ErrorManager.String())
+		return
+	}
+
+	loop := audio.NewInfiniteLoop(stream, stream.Length())
+
+	player, err := resound.NewPlayer("bgm", loop)
+	if err != nil {
+		m.Log().Logger().Err(fmt.Errorf("new player: %w", err)).Msg(log.ErrorManager.String())
+		return
+	}
+
+	player.Play()
+}
 
 func (m *Model) Close() error {
 	return errors.Join(m.listener.Close(), m.Log().Close(), m.file.Close())
