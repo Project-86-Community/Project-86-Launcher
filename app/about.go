@@ -64,7 +64,9 @@ func (a *About) Update(context *guigui.Context) error {
 	a.text3.SetValue("Sky")
 	a.text3.SetScale(1.2)
 
-	a.text4.SetValue(`Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+	a.text4.SetValue(`Background music: "Project: 86 OST: Legion" by XYETRY.
+
+ Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
  Copyright (C) 2025 Project 86 Community
 
  This program is free software: you can redistribute it and/or modify
