@@ -75,7 +75,7 @@ func (r *Root) handleBackgroundImage(context *guigui.Context) {
 		// The image is wider than the window. Scale by height and crop width.
 		newHeight = windowHeight
 		newWidth = int(float64(windowHeight) * imgAspectRatio)
-		xOffset = (windowWidth - newWidth) / 2
+		xOffset = 0
 		yOffset = 0
 	} else {
 		// The image is taller than the window. Scale by width and crop height.
