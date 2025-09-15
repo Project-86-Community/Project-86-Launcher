@@ -219,6 +219,7 @@ func (c *CacheModel) Start() {
 		// If timestamp is expired, set ratelimit to nil.
 		if c.data != nil && c.data.RateLimit2 != nil && time.Unix(c.data.RateLimit2.Reset, 0).Before(time.Now()) {
 			c.data.RateLimit2 = nil
+			c.refreshData()
 		}
 	}
 
