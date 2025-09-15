@@ -27,11 +27,9 @@ import (
 	"fmt"
 	"net"
 	"p86l/assets"
-	"p86l/internal/log"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
-	"github.com/solarlune/resound"
 )
 
 type Model struct {
@@ -40,6 +38,8 @@ type Model struct {
 	file     FileModel
 	data     DataModel
 	cache    CacheModel
+
+	player *audio.Player
 }
 
 // -- Getters for Model --
@@ -64,36 +64,42 @@ func (m *Model) Cache() *CacheModel {
 	return &m.cache
 }
 
+func (m *Model) Player() *audio.Player {
+	return m.player
+}
+
 // -- Setters for Model --
 
 func (m *Model) SetListener(listener net.Listener) {
 	m.listener = listener
 }
 
+func (m *Model) SetPlayer(player *audio.Player) {
+	m.player = player
+}
+
 // -- common --
 
-func (m Model) StartBGM() {
+func (m Model) StartBGM() (*audio.Player, error) {
 	const sampleRate = 44100
-	audio.NewContext(sampleRate)
+	actx := audio.NewContext(sampleRate)
+
 	reader := bytes.NewReader(assets.P86lOst)
-
-	stream, err := vorbis.DecodeWithSampleRate(sampleRate, reader)
+	stream, err := vorbis.DecodeF32(reader)
 	if err != nil {
-		m.Log().Logger().Err(fmt.Errorf("vorbis decoder: %w", err)).Msg(log.ErrorManager.String())
-		return
+		return nil, fmt.Errorf("vorbis decoder: %w", err)
 	}
 
-	loop := audio.NewInfiniteLoop(stream, stream.Length())
+	loop := audio.NewInfiniteLoopF32(stream, stream.Length())
 
-	player, err := resound.NewPlayer("bgm", loop)
+	player, err := actx.NewPlayerF32(loop)
 	if err != nil {
-		m.Log().Logger().Err(fmt.Errorf("new player: %w", err)).Msg(log.ErrorManager.String())
-		return
+		return nil, fmt.Errorf("new player: %w", err)
 	}
 
-	player.Play()
+	return player, nil
 }
 
 func (m *Model) Close() error {
-	return errors.Join(m.listener.Close(), m.Log().Close(), m.file.Close())
+	return errors.Join(m.listener.Close(), m.player.Close(), m.Log().Close(), m.file.Close())
 }

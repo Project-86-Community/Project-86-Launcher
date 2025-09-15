@@ -8,7 +8,6 @@ require (
 	github.com/hajimehoshi/guigui v0.0.0-20250914065550-a1f46fdbb0e2
 	github.com/kisielk/errcheck v1.9.0
 	github.com/rs/zerolog v1.34.0
-	github.com/solarlune/resound v0.4.0
 	golang.org/x/text v0.29.0
 	golang.org/x/tools v0.36.0
 )

@@ -21,6 +21,8 @@
 
 package p86l
 
+import "github.com/hajimehoshi/ebiten/v2/audio"
+
 type Pages int
 
 const (
@@ -60,6 +62,12 @@ func (d *DataModel) SetUsePreRelease(value bool) {
 	d.usePreRelease = value
 }
 
-func (d *DataModel) SetDisableBgMusic(value bool) {
+func (d *DataModel) SetDisableBgMusic(player *audio.Player, value bool) {
 	d.disableBgMusic = value
+	switch value {
+	case true:
+		player.Pause()
+	case false:
+		player.Play()
+	}
 }

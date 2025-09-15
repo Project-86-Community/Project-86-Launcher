@@ -91,7 +91,14 @@ func main() {
 	}
 
 	model := &p86l.Model{}
+	player, err := model.StartBGM()
+	if err != nil {
+		logger.Error().Err(err).Msg(log.ErrorManager.String())
+		os.Exit(1)
+	}
+
 	model.SetListener(listener)
+	model.SetPlayer(player)
 	model.Log().SetLogger(logger)
 	model.Log().SetLogFile(logFile)
 	model.File().SetFS(fs)
@@ -99,8 +106,10 @@ func main() {
 	model.Cache().SetFS(fs)
 	model.Cache().SetLogger(logger)
 
+	if !model.Data().DisableBgMusic() {
+		player.Play()
+	}
 	go model.Cache().Start()
-	model.StartBGM()
 	app := &app.Root{}
 	app.SetModel(model)
 

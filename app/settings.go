@@ -38,12 +38,11 @@ type Settings struct {
 
 	background basicwidget.Background
 
-	form1                                                     basicwidget.Form
-	languageText, darkModeText, scaleText, rememberWindowText basicwidget.Text
-	languageDropdownList                                      basicwidget.DropdownList[language.Tag]
-	darkModeToggle                                            basicwidget.Toggle
-	scaleSegmentedControl                                     basicwidget.SegmentedControl[float64]
-	rememberWindowToggle                                      basicwidget.Toggle
+	form1                                                                     basicwidget.Form
+	languageText, darkModeText, scaleText, rememberWindowText, disableBgmText basicwidget.Text
+	darkModeToggle, rememberWindowToggle, disableBgmToggle                    basicwidget.Toggle
+	languageDropdownList                                                      basicwidget.DropdownList[language.Tag]
+	scaleSegmentedControl                                                     basicwidget.SegmentedControl[float64]
 
 	form2                                     basicwidget.Form
 	companyText, launcherText, logsText       basicwidget.Text
@@ -74,6 +73,7 @@ func (s *Settings) Update(context *guigui.Context) error {
 	s.darkModeText.SetValue("Use darkmode")
 	s.scaleText.SetValue("Scale")
 	s.rememberWindowText.SetValue("Remember window size & position & page")
+	s.disableBgmText.SetValue("Disable background music")
 
 	s.languageDropdownList.SetItems([]basicwidget.DropdownListItem[language.Tag]{
 		{
@@ -153,6 +153,16 @@ func (s *Settings) Update(context *guigui.Context) error {
 	})
 	s.scaleSegmentedControl.SelectItemByValue(context.AppScale())
 
+	s.disableBgmToggle.SetOnValueChanged(func(value bool) {
+		model.Data().SetDisableBgMusic(model.Player(), value)
+	})
+	switch model.Data().DisableBgMusic() {
+	case true:
+		s.disableBgmToggle.SetValue(true)
+	case false:
+		s.disableBgmToggle.SetValue(false)
+	}
+
 	items1 := []basicwidget.FormItem{
 		{
 			PrimaryWidget:   &s.languageText,
@@ -169,6 +179,10 @@ func (s *Settings) Update(context *guigui.Context) error {
 		{
 			PrimaryWidget:   &s.rememberWindowText,
 			SecondaryWidget: &s.rememberWindowToggle,
+		},
+		{
+			PrimaryWidget:   &s.disableBgmText,
+			SecondaryWidget: &s.disableBgmToggle,
 		},
 	}
 
