@@ -105,16 +105,16 @@ func (r *Root) Model(key any) any {
 func (r *Root) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
 	adder.AddChild(&r.backgroundImage)
 	adder.AddChild(&r.sidebar)
-	if mode := r.model.Mode(); mode == "home" {
+	if page := r.model.Data().Page(); page == p86l.PageHome {
 		adder.AddChild(&r.home)
 	} else {
 		adder.AddChild(&r.background)
-		switch mode {
-		case "play":
+		switch page {
+		case p86l.PagePlay:
 			adder.AddChild(&r.panelPlay)
-		case "settings":
+		case p86l.PageSettings:
 			adder.AddChild(&r.panelSettings)
-		case "about":
+		case p86l.PageAbout:
 			adder.AddChild(&r.panelAbout)
 		}
 	}
@@ -128,14 +128,14 @@ func (r *Root) Update(context *guigui.Context) error {
 	u := basicwidget.UnitSize(context)
 	x := r.mainLayout.CellBounds(1, 0).Size().X
 
-	switch r.model.Mode() {
-	case "play":
+	switch r.model.Data().Page() {
+	case p86l.PagePlay:
 		r.play.SetFixedSize(image.Pt(x, r.play.Widget().Overflow(context).Y))
 		r.panelPlay.SetContent(&r.play)
-	case "settings":
+	case p86l.PageSettings:
 		r.settings.SetFixedSize(image.Pt(x, r.settings.Widget().Overflow(context).Y))
 		r.panelSettings.SetContent(&r.settings)
-	case "about":
+	case p86l.PageAbout:
 		r.about.SetFixedSize(image.Pt(x, r.about.Widget().Overflow(context).Y))
 		r.panelAbout.SetContent(&r.about)
 	}

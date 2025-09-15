@@ -86,7 +86,7 @@ func (s *Sidebar) Layout(context *guigui.Context, widget guigui.Widget) image.Re
 type sidebarContent struct {
 	guigui.DefaultWidget
 
-	list basicwidget.List[string]
+	list basicwidget.List[p86l.Pages]
 
 	size image.Point
 }
@@ -104,35 +104,35 @@ func (s *sidebarContent) Update(context *guigui.Context) error {
 
 	s.list.SetStyle(basicwidget.ListStyleSidebar)
 
-	items := []basicwidget.ListItem[string]{
+	items := []basicwidget.ListItem[p86l.Pages]{
 		{
 			Text:  "Home",
-			Value: "home",
+			Value: p86l.PageHome,
 		},
 		{
 			Text:  "Play",
-			Value: "play",
+			Value: p86l.PagePlay,
 		},
 		{
 			Text:  "Settings",
-			Value: "settings",
+			Value: p86l.PageSettings,
 		},
 		{
 			Text:  "About",
-			Value: "about",
+			Value: p86l.PageAbout,
 		},
 	}
 
 	s.list.SetItems(items)
-	s.list.SelectItemByValue(model.Mode())
+	s.list.SelectItemByValue(model.Data().Page())
 	s.list.SetItemHeight(basicwidget.UnitSize(context))
 	s.list.SetOnItemSelected(func(index int) {
 		item, ok := s.list.ItemByIndex(index)
 		if !ok {
-			model.SetMode("")
+			model.Data().SetPage(p86l.PageHome)
 			return
 		}
-		model.SetMode(item.Value)
+		model.Data().SetPage(item.Value)
 	})
 
 	return nil

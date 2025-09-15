@@ -71,7 +71,7 @@ func (p *Play) Update(context *guigui.Context) error {
 	p.updateButton.SetText("Update")
 	p.playButton.SetText("Play")
 
-	p.changelogText.Widget().SetValue(model.Cache().ChangelogText(model.UsePreRelease()))
+	p.changelogText.Widget().SetValue(model.Cache().ChangelogText(model.Data().UsePreRelease()))
 	p.changelogText.Widget().SetAutoWrap(true)
 	p.changelogText.Widget().SetMultiline(true)
 	p.changelogText.Widget().SetEditable(false)
@@ -81,12 +81,12 @@ func (p *Play) Update(context *guigui.Context) error {
 
 	p.prereleaseToggle.SetOnValueChanged(func(value bool) {
 		if value {
-			model.SetUsePreRelease(true)
+			model.Data().SetUsePreRelease(true)
 		} else {
-			model.SetUsePreRelease(false)
+			model.Data().SetUsePreRelease(false)
 		}
 	})
-	if model.UsePreRelease() {
+	if model.Data().UsePreRelease() {
 		p.prereleaseToggle.SetValue(true)
 	} else {
 		p.prereleaseToggle.SetValue(false)

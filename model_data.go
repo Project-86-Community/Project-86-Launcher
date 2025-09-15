@@ -21,49 +21,45 @@
 
 package p86l
 
-import (
-	"errors"
-	"net"
+type Pages int
+
+const (
+	PageHome Pages = iota
+	PagePlay
+	PageSettings
+	PageAbout
 )
 
-type Model struct {
-	listener net.Listener
-	log      LogModel
-	file     FileModel
-	data     DataModel
-	cache    CacheModel
+type DataModel struct {
+	page           Pages
+	usePreRelease  bool
+	disableBgMusic bool
 }
 
-// -- Getters for Model --
+// -- Getters for DataModel --
 
-func (m *Model) Listener() net.Listener {
-	return m.listener
+func (d *DataModel) Page() Pages {
+	return d.page
 }
 
-func (m *Model) Log() *LogModel {
-	return &m.log
+func (d *DataModel) UsePreRelease() bool {
+	return d.usePreRelease
 }
 
-func (m *Model) File() *FileModel {
-	return &m.file
+func (d *DataModel) DisableBgMusic() bool {
+	return d.disableBgMusic
 }
 
-func (m *Model) Data() *DataModel {
-	return &m.data
+// -- Setters for DataModel --
+
+func (d *DataModel) SetPage(page Pages) {
+	d.page = page
 }
 
-func (m *Model) Cache() *CacheModel {
-	return &m.cache
+func (d *DataModel) SetUsePreRelease(value bool) {
+	d.usePreRelease = value
 }
 
-// -- Setters for Model --
-
-func (m *Model) SetListener(listener net.Listener) {
-	m.listener = listener
-}
-
-// -- common --
-
-func (m *Model) Close() error {
-	return errors.Join(m.listener.Close(), m.Log().Close(), m.file.Close())
+func (d *DataModel) SetDisableBgMusic(value bool) {
+	d.disableBgMusic = value
 }
