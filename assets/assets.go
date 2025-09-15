@@ -38,6 +38,8 @@ var (
 	LeadDeveloper = ebiten.NewImageFromImage(images.ImageLeadDeveloper)
 	DevDeveloper  = ebiten.NewImageFromImage(images.ImageDevDeveloper)
 
+	//go:embed images/icon.ico
+	P86lIco []byte
 	//go:embed audio/p86l_ost_legion.ogg
 	P86lOst []byte
 )

@@ -22,13 +22,27 @@
 package p86l
 
 import (
+	"bytes"
+	"fmt"
 	"image"
 	"os"
+	"p86l/assets"
 	"runtime"
 	"strings"
+
+	"github.com/fyne-io/image/ico"
 )
 
 var DisableAPI bool = false
+
+func GetIcons() ([]image.Image, error) {
+	images, err := ico.DecodeAll(bytes.NewReader(assets.P86lIco))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode icons: %w", err)
+	}
+
+	return images, nil
+}
 
 func GetUsername() string {
 	var username string

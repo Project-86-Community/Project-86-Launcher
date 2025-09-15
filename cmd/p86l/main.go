@@ -37,6 +37,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
 	"github.com/rs/zerolog"
 )
@@ -106,18 +107,25 @@ func main() {
 	model.Cache().SetFS(fs)
 	model.Cache().SetLogger(logger)
 
-	if !model.Data().DisableBgMusic() {
-		player.Play()
-	}
 	go model.Cache().Start()
+
 	app := &app.Root{}
 	app.SetModel(model)
-
 	defer func() {
 		if err := app.Close(); err != nil {
 			fmt.Println(err)
 		}
 	}()
+
+	images, err := p86l.GetIcons()
+	if err != nil {
+		logger.Error().Err(err).Msg(log.ErrorManager.String())
+		os.Exit(1)
+	}
+	ebiten.SetWindowIcon(images)
+	if !model.Data().DisableBgMusic() {
+		player.Play()
+	}
 
 	op := &guigui.RunOptions{
 		Title:         configs.AppTitle,
