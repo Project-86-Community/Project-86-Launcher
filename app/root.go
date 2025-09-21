@@ -28,7 +28,6 @@ import (
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/hajimehoshi/guigui/layout"
 )
 
 type modelKey int
@@ -43,18 +42,19 @@ type Root struct {
 	backgroundImage basicwidget.Image
 	background      basicwidget.Background
 	sidebar         Sidebar
-	panelPlay       basicwidget.Panel
-	panelSettings   basicwidget.Panel
-	panelAbout      basicwidget.Panel
 	home            Home
-	play            guigui.WidgetWithSize[*Play]
-	settings        guigui.WidgetWithSize[*Settings]
-	about           guigui.WidgetWithSize[*About]
+
+	panelPlay     basicwidget.Panel
+	panelSettings basicwidget.Panel
+	panelAbout    basicwidget.Panel
+
+	play     guigui.WidgetWithSize[*Play]
+	settings guigui.WidgetWithSize[*Settings]
+	about    guigui.WidgetWithSize[*About]
 
 	model                   *p86l.Model
 	backgroundImageSize     image.Point
 	backgroundImagePosition image.Point
-	mainLayout              layout.GridLayout
 }
 
 func (r *Root) handleBackgroundImage(context *guigui.Context) {
@@ -126,27 +126,24 @@ func (r *Root) Update(context *guigui.Context) error {
 	context.SetOpacity(&r.background, 0.9)
 
 	u := basicwidget.UnitSize(context)
-	x := r.mainLayout.CellBounds(1, 0).Size().X
+	x := context.Bounds(r).Size().X - (8 * u)
 
-	switch r.model.Data().Page() {
-	case p86l.PagePlay:
-		r.play.SetFixedSize(image.Pt(x, r.play.Widget().Overflow(context).Y))
-		r.panelPlay.SetContent(&r.play)
-	case p86l.PageSettings:
-		r.settings.SetFixedSize(image.Pt(x, r.settings.Widget().Overflow(context).Y))
-		r.panelSettings.SetContent(&r.settings)
-	case p86l.PageAbout:
-		r.about.SetFixedSize(image.Pt(x, r.about.Widget().Overflow(context).Y))
-		r.panelAbout.SetContent(&r.about)
+	{
+		y := r.play.Widget().Overflow(context).Y
+		r.play.SetFixedSize(image.Pt(x, y))
+	}
+	{
+		y := r.settings.Widget().Overflow(context).Y
+		r.settings.SetFixedSize(image.Pt(x, y))
+	}
+	{
+		y := r.about.Widget().Overflow(context).Y
+		r.about.SetFixedSize(image.Pt(x, y))
 	}
 
-	r.mainLayout = layout.GridLayout{
-		Bounds: context.Bounds(r),
-		Widths: []layout.Size{
-			layout.FixedSize(8 * u),
-			layout.FlexibleSize(1),
-		},
-	}
+	r.panelPlay.SetContent(&r.play)
+	r.panelSettings.SetContent(&r.settings)
+	r.panelAbout.SetContent(&r.about)
 
 	return nil
 }
@@ -154,27 +151,34 @@ func (r *Root) Update(context *guigui.Context) error {
 func (r *Root) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
 	switch widget {
 	case &r.backgroundImage:
-		return image.Rect(
-			r.backgroundImagePosition.X,
-			r.backgroundImagePosition.Y,
-			r.backgroundImagePosition.X+r.backgroundImageSize.X,
-			r.backgroundImagePosition.Y+r.backgroundImageSize.Y,
-		)
-	case &r.background:
-		return r.mainLayout.CellBounds(1, 0)
-	case &r.sidebar:
-		return r.mainLayout.CellBounds(0, 0)
-	case &r.panelPlay:
-		return r.mainLayout.CellBounds(1, 0)
-	case &r.panelSettings:
-		return r.mainLayout.CellBounds(1, 0)
-	case &r.panelAbout:
-		return r.mainLayout.CellBounds(1, 0)
-	case &r.home:
-		return r.mainLayout.CellBounds(1, 0)
+		return image.Rectangle{
+			Min: r.backgroundImagePosition,
+			Max: image.Pt(
+				r.backgroundImagePosition.X+r.backgroundImageSize.X,
+				r.backgroundImagePosition.Y+r.backgroundImageSize.Y,
+			),
+		}
 	}
 
-	return image.Rectangle{}
+	u := basicwidget.UnitSize(context)
+	layout := guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionHorizontal,
+		Items: []guigui.LinearLayoutItem{
+			{
+				Widget: &r.sidebar,
+				Size:   guigui.FixedSize(8 * u),
+			},
+			{
+				Size: guigui.FlexibleSize(1),
+			},
+		},
+	}
+	if widget == &r.sidebar {
+		return layout.WidgetBounds(context, context.Bounds(r), widget)
+	} else if widget == &r.background {
+		return layout.ItemBounds(context, context.Bounds(r), 1)
+	}
+	return layout.ItemBounds(context, context.Bounds(r), 1)
 }
 
 func (r *Root) Close() error {

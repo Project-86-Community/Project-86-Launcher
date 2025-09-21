@@ -29,7 +29,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/hajimehoshi/guigui/layout"
 )
 
 type About struct {
@@ -39,12 +38,15 @@ type About struct {
 	form                       basicwidget.Form
 	text1, text2, text3, text4 basicwidget.Text
 	image1, image2             aboutIcon
-
-	mainLayout layout.GridLayout
 }
 
 func (a *About) Overflow(context *guigui.Context) image.Point {
-	return p86l.MergeRectangles(a.mainLayout.CellBounds(0, 0), a.mainLayout.CellBounds(0, 1), a.mainLayout.CellBounds(0, 2)).Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
+	r1 := context.Bounds(&a.text1).Bounds()
+	r2 := context.Bounds(&a.form).Bounds()
+	r3 := context.Bounds(&a.text4).Bounds()
+	size := p86l.MergeRectangles(r1, r2, r3)
+
+	return size.Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
 }
 
 func (a *About) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
@@ -100,33 +102,27 @@ func (a *About) Update(context *guigui.Context) error {
 	}
 
 	a.form.SetItems(items)
-	u := basicwidget.UnitSize(context)
-	a.mainLayout = layout.GridLayout{
-		Bounds: context.Bounds(a).Inset(u / 2),
-		Heights: []layout.Size{
-			layout.FixedSize(a.text1.Measure(context, guigui.FixedWidthConstraints(context.Bounds(a).Dx()-u)).Y + u),
-			layout.FixedSize(a.form.Measure(context, guigui.FixedWidthConstraints(context.Bounds(a).Dx()-u)).Y + u/2),
-			layout.FixedSize(a.text4.Measure(context, guigui.FixedWidthConstraints(context.Bounds(a).Dx()-u)).Y),
-		},
-		RowGap: u / 2,
-	}
 
 	return nil
 }
 
 func (a *About) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
-	switch widget {
-	case &a.text1:
-		return a.mainLayout.CellBounds(0, 0)
-	case &a.background:
-		return a.mainLayout.CellBounds(0, 1)
-	case &a.form:
-		return a.mainLayout.CellBounds(0, 1).Inset(basicwidget.UnitSize(context) / 4)
-	case &a.text4:
-		return a.mainLayout.CellBounds(0, 2)
-	}
-
-	return image.Rectangle{}
+	u := basicwidget.UnitSize(context)
+	return (guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items: []guigui.LinearLayoutItem{
+			{
+				Widget: &a.text1,
+			},
+			{
+				Widget: &a.form,
+			},
+			{
+				Widget: &a.text4,
+			},
+		},
+		Gap: u / 2,
+	}).WidgetBounds(context, context.Bounds(a).Inset(u/2), widget)
 }
 
 type aboutIcon struct {
@@ -134,7 +130,6 @@ type aboutIcon struct {
 
 	image basicwidget.Image
 
-	mainLayout  layout.GridLayout
 	ebitenImage *ebiten.Image
 }
 
@@ -148,24 +143,21 @@ func (a *aboutIcon) AddChildren(context *guigui.Context, adder *guigui.ChildAdde
 
 func (a *aboutIcon) Update(context *guigui.Context) error {
 	a.image.SetImage(a.ebitenImage)
-	u := basicwidget.UnitSize(context)
-	a.mainLayout = layout.GridLayout{
-		Bounds: context.Bounds(a),
-		Heights: []layout.Size{
-			layout.FixedSize(u * 3),
-		},
-	}
 
 	return nil
 }
 
 func (a *aboutIcon) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
-	switch widget {
-	case &a.image:
-		return a.mainLayout.CellBounds(0, 0)
-	}
-
-	return image.Rectangle{}
+	u := basicwidget.UnitSize(context)
+	return (guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionHorizontal,
+		Items: []guigui.LinearLayoutItem{
+			{
+				Widget: &a.image,
+				Size:   guigui.FixedSize(u * 3),
+			},
+		},
+	}).WidgetBounds(context, context.Bounds(a), widget)
 }
 
 func (a *aboutIcon) Measure(context *guigui.Context, constraints guigui.Constraints) image.Point {

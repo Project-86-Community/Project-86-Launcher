@@ -27,7 +27,6 @@ import (
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/hajimehoshi/guigui/layout"
 )
 
 type Home struct {
@@ -36,8 +35,6 @@ type Home struct {
 	background                                           basicwidget.Background
 	form                                                 basicwidget.Form
 	welcomeText, usernameText, downloadText, versionText basicwidget.Text
-
-	mainLayout layout.GridLayout
 }
 
 func (h *Home) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
@@ -49,7 +46,7 @@ func (h *Home) Update(context *guigui.Context) error {
 	h.welcomeText.SetValue("Welcome Test")
 	h.usernameText.SetValue(p86l.GetUsername())
 	h.downloadText.SetValue("Downloaded")
-	h.versionText.SetValue("v15.15.15")
+	h.versionText.SetValue("v1.8.2-alpha")
 
 	h.form.SetItems([]basicwidget.FormItem{
 		{
@@ -62,26 +59,35 @@ func (h *Home) Update(context *guigui.Context) error {
 		},
 	})
 
-	u := basicwidget.UnitSize(context)
-	h.mainLayout = layout.GridLayout{
-		Bounds: context.Bounds(h).Inset(u / 2),
-		Heights: []layout.Size{
-			layout.FlexibleSize(2),
-			layout.FixedSize(h.form.Measure(context, guigui.FixedWidthConstraints(context.Bounds(h).Dx()-u)).Y + u/2),
-		},
-	}
-
 	return nil
 }
 
 func (h *Home) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
 	u := basicwidget.UnitSize(context)
-	switch widget {
-	case &h.background:
-		return h.mainLayout.CellBounds(0, 1)
-	case &h.form:
-		return h.mainLayout.CellBounds(0, 1).Inset(u / 4)
-	}
-
-	return image.Rectangle{}
+	return (guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items: []guigui.LinearLayoutItem{
+			{
+				Size: guigui.FlexibleSize(1),
+			},
+			{
+				Widget: &h.background,
+				Size:   guigui.FixedSize(h.form.Measure(context, guigui.FixedWidthConstraints(context.Bounds(h).Dx()-u)).Y + u/2),
+				Layout: guigui.LinearLayout{
+					Direction: guigui.LayoutDirectionVertical,
+					Items: []guigui.LinearLayoutItem{
+						{
+							Widget: &h.form,
+						},
+					},
+					Padding: guigui.Padding{
+						Start:  u / 4,
+						Top:    u / 4,
+						End:    u / 4,
+						Bottom: u / 4,
+					},
+				},
+			},
+		},
+	}).WidgetBounds(context, context.Bounds(h).Inset(u/2), widget)
 }

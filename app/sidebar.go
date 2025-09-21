@@ -27,27 +27,22 @@ import (
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/hajimehoshi/guigui/layout"
 )
 
 type Sidebar struct {
 	guigui.DefaultWidget
 
-	panel           basicwidget.Panel
-	panelContent    sidebarContent
-	cacheExpireText basicwidget.Text
-
-	mainLayout layout.GridLayout
+	panel        basicwidget.Panel
+	panelContent sidebarContent
+	bottom       sidebarBottom
 }
 
 func (s *Sidebar) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
 	adder.AddChild(&s.panel)
-	adder.AddChild(&s.cacheExpireText)
+	adder.AddChild(&s.bottom)
 }
 
 func (s *Sidebar) Update(context *guigui.Context) error {
-	model := context.Model(s, modelKeyModel).(*p86l.Model)
-
 	s.panel.SetStyle(basicwidget.PanelStyleSide)
 	s.panel.SetBorders(basicwidget.PanelBorder{
 		End: true,
@@ -56,29 +51,27 @@ func (s *Sidebar) Update(context *guigui.Context) error {
 	s.panelContent.setSize(context.Bounds(s).Size())
 	s.panel.SetContent(&s.panelContent)
 
-	s.cacheExpireText.SetValue(model.Cache().ExpireTimeFormatted())
-	s.cacheExpireText.SetAutoWrap(true)
-	s.cacheExpireText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
-
-	u := basicwidget.UnitSize(context)
-	s.mainLayout = layout.GridLayout{
-		Bounds: context.Bounds(s),
-		Heights: []layout.Size{
-			layout.FixedSize(s.panelContent.Measure(context, guigui.FixedWidthConstraints(context.Bounds(s).Dx()-u)).Y),
-			layout.FlexibleSize(1),
-			layout.FixedSize(u * 2),
-		},
-	}
-
 	return nil
 }
 
 func (s *Sidebar) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
 	switch widget {
 	case &s.panel:
-		return s.mainLayout.CellBounds(0, 0)
-	case &s.cacheExpireText:
-		return s.mainLayout.CellBounds(0, 2).Inset(basicwidget.UnitSize(context) / 4)
+		return context.Bounds(s)
+	case &s.bottom:
+		u := basicwidget.UnitSize(context)
+		return (guigui.LinearLayout{
+			Direction: guigui.LayoutDirectionVertical,
+			Items: []guigui.LinearLayoutItem{
+				{
+					Size: guigui.FlexibleSize(1),
+				},
+				{
+					Widget: &s.bottom,
+					Size:   guigui.FixedSize(2 * u),
+				},
+			},
+		}).WidgetBounds(context, context.Bounds(s), widget)
 	}
 	return image.Rectangle{}
 }
@@ -148,4 +141,33 @@ func (s *sidebarContent) Layout(context *guigui.Context, widget guigui.Widget) i
 
 func (s *sidebarContent) Measure(context *guigui.Context, constraints guigui.Constraints) image.Point {
 	return s.size
+}
+
+type sidebarBottom struct {
+	guigui.DefaultWidget
+
+	cacheExpireText basicwidget.Text
+}
+
+func (s *sidebarBottom) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+	adder.AddChild(&s.cacheExpireText)
+}
+
+func (s *sidebarBottom) Update(context *guigui.Context) error {
+	model := context.Model(s, modelKeyModel).(*p86l.Model)
+
+	s.cacheExpireText.SetValue(model.Cache().ExpireTimeFormatted())
+	s.cacheExpireText.SetAutoWrap(true)
+	s.cacheExpireText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+
+	return nil
+}
+
+func (s *sidebarBottom) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
+	u := basicwidget.UnitSize(context)
+	switch widget {
+	case &s.cacheExpireText:
+		return context.Bounds(s).Inset(u / 4)
+	}
+	return image.Rectangle{}
 }

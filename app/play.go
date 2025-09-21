@@ -29,7 +29,6 @@ import (
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/hajimehoshi/guigui/layout"
 )
 
 type Play struct {
@@ -42,14 +41,15 @@ type Play struct {
 	prereleaseToggle                                          basicwidget.Toggle
 	changelogText                                             guigui.WidgetWithSize[*basicwidget.Text]
 	websiteButton, githubButton, discordButton, patreonButton basicwidget.Button
-
-	mainLayout   layout.GridLayout
-	buttonLayout layout.GridLayout
-	socialLayout layout.GridLayout
 }
 
 func (p *Play) Overflow(context *guigui.Context) image.Point {
-	return p86l.MergeRectangles(p.mainLayout.CellBounds(0, 0), p.mainLayout.CellBounds(0, 1), p.mainLayout.CellBounds(0, 2), p.mainLayout.CellBounds(0, 3)).Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
+	r1 := context.Bounds(&p.installButton).Bounds()
+	r2 := context.Bounds(&p.form).Bounds()
+	r3 := context.Bounds(&p.websiteButton).Bounds()
+	size := p86l.MergeRectangles(r1, r2, r3)
+
+	return size.Size().Add(image.Pt(0, int(3.5*float64(basicwidget.UnitSize(context)))))
 }
 
 func (p *Play) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
@@ -112,68 +112,95 @@ func (p *Play) Update(context *guigui.Context) error {
 	p.discordButton.SetIcon(assets.Discord)
 	p.patreonButton.SetIcon(assets.Patreon)
 
-	u := basicwidget.UnitSize(context)
-	p.mainLayout = layout.GridLayout{
-		Bounds: context.Bounds(p).Inset(u / 2),
-		Heights: []layout.Size{
-			layout.FixedSize(u * 2),
-			layout.FixedSize(u * 2),
-			layout.FixedSize(p.form.Measure(context, guigui.FixedWidthConstraints(context.Bounds(p).Dx()-u)).Y + u/2),
-			layout.FixedSize(int(float64(u) * 1.5)),
-		},
-		RowGap: u / 2,
-	}
-	p.buttonLayout = layout.GridLayout{
-		Bounds: p.mainLayout.CellBounds(0, 1),
-		Widths: []layout.Size{
-			layout.FlexibleSize(1),
-			layout.FixedSize(u * 4),
-			layout.FixedSize(u * 4),
-			layout.FixedSize(u * 4),
-			layout.FlexibleSize(1),
-		},
-		Heights: []layout.Size{
-			layout.FixedSize(u * 2),
-		},
-		ColumnGap: u / 2,
-	}
-	p.socialLayout = layout.GridLayout{
-		Bounds: p.mainLayout.CellBounds(0, 3),
-		Widths: []layout.Size{
-			layout.FlexibleSize(1),
-			layout.FixedSize(int(float64(u) * 1.5)),
-			layout.FixedSize(int(float64(u) * 1.5)),
-			layout.FixedSize(int(float64(u) * 1.5)),
-			layout.FixedSize(int(float64(u) * 1.5)),
-			layout.FlexibleSize(1),
-		},
-		ColumnGap: u / 2,
-	}
-
 	return nil
 }
 
 func (p *Play) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
-	switch widget {
-	case &p.installButton:
-		return p.buttonLayout.CellBounds(1, 0)
-	case &p.updateButton:
-		return p.buttonLayout.CellBounds(2, 0)
-	case &p.playButton:
-		return p.buttonLayout.CellBounds(3, 0)
-	case &p.background:
-		return p.mainLayout.CellBounds(0, 2)
-	case &p.form:
-		return p.mainLayout.CellBounds(0, 2).Inset(basicwidget.UnitSize(context) / 4)
-	case &p.websiteButton:
-		return p.socialLayout.CellBounds(1, 0)
-	case &p.githubButton:
-		return p.socialLayout.CellBounds(2, 0)
-	case &p.discordButton:
-		return p.socialLayout.CellBounds(3, 0)
-	case &p.patreonButton:
-		return p.socialLayout.CellBounds(4, 0)
-	}
+	u := basicwidget.UnitSize(context)
+	return (guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items: []guigui.LinearLayoutItem{
+			{
+				Size: guigui.FixedSize(u * 2),
+			},
+			{
+				Size: guigui.FixedSize(u * 2),
+				Layout: guigui.LinearLayout{
+					Direction: guigui.LayoutDirectionHorizontal,
+					Items: []guigui.LinearLayoutItem{
+						{
+							Size: guigui.FlexibleSize(1),
+						},
+						{
+							Widget: &p.installButton,
+							Size:   guigui.FixedSize(u * 4),
+						},
+						{
+							Widget: &p.updateButton,
+							Size:   guigui.FixedSize(u * 4),
+						},
+						{
+							Widget: &p.playButton,
+							Size:   guigui.FixedSize(u * 4),
+						},
+						{
+							Size: guigui.FlexibleSize(1),
+						},
+					},
+					Gap: u / 2,
+				},
+			},
+			{
+				Widget: &p.background,
+				Size:   guigui.FixedSize(p.form.Measure(context, guigui.FixedWidthConstraints(context.Bounds(p).Dx()-u)).Y + u/2),
+				Layout: guigui.LinearLayout{
+					Direction: guigui.LayoutDirectionVertical,
+					Items: []guigui.LinearLayoutItem{
+						{
+							Widget: &p.form,
+						},
+					},
+					Padding: guigui.Padding{
+						Start:  u / 4,
+						Top:    u / 4,
+						End:    u / 4,
+						Bottom: u / 4,
+					},
+				},
+			},
+			{
+				Size: guigui.FixedSize(int(float64(u) * 1.5)),
+				Layout: guigui.LinearLayout{
+					Direction: guigui.LayoutDirectionHorizontal,
+					Items: []guigui.LinearLayoutItem{
+						{
+							Size: guigui.FlexibleSize(1),
+						},
+						{
+							Widget: &p.websiteButton,
+							Size:   guigui.FixedSize(int(float64(u) * 1.5)),
+						},
+						{
+							Widget: &p.githubButton,
+							Size:   guigui.FixedSize(int(float64(u) * 1.5)),
+						},
+						{
+							Widget: &p.discordButton,
+							Size:   guigui.FixedSize(int(float64(u) * 1.5)),
+						},
+						{
+							Widget: &p.patreonButton,
+							Size:   guigui.FixedSize(int(float64(u) * 1.5)),
+						},
+						{
+							Size: guigui.FlexibleSize(1),
+						},
+					},
+					Gap: u / 2,
+				},
+			},
+		},
+		Gap: u / 2,
+	}).WidgetBounds(context, context.Bounds(p).Inset(u/2), widget)
 
-	return image.Rectangle{}
 }

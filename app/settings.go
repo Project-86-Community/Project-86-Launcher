@@ -29,7 +29,6 @@ import (
 
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
-	"github.com/hajimehoshi/guigui/layout"
 	"golang.org/x/text/language"
 )
 
@@ -51,12 +50,15 @@ type Settings struct {
 	form3            basicwidget.Form
 	resetCacheText   basicwidget.Text
 	resetCacheButton basicwidget.Button
-
-	mainLayout layout.GridLayout
 }
 
 func (s *Settings) Overflow(context *guigui.Context) image.Point {
-	return p86l.MergeRectangles(s.mainLayout.CellBounds(0, 0), s.mainLayout.CellBounds(0, 1), s.mainLayout.CellBounds(0, 2)).Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
+	r1 := context.Bounds(&s.form1).Bounds()
+	r2 := context.Bounds(&s.form2).Bounds()
+	r3 := context.Bounds(&s.form3).Bounds()
+	size := p86l.MergeRectangles(r1, r2, r3)
+
+	return size.Size().Add(image.Pt(0, basicwidget.UnitSize(context)))
 }
 
 func (s *Settings) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
@@ -227,37 +229,40 @@ func (s *Settings) Update(context *guigui.Context) error {
 	s.form1.SetItems(items1)
 	s.form2.SetItems(items2)
 	s.form3.SetItems(items3)
-	u := basicwidget.UnitSize(context)
-	s.mainLayout = layout.GridLayout{
-		Bounds: context.Bounds(s).Inset(u / 2),
-		Heights: []layout.Size{
-			layout.FixedSize(s.form1.Measure(context, guigui.FixedWidthConstraints(context.Bounds(s).Dx()-u)).Y + u/2),
-			layout.FixedSize(s.form2.Measure(context, guigui.FixedWidthConstraints(context.Bounds(s).Dx()-u)).Y + u/2),
-			layout.FixedSize(s.form3.Measure(context, guigui.FixedWidthConstraints(context.Bounds(s).Dx()-u)).Y + u/2),
-		},
-	}
 
 	return nil
 }
 
 func (s *Settings) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
 	u := basicwidget.UnitSize(context)
-	switch widget {
-	case &s.background:
-		r1 := s.mainLayout.CellBounds(0, 0)
-		r2 := s.mainLayout.CellBounds(0, 1)
-		r3 := s.mainLayout.CellBounds(0, 2)
-		return image.Rectangle{
-			Min: r1.Min,
-			Max: image.Pt(max(r1.Max.X, r2.Max.X, r3.Max.X), max(r1.Max.Y, r2.Max.Y, r3.Max.Y)),
-		}
-	case &s.form1:
-		return s.mainLayout.CellBounds(0, 0).Inset(u / 4)
-	case &s.form2:
-		return s.mainLayout.CellBounds(0, 1).Inset(u / 4)
-	case &s.form3:
-		return s.mainLayout.CellBounds(0, 2).Inset(u / 4)
-	}
-
-	return image.Rectangle{}
+	return (guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items: []guigui.LinearLayoutItem{
+			{
+				Widget: &s.background,
+				Size:   guigui.FixedSize(s.Overflow(context).Y - u/2),
+				Layout: guigui.LinearLayout{
+					Direction: guigui.LayoutDirectionVertical,
+					Items: []guigui.LinearLayoutItem{
+						{
+							Widget: &s.form1,
+						},
+						{
+							Widget: &s.form2,
+						},
+						{
+							Widget: &s.form3,
+						},
+					},
+					Gap: u / 2,
+					Padding: guigui.Padding{
+						Start:  u / 4,
+						Top:    u / 4,
+						End:    u / 4,
+						Bottom: u / 4,
+					},
+				},
+			},
+		},
+	}).WidgetBounds(context, context.Bounds(s).Inset(u/4), widget)
 }
