@@ -115,7 +115,22 @@ func (a *About) Layout(context *guigui.Context, widget guigui.Widget) image.Rect
 				Widget: &a.text1,
 			},
 			{
-				Widget: &a.form,
+				Widget: &a.background,
+				Size:   guigui.FixedSize(a.form.Measure(context, guigui.FixedWidthConstraints(context.Bounds(a).Dx()-u)).Y + u/2),
+				Layout: guigui.LinearLayout{
+					Direction: guigui.LayoutDirectionVertical,
+					Items: []guigui.LinearLayoutItem{
+						{
+							Widget: &a.form,
+						},
+					},
+					Padding: guigui.Padding{
+						Start:  u / 4,
+						Top:    u / 4,
+						End:    u / 4,
+						Bottom: u / 4,
+					},
+				},
 			},
 			{
 				Widget: &a.text4,
