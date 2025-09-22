@@ -52,6 +52,7 @@ func setupLogger(fs *os.Root) (*zerolog.Logger, *os.File) {
 			TimeFormat: time.RFC3339,
 		}
 		logger := zerolog.New(output).With().Timestamp().Logger()
+		logger.Info().Bool("Debug", true).Msg(log.AppManager.String())
 		for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
 			switch {
 			case token != "log":
@@ -91,6 +92,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	p86l.LauncherVersion = VERSION
 	model := &p86l.Model{}
 	player, err := model.StartBGM()
 	if err != nil {
@@ -112,6 +114,7 @@ func main() {
 	app := &app.Root{}
 	app.SetModel(model)
 	defer func() {
+		logger.Info().Str("main", "closing").Msg(log.AppManager.String())
 		if err := app.Close(); err != nil {
 			fmt.Println(err)
 		}

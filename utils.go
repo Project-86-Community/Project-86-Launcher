@@ -34,7 +34,10 @@ import (
 	"github.com/fyne-io/image/ico"
 )
 
-var DisableAPI bool = false
+var (
+	LauncherVersion string = "dev"
+	DisableAPI      bool   = false
+)
 
 func GetIcons() ([]image.Image, error) {
 	images, err := ico.DecodeAll(bytes.NewReader(assets.P86lIco))

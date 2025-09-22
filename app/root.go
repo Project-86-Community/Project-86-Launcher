@@ -25,7 +25,10 @@ import (
 	"image"
 	"p86l"
 	"p86l/assets"
+	"runtime"
+	"sync"
 
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
 )
@@ -55,6 +58,8 @@ type Root struct {
 	model                   *p86l.Model
 	backgroundImageSize     image.Point
 	backgroundImagePosition image.Point
+
+	sync sync.Once
 }
 
 func (r *Root) handleBackgroundImage(context *guigui.Context) {
@@ -121,6 +126,16 @@ func (r *Root) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
 }
 
 func (r *Root) Update(context *guigui.Context) error {
+	r.sync.Do(func() {
+		logger := r.model.Log().Logger()
+		logger.Info().Str("Version", p86l.LauncherVersion).Msg("P86L - Project 86 Launcher")
+		logger.Info().Str("Detected OS", runtime.GOOS).Msg("Operating System")
+
+		var gpuInfo ebiten.DebugInfo
+		ebiten.ReadDebugInfo(&gpuInfo)
+		logger.Info().Str("Graphics API", gpuInfo.GraphicsLibrary.String()).Msg("GPU")
+	})
+
 	r.backgroundImage.SetImage(assets.Banner)
 	r.handleBackgroundImage(context)
 	context.SetOpacity(&r.background, 0.9)

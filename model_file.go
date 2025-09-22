@@ -54,6 +54,7 @@ func (f *FileModel) Open(input string) {
 	if err := open.Open(input); err != nil {
 		f.logger.Warn().Str("FileModel", "Open").Err(err).Msg(log.ErrorManager.String())
 	}
+	f.logger.Info().Str("FileModel.Open", input).Msg(log.AppManager.String())
 }
 
 func (f *FileModel) Close() error {

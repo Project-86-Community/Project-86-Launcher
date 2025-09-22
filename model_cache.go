@@ -225,6 +225,8 @@ func (c *CacheModel) refreshData() {
 	err = c.Save()
 	if err != nil {
 		c.logger.Warn().Str("CacheModel", "refreshData").Err(fmt.Errorf("failed to save cache: %w", err)).Msg(log.ErrorManager.String())
+	} else {
+		c.logger.Info().Str("CacheModel.refreshData", "saved latest cache").Msg(log.AppManager.String())
 	}
 }
 
@@ -232,11 +234,13 @@ func (c *CacheModel) Start() {
 	// Loads saved data
 	if c.fs.Exist(c.Path()) {
 		err := c.Load()
+		c.logger.Info().Str("CacheModel.Start", "loading cache file").Msg(log.AppManager.String())
 		if err != nil {
 			c.logger.Warn().Str("CacheModel", "Start").Err(fmt.Errorf("cache corrupted: %w", err)).Msg(log.ErrorManager.String())
 		}
-		// If timestamp is expired, set ratelimit to nil.
+		// If cache is expired, set ratelimit to nil.
 		if c.data != nil && c.data.RateLimit2 != nil && time.Unix(c.data.RateLimit2.Reset, 0).Before(time.Now()) {
+			c.logger.Info().Str("CacheModel.Start", "cache is expired").Msg(log.AppManager.String())
 			c.data.RateLimit2 = nil
 			c.refreshData()
 		}
@@ -249,6 +253,7 @@ func (c *CacheModel) Start() {
 
 	// Refresh data when, on startup and there is no cache.
 	if !c.fs.Exist(c.Path()) {
+		c.logger.Info().Str("CacheModel.Start", "no cache file found, getting new cache").Msg(log.AppManager.String())
 		c.refreshData()
 	}
 
@@ -259,6 +264,7 @@ func (c *CacheModel) Start() {
 		if err != nil {
 			c.logger.Warn().Str("CacheModel", "Start").Err(fmt.Errorf("%w: %w", log.ErrCacheRateLimit, err)).Msg(log.ErrorManager.String())
 		} else {
+			c.logger.Info().Str("CacheModel.Start", "API is ratelimited").Msg(log.AppManager.String())
 			c.data = &CacheData{
 				RateLimit2: ratelimit,
 				Releases:   nil,
@@ -289,5 +295,6 @@ func (c *CacheModel) ForceRefresh() {
 	if err := c.Remove(); err != nil {
 		c.logger.Warn().Str("CacheModel", "ForceRefresh").Err(fmt.Errorf("failed to remove cache: %w", err))
 	}
+	c.logger.Info().Str("CacheModel.ForceRefresh", "force refreshing cache").Msg(log.AppManager.String())
 	c.refreshData()
 }
