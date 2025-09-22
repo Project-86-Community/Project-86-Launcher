@@ -100,15 +100,34 @@ func (c *CacheModel) ExpireTimeFormatted() string {
 	return "..."
 }
 
-func (c *CacheModel) ChangelogText(value bool) string {
-	if c.data != nil && c.data.Releases != nil {
-		if value {
-			return fmt.Sprintf("%s\n\n%s", c.data.Releases.PreRelease.Name, c.data.Releases.PreRelease.Body)
-		} else {
-			return fmt.Sprintf("%s\n\n%s", c.data.Releases.Stable.Name, c.data.Releases.Stable.Body)
-		}
+func (c *CacheModel) GameVersionText(value bool) string {
+	if c.data == nil && c.data.Releases == nil {
+		return "..."
 	}
-	return "..."
+	if value {
+		_, debugGameAsset := GetAssets(c.data.Releases.PreRelease.Assets)
+		if debugGameAsset == nil {
+			return "..."
+		}
+		return fmt.Sprintf("%d", debugGameAsset.DownloadCount)
+	} else {
+		gameAsset, _ := GetAssets(c.data.Releases.Stable.Assets)
+		if gameAsset == nil {
+			return "..."
+		}
+		return fmt.Sprintf("%d", gameAsset.DownloadCount)
+	}
+}
+
+func (c *CacheModel) ChangelogText(value bool) string {
+	if c.data == nil && c.data.Releases == nil {
+		return "..."
+	}
+	if value {
+		return fmt.Sprintf("%s\n\n%s", c.data.Releases.PreRelease.Name, c.data.Releases.PreRelease.Body)
+	} else {
+		return fmt.Sprintf("%s\n\n%s", c.data.Releases.Stable.Name, c.data.Releases.Stable.Body)
+	}
 }
 
 func (c *CacheModel) Load() error {

@@ -37,6 +37,7 @@ type Play struct {
 	installButton, updateButton, playButton                   basicwidget.Button
 	background                                                basicwidget.Background
 	form                                                      basicwidget.Form
+	gameDownloadsText, cachedGameDownloadsText                basicwidget.Text
 	prereleaseText                                            basicwidget.Text
 	prereleaseToggle                                          basicwidget.Toggle
 	changelogText                                             guigui.WidgetWithSize[*basicwidget.Text]
@@ -77,7 +78,10 @@ func (p *Play) Update(context *guigui.Context) error {
 	p.changelogText.Widget().SetEditable(false)
 	p.changelogText.SetFixedWidth(context.Bounds(&p.form).Size().X - basicwidget.UnitSize(context)/2)
 
+	p.gameDownloadsText.SetValue("Total downloads")
 	p.prereleaseText.SetValue("Enable Pre-release")
+
+	p.cachedGameDownloadsText.SetValue(model.Cache().GameVersionText(model.Data().UsePreRelease()))
 
 	p.prereleaseToggle.SetOnValueChanged(func(value bool) {
 		if value {
@@ -93,6 +97,10 @@ func (p *Play) Update(context *guigui.Context) error {
 	}
 
 	p.form.SetItems([]basicwidget.FormItem{
+		{
+			PrimaryWidget:   &p.gameDownloadsText,
+			SecondaryWidget: &p.cachedGameDownloadsText,
+		},
 		{
 			PrimaryWidget:   &p.prereleaseText,
 			SecondaryWidget: &p.prereleaseToggle,

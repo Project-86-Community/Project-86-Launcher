@@ -27,6 +27,7 @@ import (
 	"image"
 	"os"
 	"p86l/assets"
+	"p86l/internal/github"
 	"runtime"
 	"strings"
 
@@ -86,4 +87,34 @@ func MergeRectangles(rects ...image.Rectangle) image.Rectangle {
 		Min: mergedMin,
 		Max: mergedMax,
 	}
+}
+
+func isGameFile(filename string) bool {
+	return strings.Contains(filename, "Project86-v") &&
+		strings.Contains(filename, ".zip") &&
+		!strings.Contains(filename, "dev")
+}
+
+func isDebugGameFile(filename string) bool {
+	return strings.Contains(filename, "Project86-v") &&
+		strings.Contains(filename, ".zip") &&
+		strings.Contains(filename, "dev")
+}
+
+func GetAssets(assets []github.ReleaseAsset) (*github.ReleaseAsset, *github.ReleaseAsset) {
+	var gameAsset *github.ReleaseAsset
+	var debugGameAsset *github.ReleaseAsset
+
+	for _, asset := range assets {
+		switch {
+		case isGameFile(asset.Name):
+			gameAsset = &asset
+			continue
+		case isDebugGameFile(asset.Name):
+			debugGameAsset = &asset
+			continue
+		}
+	}
+
+	return gameAsset, debugGameAsset
 }
