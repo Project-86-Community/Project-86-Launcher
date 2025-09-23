@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -25,8 +25,8 @@ import (
 	"image"
 	"p86l"
 
-	"github.com/hajimehoshi/guigui"
-	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/guigui-gui/guigui"
+	"github.com/guigui-gui/guigui/basicwidget"
 )
 
 type Sidebar struct {
@@ -34,52 +34,31 @@ type Sidebar struct {
 
 	panel        basicwidget.Panel
 	panelContent sidebarContent
-	bottom       sidebarBottom
 }
 
-func (s *Sidebar) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+func (s *Sidebar) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	adder.AddChild(&s.panel)
-	adder.AddChild(&s.bottom)
-}
 
-func (s *Sidebar) Update(context *guigui.Context) error {
 	s.panel.SetStyle(basicwidget.PanelStyleSide)
 	s.panel.SetBorders(basicwidget.PanelBorder{
 		End: true,
 	})
 	context.SetOpacity(&s.panel, 0.9)
-	s.panelContent.setSize(context.Bounds(s).Size())
 	s.panel.SetContent(&s.panelContent)
 
 	return nil
 }
 
-func (s *Sidebar) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
-	switch widget {
-	case &s.panel:
-		return context.Bounds(s)
-	case &s.bottom:
-		u := basicwidget.UnitSize(context)
-		return (guigui.LinearLayout{
-			Direction: guigui.LayoutDirectionVertical,
-			Items: []guigui.LinearLayoutItem{
-				{
-					Size: guigui.FlexibleSize(1),
-				},
-				{
-					Widget: &s.bottom,
-					Size:   guigui.FixedSize(2 * u),
-				},
-			},
-		}).WidgetBounds(context, context.Bounds(s), widget)
-	}
-	return image.Rectangle{}
+func (s *Sidebar) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
+	s.panelContent.setSize(widgetBounds.Bounds().Size())
+	layouter.LayoutWidget(&s.panel, widgetBounds.Bounds())
 }
 
 type sidebarContent struct {
 	guigui.DefaultWidget
 
-	list basicwidget.List[p86l.Pages]
+	list   basicwidget.List[p86l.SidebarPage]
+	bottom sidebarBottom
 
 	size image.Point
 }
@@ -88,55 +67,67 @@ func (s *sidebarContent) setSize(size image.Point) {
 	s.size = size
 }
 
-func (s *sidebarContent) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+func (s *sidebarContent) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	adder.AddChild(&s.list)
-}
+	adder.AddChild(&s.bottom)
 
-func (s *sidebarContent) Update(context *guigui.Context) error {
 	model := context.Model(s, modelKeyModel).(*p86l.Model)
+	data := model.Data()
+	dataFile := data.Get()
 
 	s.list.SetStyle(basicwidget.ListStyleSidebar)
 
-	items := []basicwidget.ListItem[p86l.Pages]{
+	items := []basicwidget.ListItem[p86l.SidebarPage]{
 		{
-			Text:  "Home",
+			Text:  p86l.T("home.title"),
 			Value: p86l.PageHome,
 		},
 		{
-			Text:  "Play",
+			Text:  p86l.T("play.play"),
 			Value: p86l.PagePlay,
 		},
 		{
-			Text:  "Settings",
+			Text:  p86l.T("settings.title"),
 			Value: p86l.PageSettings,
 		},
 		{
-			Text:  "About",
+			Text:  p86l.T("about.title"),
 			Value: p86l.PageAbout,
 		},
 	}
 
 	s.list.SetItems(items)
-	s.list.SelectItemByValue(model.Data().Page())
+	s.list.SelectItemByValue(p86l.SidebarPage(dataFile.Remember.Page))
 	s.list.SetItemHeight(basicwidget.UnitSize(context))
 	s.list.SetOnItemSelected(func(index int) {
 		item, ok := s.list.ItemByIndex(index)
 		if !ok {
-			model.Data().SetPage(p86l.PageHome)
+			data.SetPage(p86l.PageHome)
 			return
 		}
-		model.Data().SetPage(item.Value)
+		data.SetPage(item.Value)
 	})
 
 	return nil
 }
 
-func (s *sidebarContent) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
-	switch widget {
-	case &s.list:
-		return context.Bounds(s)
-	}
-	return image.Rectangle{}
+func (s *sidebarContent) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
+	u := basicwidget.UnitSize(context)
+	(guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items: []guigui.LinearLayoutItem{
+			{
+				Widget: &s.list,
+			},
+			{
+				Size: guigui.FlexibleSize(1),
+			},
+			{
+				Widget: &s.bottom,
+			},
+		},
+		Gap: u / 2,
+	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }
 
 func (s *sidebarContent) Measure(context *guigui.Context, constraints guigui.Constraints) image.Point {
@@ -146,28 +137,56 @@ func (s *sidebarContent) Measure(context *guigui.Context, constraints guigui.Con
 type sidebarBottom struct {
 	guigui.DefaultWidget
 
+	progressText    basicwidget.Text
 	cacheExpireText basicwidget.Text
+
+	formattedCacheExpireText string
 }
 
-func (s *sidebarBottom) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+func (s *sidebarBottom) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
+	adder.AddChild(&s.progressText)
 	adder.AddChild(&s.cacheExpireText)
-}
 
-func (s *sidebarBottom) Update(context *guigui.Context) error {
-	model := context.Model(s, modelKeyModel).(*p86l.Model)
+	s.progressText.SetAutoWrap(true)
 
-	s.cacheExpireText.SetValue(model.Cache().ExpireTimeFormatted())
-	s.cacheExpireText.SetAutoWrap(true)
+	s.cacheExpireText.SetValue(s.formattedCacheExpireText)
 	s.cacheExpireText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+	s.cacheExpireText.SetScale(0.8)
+	s.cacheExpireText.SetAutoWrap(true)
+	s.cacheExpireText.SetMultiline(true)
 
 	return nil
 }
 
-func (s *sidebarBottom) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
-	u := basicwidget.UnitSize(context)
-	switch widget {
-	case &s.cacheExpireText:
-		return context.Bounds(s).Inset(u / 4)
+func (s *sidebarBottom) Tick(context *guigui.Context, widgetBounds *guigui.WidgetBounds) error {
+	model := context.Model(s, modelKeyModel).(*p86l.Model)
+	newText := p86l.FormattedCacheExpireText(model.Cache().Get())
+	if newText != s.formattedCacheExpireText {
+		s.formattedCacheExpireText = newText
+		guigui.RequestRedraw(s)
 	}
-	return image.Rectangle{}
+
+	return nil
+}
+
+func (s *sidebarBottom) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
+	u := basicwidget.UnitSize(context)
+	(guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items: []guigui.LinearLayoutItem{
+			{
+				Size: guigui.FlexibleSize(1),
+			},
+			{
+				Widget: &s.progressText,
+			},
+			{
+				Widget: &s.cacheExpireText,
+			},
+		},
+		Gap: u / 2,
+		Padding: guigui.Padding{
+			End: u / 6,
+		},
+	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }

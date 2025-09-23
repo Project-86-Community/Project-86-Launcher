@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -25,8 +25,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"p86l/configs"
 	"path/filepath"
+	"strings"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 var ErrLogFileInvalid = errors.New("failed to create log file")
@@ -46,6 +50,31 @@ func (m Manager) String() string {
 	return list[m] + "Manager"
 }
 
+type Model int
+
+const (
+	UnknownModel Model = iota
+	MainModel
+	DataModel
+	CacheModel
+)
+
+func (m Model) String() string {
+	list := []string{"", "Main", "Data", "Cache"}
+	return list[m] + "Model"
+}
+
+const (
+	Lifecycle      = "lifecycle"
+	BackgroundLoop = "background loop"
+	InitialFetch   = "initial fetch"
+	FetchRateLimit = "fetch rate limit"
+	FetchReleases  = "fetch releases"
+
+	Starting = "starting"
+	Stopped  = "stopped"
+)
+
 // -- errors --
 
 var (
@@ -57,25 +86,15 @@ var (
 	ErrFileLoad   = errors.New("failed to load file")
 	ErrFileSave   = errors.New("failed to save file")
 
-	ErrGithubRequestNew       = errors.New("failed to create new request")
-	ErrGithubRequestDo        = errors.New("failed to execute request")
-	ErrGithubRequestStatus    = errors.New("github api returned status")
-	ErrGithubRequestBodyRead  = errors.New("reading body failed")
-	ErrGithubRequestBodyClose = errors.New("failed to close body")
-
-	ErrCacheRateLimit = errors.New("failed to get ratelimit")
-	ErrCacheLatest    = errors.New("failed to get latest cache")
-
-	ErrRepoEmpty       = errors.New("repo is empty")
-	ErrRepoBodyEmpty   = errors.New("body is empty")
-	ErrRepoAssetsEmpty = errors.New("assets are empty")
+	ErrGithubRequestNew      = errors.New("failed to create new request")
+	ErrGithubRequestDo       = errors.New("failed to execute request")
+	ErrGithubRequestStatus   = errors.New("github api returned status")
+	ErrGithubRequestBodyRead = errors.New("reading body failed")
 )
 
-// -- utils --
-
-func NewLogFile(root *os.Root, path string) (*os.File, error) {
-	timestamp := time.Now().UTC().Unix()
-	filename := fmt.Sprintf("log-%d.txt", timestamp)
+func newLogFile(root *os.Root, path string) (*os.File, error) {
+	timestamp := time.Now()
+	filename := fmt.Sprintf("log_%d-%d-%d-%d.txt", timestamp.Year(), timestamp.Month(), timestamp.Day(), timestamp.Unix())
 
 	file, err := root.Create(filepath.Join(path, filename))
 	if err != nil {
@@ -83,4 +102,60 @@ func NewLogFile(root *os.Root, path string) (*os.File, error) {
 	}
 
 	return file, nil
+}
+
+func NewLogger(VERSION string, fs *os.Root) (*zerolog.Logger, *os.File, bool, bool, error) {
+	switch VERSION {
+	case "dev":
+		var saveLogs, disableFS, disableAPI bool
+		var logger zerolog.Logger
+		var logFile *os.File
+
+		zerolog.SetGlobalLevel(zerolog.Disabled)
+
+		for token := range strings.SplitSeq(os.Getenv("P86L_DEBUG"), ",") {
+			switch token {
+			case "log":
+				zerolog.SetGlobalLevel(zerolog.DebugLevel)
+			case "logfile":
+				saveLogs = true
+			case "nofs":
+				disableFS = true
+			case "noapi":
+				disableAPI = true
+			}
+		}
+
+		if zerolog.GlobalLevel() != zerolog.Disabled {
+			lcw := zerolog.ConsoleWriter{
+				Out:        os.Stdout,
+				TimeFormat: time.RFC3339,
+			}
+
+			if saveLogs {
+				newLogFile, err := newLogFile(fs, filepath.Join(configs.AppName, configs.FolderLogs))
+				if err != nil {
+					return nil, nil, disableFS, false, err
+				}
+				logFile = newLogFile
+
+				multiWriter := zerolog.MultiLevelWriter(lcw, logFile)
+				logger = zerolog.New(multiWriter).With().Timestamp().Logger()
+			} else {
+				logger = zerolog.New(lcw).With().Timestamp().Logger()
+			}
+		}
+
+		logger.Info().Bool("Debug", true).Msg(AppManager.String())
+		return &logger, logFile, disableFS, disableAPI, nil
+	default:
+		logFile, err := newLogFile(fs, filepath.Join(configs.AppName, configs.FolderLogs))
+		if err != nil {
+			return nil, nil, false, false, err
+		}
+
+		multiWriter := zerolog.MultiLevelWriter(os.Stdout, logFile)
+		logger := zerolog.New(multiWriter).With().Timestamp().Logger()
+		return &logger, logFile, false, false, nil
+	}
 }

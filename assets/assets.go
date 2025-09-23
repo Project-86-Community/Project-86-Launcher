@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,10 +22,13 @@
 package assets
 
 import (
-	_ "embed"
+	"embed"
 	"p86l/assets/images"
 
+	"github.com/BurntSushi/toml"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 )
 
 var (
@@ -42,4 +45,33 @@ var (
 	P86lIco []byte
 	//go:embed audio/p86l_ost_legion.ogg
 	P86lOst []byte
+
+	//go:embed languages/*.toml
+	languagesFS embed.FS
+	bundle      *i18n.Bundle
+	Localizer   *i18n.Localizer
 )
+
+func init() {
+	bundle = i18n.NewBundle(language.English)
+	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
+
+	entries, err := languagesFS.ReadDir("languages")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			path := "languages/" + entry.Name()
+			_, err := bundle.LoadMessageFileFS(languagesFS, path)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+}
+
+func LoadLanguage(lang string) {
+	Localizer = i18n.NewLocalizer(bundle, lang)
+}

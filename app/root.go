@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -23,14 +23,20 @@ package app
 
 import (
 	"image"
+	"os"
 	"p86l"
 	"p86l/assets"
+	"p86l/configs"
+	"p86l/internal/file"
+	"p86l/internal/log"
 	"runtime"
+	"slices"
 	"sync"
 
+	"github.com/guigui-gui/guigui"
+	"github.com/guigui-gui/guigui/basicwidget"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/guigui"
-	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/rs/zerolog"
 	"golang.org/x/text/language"
 )
 
@@ -48,26 +54,63 @@ type Root struct {
 	sidebar         Sidebar
 	home            Home
 
-	panelPlay     basicwidget.Panel
-	panelSettings basicwidget.Panel
-	panelAbout    basicwidget.Panel
+	play     Play
+	settings Settings
+	about    About
 
-	play     guigui.WidgetWithSize[*Play]
-	settings guigui.WidgetWithSize[*Settings]
-	about    guigui.WidgetWithSize[*About]
-
-	model                   *p86l.Model
 	backgroundImageSize     image.Point
 	backgroundImagePosition image.Point
 
+	model *p86l.Model
+
 	sync sync.Once
+
+	locales           []language.Tag
+	faceSourceEntries []basicwidget.FaceSourceEntry
 }
 
-func (r *Root) handleBackgroundImage(context *guigui.Context) {
+func NewRoot(VERSION string) (*Root, *p86l.Model, *file.Filesystem, *zerolog.Logger, *os.File, error) {
+	fs, err := file.NewFilesystem()
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+
+	logger, logFile, noFS, noAPI, err := log.NewLogger(VERSION, fs.Root())
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+
+	logger.Info().Str(log.Lifecycle, "app start").Msg(log.AppManager.String())
+	logger.Info().Str(log.Lifecycle, "logging started").Msg(log.AppManager.String())
+	logger.Info().Str("operating system", runtime.GOOS).Msg(log.AppManager.String())
+	logger.Info().Str(log.Lifecycle, "init filesystem").Msg(log.FileManager.String())
+
+	player, err := p86l.NewBGMPlayer()
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+
+	model := p86l.NewModel(logger, fs, player)
+
+	if !noFS {
+		dataSubModel := p86l.NewDataSubModel(model)
+		model.AddSubModel(dataSubModel)
+	}
+	if !noAPI {
+		cacheSubModel := p86l.NewCacheSubModel(model)
+		model.AddSubModel(cacheSubModel)
+	}
+
+	model.Start()
+
+	return &Root{model: model}, model, fs, logger, logFile, nil
+}
+
+func (r *Root) handleBackgroundImage(widgetBounds *guigui.WidgetBounds) {
 	imgWidth := assets.Banner.Bounds().Dx()
 	imgHeight := assets.Banner.Bounds().Dy()
 
-	windowBounds := context.Bounds(r)
+	windowBounds := widgetBounds.Bounds()
 	windowWidth := windowBounds.Dx()
 	windowHeight := windowBounds.Dy()
 
@@ -95,8 +138,31 @@ func (r *Root) handleBackgroundImage(context *guigui.Context) {
 	r.backgroundImagePosition = image.Pt(xOffset, yOffset)
 }
 
-func (r *Root) SetModel(model *p86l.Model) {
-	r.model = model
+func (r *Root) updateFontFaceSources(context *guigui.Context) {
+	r.locales = slices.Delete(r.locales, 0, len(r.locales))
+	r.locales = context.AppendLocales(r.locales)
+
+	r.faceSourceEntries = slices.Delete(r.faceSourceEntries, 0, len(r.faceSourceEntries))
+	//r.faceSourceEntries = cjkfont.AppendRecommendedFaceSourceEntries(r.faceSourceEntries, r.locales)
+	basicwidget.SetFaceSources(r.faceSourceEntries)
+}
+
+func (r *Root) contentWidget() guigui.Widget {
+	dataFile := r.model.Data().Get()
+	page := dataFile.Remember.Page
+
+	switch p86l.SidebarPage(page) {
+	case p86l.PageHome:
+		return &r.home
+	case p86l.PagePlay:
+		return &r.play
+	case p86l.PageSettings:
+		return &r.settings
+	case p86l.PageAbout:
+		return &r.about
+	}
+
+	return nil
 }
 
 func (r *Root) Model(key any) any {
@@ -108,109 +174,167 @@ func (r *Root) Model(key any) any {
 	}
 }
 
-func (r *Root) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+func (r *Root) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
+	dataFile := r.model.Data().Get()
+	page := dataFile.Remember.Page
+
 	adder.AddChild(&r.backgroundImage)
-	adder.AddChild(&r.sidebar)
-	if page := r.model.Data().Page(); page == p86l.PageHome {
-		adder.AddChild(&r.home)
-	} else {
+
+	if p86l.SidebarPage(page) != p86l.PageHome {
 		adder.AddChild(&r.background)
-		switch page {
-		case p86l.PagePlay:
-			adder.AddChild(&r.panelPlay)
-		case p86l.PageSettings:
-			adder.AddChild(&r.panelSettings)
-		case p86l.PageAbout:
-			adder.AddChild(&r.panelAbout)
-		}
 	}
-}
 
-func (r *Root) Update(context *guigui.Context) error {
+	adder.AddChild(&r.sidebar)
+	if content := r.contentWidget(); content != nil {
+		adder.AddChild(content)
+	}
+
+	var err error
 	r.sync.Do(func() {
-		logger := r.model.Log().Logger()
-		logger.Info().Str("Version", p86l.LauncherVersion).Msg("P86L - Project 86 Launcher")
-		logger.Info().Str("Detected OS", runtime.GOOS).Msg("Operating System")
-
-		var gpuInfo ebiten.DebugInfo
-		ebiten.ReadDebugInfo(&gpuInfo)
-		logger.Info().Str("Graphics API", gpuInfo.GraphicsLibrary.String()).Msg("GPU")
-
-		data := r.model.Data()
-		context.SetAppLocales([]language.Tag{data.Lang()})
-		if data.IsNew() {
-			colorMode := context.ColorMode()
-			context.SetColorMode(colorMode)
-		} else {
-			if data.UseDarkmode() {
-				context.SetColorMode(guigui.ColorModeDark)
-			} else {
-				context.SetColorMode(guigui.ColorModeLight)
-			}
+		if context.ColorMode() == guigui.ColorModeDark {
+			r.model.SetIsAutoUseDarkmode(true)
 		}
-		context.SetAppScale(data.AppScale())
+		r.model.SetUIRefreshFn(func() {
+			guigui.RequestRedraw(r)
+		})
+		r.model.SetSyncDataFn(func(m *p86l.Model, value bool) error {
+			data := m.Data()
+			cacheFile := m.Cache().Get()
+
+			tag, err := data.Lang()
+			if err != nil {
+				return err
+			}
+
+			context.SetAppLocales([]language.Tag{tag})
+			assets.LoadLanguage(tag.String())
+			if !value {
+				if data.UseDarkmode() {
+					context.SetColorMode(guigui.ColorModeDark)
+				} else {
+					context.SetColorMode(guigui.ColorModeLight)
+				}
+			} else {
+				if m.IsAutoUseDarkmode() {
+					m.Data().Update(func(df *p86l.DataFile) {
+						df.UseDarkmode = true
+					})
+				}
+			}
+
+			if cacheFile.Releases != nil && data.TranslateChangelog() && tag != language.English {
+				m.Translate(p86l.ReleasesChangelogText(cacheFile, dataFile.UsePreRelease), tag.String())
+			}
+
+			context.SetAppScale(data.AppScale())
+
+			remember := data.Remember()
+			if remember.Active {
+				if !value {
+					ebiten.SetWindowSize(max(configs.AppWindowMinSize.X, remember.WSizeX), max(configs.AppWindowMinSize.Y, remember.WSizeY))
+					ebiten.SetWindowPosition(max(0, remember.WPosX), max(0, remember.WPosY))
+				}
+				data.SetPage(p86l.SidebarPage(remember.Page))
+			}
+
+			if !data.DisableBgMusic() {
+				m.BGMPlayer().Play()
+			}
+			return nil
+		})
+		err = r.model.SyncData()
 	})
+	if err != nil {
+		return err
+	}
 
 	r.backgroundImage.SetImage(assets.Banner)
-	r.handleBackgroundImage(context)
-	context.SetOpacity(&r.background, 0.9)
-
-	u := basicwidget.UnitSize(context)
-	x := context.Bounds(r).Size().X - (8 * u)
-
 	{
-		y := r.play.Widget().Overflow(context).Y
-		r.play.SetFixedSize(image.Pt(x, y))
-	}
-	{
-		y := r.settings.Widget().Overflow(context).Y
-		r.settings.SetFixedSize(image.Pt(x, y))
-	}
-	{
-		y := r.about.Widget().Overflow(context).Y
-		r.about.SetFixedSize(image.Pt(x, y))
+		wMinX := int(float64(configs.AppWindowMinSize.X)*context.AppScale()) + basicwidget.UnitSize(context)*2
+		wMinY := int(float64(configs.AppWindowMinSize.Y)*context.AppScale()) + basicwidget.UnitSize(context)*2
+		ebiten.SetWindowSizeLimits(
+			wMinX,
+			wMinY,
+			-1,
+			-1,
+		)
 	}
 
-	r.panelPlay.SetContent(&r.play)
-	r.panelSettings.SetContent(&r.settings)
-	r.panelAbout.SetContent(&r.about)
+	r.updateFontFaceSources(context)
 
 	return nil
 }
 
-func (r *Root) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
-	switch widget {
-	case &r.backgroundImage:
-		return image.Rectangle{
-			Min: r.backgroundImagePosition,
-			Max: image.Pt(
-				r.backgroundImagePosition.X+r.backgroundImageSize.X,
-				r.backgroundImagePosition.Y+r.backgroundImageSize.Y,
-			),
-		}
-	}
+func (r *Root) Tick(context *guigui.Context, widgetBounds *guigui.WidgetBounds) error {
+	data := r.model.Data()
+	dataFile := data.Get()
 
-	u := basicwidget.UnitSize(context)
-	layout := guigui.LinearLayout{
-		Direction: guigui.LayoutDirectionHorizontal,
-		Items: []guigui.LinearLayoutItem{
-			{
-				Widget: &r.sidebar,
-				Size:   guigui.FixedSize(8 * u),
-			},
-			{
-				Size: guigui.FlexibleSize(1),
-			},
-		},
-	}
-	if widget == &r.sidebar {
-		return layout.WidgetBounds(context, context.Bounds(r), widget)
-	} else if widget == &r.background {
-		return layout.ItemBounds(context, context.Bounds(r), 1)
-	}
-	return layout.ItemBounds(context, context.Bounds(r), 1)
+	sx, sy := ebiten.WindowSize()
+	px, py := ebiten.WindowPosition()
+	page := dataFile.Remember.Page
+
+	data.Update(func(df *p86l.DataFile) {
+		df.Remember = p86l.DataRemember{
+			WSizeX: sx,
+			WSizeY: sy,
+			WPosX:  px,
+			WPosY:  py,
+			Page:   int(page),
+			Active: dataFile.Remember.Active,
+		}
+	})
+
+	return nil
 }
 
-func (r *Root) Close() error {
-	return r.model.Close()
+func (r *Root) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
+	u := basicwidget.UnitSize(context)
+
+	r.handleBackgroundImage(widgetBounds)
+	bgBounds := image.Rect(
+		r.backgroundImagePosition.X,
+		r.backgroundImagePosition.Y,
+		r.backgroundImagePosition.X+r.backgroundImageSize.X,
+		r.backgroundImagePosition.Y+r.backgroundImageSize.Y,
+	)
+	(guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items: []guigui.LinearLayoutItem{
+			{
+				Widget: &r.backgroundImage,
+				Size:   guigui.FlexibleSize(1),
+			},
+		},
+	}).LayoutWidgets(context, bgBounds, layouter)
+
+	(guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items: []guigui.LinearLayoutItem{
+			{
+				Size: guigui.FlexibleSize(1),
+				Layout: guigui.LinearLayout{
+					Direction: guigui.LayoutDirectionHorizontal,
+					Items: []guigui.LinearLayoutItem{
+						{
+							Widget: &r.sidebar,
+							Size:   guigui.FixedSize(4 * u),
+						},
+						{
+							Widget: &r.background,
+							Size:   guigui.FlexibleSize(1),
+							Layout: guigui.LinearLayout{
+								Direction: guigui.LayoutDirectionVertical,
+								Items: []guigui.LinearLayoutItem{
+									{
+										Widget: r.contentWidget(),
+										Size:   guigui.FlexibleSize(1),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,73 +22,79 @@
 package app
 
 import (
-	"image"
 	"p86l"
 	"p86l/assets"
 	"p86l/configs"
 
-	"github.com/hajimehoshi/guigui"
-	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/guigui-gui/guigui"
+	"github.com/guigui-gui/guigui/basicwidget"
 )
 
 type Play struct {
 	guigui.DefaultWidget
 
-	installButton, updateButton, playButton                   basicwidget.Button
-	background                                                basicwidget.Background
-	form                                                      basicwidget.Form
-	gameDownloadsText, cachedGameDownloadsText                basicwidget.Text
-	prereleaseText                                            basicwidget.Text
-	prereleaseToggle                                          basicwidget.Toggle
-	changelogText                                             guigui.WidgetWithSize[*basicwidget.Text]
-	websiteButton, githubButton, discordButton, patreonButton basicwidget.Button
+	installButton, updateButton, playButton                         basicwidget.Button
+	form                                                            basicwidget.Form
+	gameVersionText, versionText, downloadsText, totalDownloadsText basicwidget.Text
+	prereleaseText                                                  basicwidget.Text
+	prereleaseToggle                                                basicwidget.Toggle
+	changelogPanel                                                  basicwidget.Panel
+	changelogText                                                   basicwidget.Text
+	websiteButton, githubButton, discordButton, patreonButton       basicwidget.Button
 }
 
-func (p *Play) Overflow(context *guigui.Context) image.Point {
-	r1 := context.Bounds(&p.installButton).Bounds()
-	r2 := context.Bounds(&p.form).Bounds()
-	r3 := context.Bounds(&p.websiteButton).Bounds()
-	size := p86l.MergeRectangles(r1, r2, r3)
-
-	return size.Size().Add(image.Pt(0, int(3.5*float64(basicwidget.UnitSize(context)))))
-}
-
-func (p *Play) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+func (p *Play) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	adder.AddChild(&p.installButton)
 	adder.AddChild(&p.updateButton)
 	adder.AddChild(&p.playButton)
-	adder.AddChild(&p.background)
 	adder.AddChild(&p.form)
+	adder.AddChild(&p.changelogPanel)
 	adder.AddChild(&p.websiteButton)
 	adder.AddChild(&p.githubButton)
 	adder.AddChild(&p.discordButton)
 	adder.AddChild(&p.patreonButton)
-}
 
-func (p *Play) Update(context *guigui.Context) error {
 	model := context.Model(p, modelKeyModel).(*p86l.Model)
+	data := model.Data()
+	dataFile := data.Get()
+	cacheFile := model.Cache().Get()
 
-	p.installButton.SetText("Install")
-	p.updateButton.SetText("Update")
-	p.playButton.SetText("Play")
+	p.installButton.SetText(p86l.T("play.install"))
+	p.updateButton.SetText(p86l.T("play.update"))
+	p.playButton.SetText(p86l.T("play.play"))
 
-	p.changelogText.Widget().SetValue(model.Cache().ChangelogText(model.Data().UsePreRelease()))
-	p.changelogText.Widget().SetAutoWrap(true)
-	p.changelogText.Widget().SetMultiline(true)
-	p.changelogText.Widget().SetEditable(false)
-	p.changelogText.SetFixedWidth(context.Bounds(&p.form).Size().X - basicwidget.UnitSize(context)/2)
+	if dataFile.UsePreRelease {
+		preReleaseAvail, _ := model.CheckFilesCached(p86l.PathGamePreRelease)
+		context.SetEnabled(&p.playButton, preReleaseAvail)
+	} else {
+		stableAvail, _ := model.CheckFilesCached(p86l.PathGameStable)
+		context.SetEnabled(&p.playButton, stableAvail)
+	}
 
-	p.gameDownloadsText.SetValue("Total downloads")
-	p.prereleaseText.SetValue("Enable Pre-release")
+	p.changelogText.SetAutoWrap(true)
+	p.changelogText.SetMultiline(true)
+	if cacheFile.Releases != nil && dataFile.TranslateChangelog && dataFile.Lang != "en" {
+		p.changelogText.SetValue(cacheFile.ChangelogTranslation)
+	} else {
+		p.changelogText.SetValue(p86l.ReleasesChangelogText(cacheFile, dataFile.UsePreRelease))
+	}
 
-	p.cachedGameDownloadsText.SetValue(model.Cache().GameVersionText(model.Data().UsePreRelease()))
+	p.changelogPanel.SetContent(&p.changelogText)
+	p.changelogPanel.SetAutoBorder(true)
+	p.changelogPanel.SetContentConstraints(basicwidget.PanelContentConstraintsFixedWidth)
+
+	p.gameVersionText.SetValue(p86l.T("play.version"))
+	p.downloadsText.SetValue(p86l.T("play.total"))
+	p.prereleaseText.SetValue(p86l.T("play.prerelease"))
+
+	p.versionText.SetValue(p86l.GameVersionText(cacheFile, dataFile.UsePreRelease))
+	p.totalDownloadsText.SetValue(p86l.ReleasesDownloadCountText(cacheFile, dataFile.UsePreRelease))
 
 	p.prereleaseToggle.SetOnValueChanged(func(value bool) {
-		model.Data().SetUsePreRelease(value)
-		if value {
-			model.Data().SetUsePreRelease(true)
-		} else {
-			model.Data().SetUsePreRelease(false)
+		data.SetUsePreRelease(value)
+
+		if cacheFile.Releases != nil && dataFile.TranslateChangelog && dataFile.Lang != "en" {
+			model.Translate(p86l.ReleasesChangelogText(cacheFile, value), dataFile.Lang)
 		}
 	})
 	if model.Data().UsePreRelease() {
@@ -99,22 +105,23 @@ func (p *Play) Update(context *guigui.Context) error {
 
 	p.form.SetItems([]basicwidget.FormItem{
 		{
-			PrimaryWidget:   &p.gameDownloadsText,
-			SecondaryWidget: &p.cachedGameDownloadsText,
+			PrimaryWidget:   &p.gameVersionText,
+			SecondaryWidget: &p.versionText,
+		},
+		{
+			PrimaryWidget:   &p.downloadsText,
+			SecondaryWidget: &p.totalDownloadsText,
 		},
 		{
 			PrimaryWidget:   &p.prereleaseText,
 			SecondaryWidget: &p.prereleaseToggle,
 		},
-		{
-			PrimaryWidget: &p.changelogText,
-		},
 	})
 
-	p.websiteButton.SetOnDown(func() { model.File().Open(configs.Website) })
-	p.githubButton.SetOnDown(func() { model.File().Open(configs.Github) })
-	p.discordButton.SetOnDown(func() { model.File().Open(configs.Discord) })
-	p.patreonButton.SetOnDown(func() { model.File().Open(configs.Patreon) })
+	p.websiteButton.SetOnDown(func() { model.OpenURL(configs.Website) })
+	p.githubButton.SetOnDown(func() { model.OpenURL(configs.Github) })
+	p.discordButton.SetOnDown(func() { model.OpenURL(configs.Discord) })
+	p.patreonButton.SetOnDown(func() { model.OpenURL(configs.Patreon) })
 
 	p.websiteButton.SetIcon(assets.IE)
 	p.githubButton.SetIcon(assets.Github)
@@ -124,59 +131,11 @@ func (p *Play) Update(context *guigui.Context) error {
 	return nil
 }
 
-func (p *Play) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
+func (p *Play) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
 	u := basicwidget.UnitSize(context)
-	return (guigui.LinearLayout{
+	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionVertical,
 		Items: []guigui.LinearLayoutItem{
-			{
-				Size: guigui.FixedSize(u * 2),
-			},
-			{
-				Size: guigui.FixedSize(u * 2),
-				Layout: guigui.LinearLayout{
-					Direction: guigui.LayoutDirectionHorizontal,
-					Items: []guigui.LinearLayoutItem{
-						{
-							Size: guigui.FlexibleSize(1),
-						},
-						{
-							Widget: &p.installButton,
-							Size:   guigui.FixedSize(u * 4),
-						},
-						{
-							Widget: &p.updateButton,
-							Size:   guigui.FixedSize(u * 4),
-						},
-						{
-							Widget: &p.playButton,
-							Size:   guigui.FixedSize(u * 4),
-						},
-						{
-							Size: guigui.FlexibleSize(1),
-						},
-					},
-					Gap: u / 2,
-				},
-			},
-			{
-				Widget: &p.background,
-				Size:   guigui.FixedSize(p.form.Measure(context, guigui.FixedWidthConstraints(context.Bounds(p).Dx()-u)).Y + u/2),
-				Layout: guigui.LinearLayout{
-					Direction: guigui.LayoutDirectionVertical,
-					Items: []guigui.LinearLayoutItem{
-						{
-							Widget: &p.form,
-						},
-					},
-					Padding: guigui.Padding{
-						Start:  u / 4,
-						Top:    u / 4,
-						End:    u / 4,
-						Bottom: u / 4,
-					},
-				},
-			},
 			{
 				Size: guigui.FixedSize(int(float64(u) * 1.5)),
 				Layout: guigui.LinearLayout{
@@ -208,8 +167,54 @@ func (p *Play) Layout(context *guigui.Context, widget guigui.Widget) image.Recta
 					Gap: u / 2,
 				},
 			},
+			{
+				Size: guigui.FixedSize(u),
+				Layout: guigui.LinearLayout{
+					Direction: guigui.LayoutDirectionHorizontal,
+					Items: []guigui.LinearLayoutItem{
+						{
+							Size: guigui.FlexibleSize(1),
+						},
+						{
+							Widget: &p.installButton,
+							Size:   guigui.FixedSize(u * 4),
+						},
+						{
+							Widget: &p.updateButton,
+							Size:   guigui.FixedSize(u * 4),
+						},
+						{
+							Widget: &p.playButton,
+							Size:   guigui.FixedSize(u * 4),
+						},
+						{
+							Size: guigui.FlexibleSize(1),
+						},
+					},
+					Gap: u / 2,
+				},
+			},
+			{
+				Layout: guigui.LinearLayout{
+					Direction: guigui.LayoutDirectionVertical,
+					Items: []guigui.LinearLayoutItem{
+						{
+							Widget: &p.form,
+						},
+					},
+				},
+			},
+			{
+				Widget: &p.changelogPanel,
+				Size:   guigui.FlexibleSize(1),
+			},
 		},
 		Gap: u / 2,
-	}).WidgetBounds(context, context.Bounds(p).Inset(u/2), widget)
-
+		Padding: guigui.Padding{
+			Start:  u / 2,
+			Top:    u / 2,
+			End:    u / 2,
+			Bottom: u / 2,
+		},
+	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }

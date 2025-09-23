@@ -1,8 +1,11 @@
+//go:build windows
+// +build windows
+
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,23 +22,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package open_test
+package file
 
 import (
-	"p86l/internal/open"
-	"testing"
+	"os"
+	"os/exec"
+	"path/filepath"
 )
 
-func TestOpen(t *testing.T) {
-	input := "https://google.com/"
-	err := open.Open(input)
-	if err != nil {
-		t.Errorf("open.Start(\"%s\") threw an error: %s", input, err)
-	}
+var (
+	cmd      = "url.dll,FileProtocolHandler"
+	runDll32 = filepath.Join(os.Getenv("SYSTEMROOT"), "System32", "rundll32.exe")
+)
 
-	input = "xxxxxxxxxxxxxxx"
-	err = open.Open(input)
-	if err != nil {
-		t.Errorf("open.Start(\"%s\") shouldn't even fail on invalid input: %s", input, err)
-	}
+func open(input string) *exec.Cmd {
+	cmd := exec.Command(runDll32, cmd, input)
+	return cmd
 }

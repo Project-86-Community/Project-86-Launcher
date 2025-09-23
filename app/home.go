@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game Community-Game Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,31 +22,31 @@
 package app
 
 import (
-	"image"
 	"p86l"
 
-	"github.com/hajimehoshi/guigui"
-	"github.com/hajimehoshi/guigui/basicwidget"
+	"github.com/guigui-gui/guigui"
+	"github.com/guigui-gui/guigui/basicwidget"
 )
 
 type Home struct {
 	guigui.DefaultWidget
 
-	background                                           basicwidget.Background
-	form                                                 basicwidget.Form
-	welcomeText, usernameText, downloadText, versionText basicwidget.Text
+	background                                               basicwidget.Background
+	form                                                     basicwidget.Form
+	welcomeText, installedText, playTimeText, lastPlayedText basicwidget.Text
+	usernameText, versionText, timeText, lastText            basicwidget.Text
 }
 
-func (h *Home) AddChildren(context *guigui.Context, adder *guigui.ChildAdder) {
+func (h *Home) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	adder.AddChild(&h.background)
 	adder.AddChild(&h.form)
-}
 
-func (h *Home) Update(context *guigui.Context) error {
-	h.welcomeText.SetValue("Welcome Test")
+	h.welcomeText.SetValue(p86l.T("home.welcome"))
 	h.usernameText.SetValue(p86l.GetUsername())
-	h.downloadText.SetValue("Downloaded")
+	h.installedText.SetValue(p86l.T("home.version"))
 	h.versionText.SetValue("v1.8.2-alpha")
+	h.playTimeText.SetValue(p86l.T("home.time"))
+	h.lastPlayedText.SetValue(p86l.T("home.last"))
 
 	h.form.SetItems([]basicwidget.FormItem{
 		{
@@ -54,17 +54,25 @@ func (h *Home) Update(context *guigui.Context) error {
 			SecondaryWidget: &h.usernameText,
 		},
 		{
-			PrimaryWidget:   &h.downloadText,
+			PrimaryWidget:   &h.installedText,
 			SecondaryWidget: &h.versionText,
+		},
+		{
+			PrimaryWidget:   &h.playTimeText,
+			SecondaryWidget: &h.timeText,
+		},
+		{
+			PrimaryWidget:   &h.lastPlayedText,
+			SecondaryWidget: &h.lastText,
 		},
 	})
 
 	return nil
 }
 
-func (h *Home) Layout(context *guigui.Context, widget guigui.Widget) image.Rectangle {
+func (h *Home) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
 	u := basicwidget.UnitSize(context)
-	return (guigui.LinearLayout{
+	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionVertical,
 		Items: []guigui.LinearLayoutItem{
 			{
@@ -72,7 +80,7 @@ func (h *Home) Layout(context *guigui.Context, widget guigui.Widget) image.Recta
 			},
 			{
 				Widget: &h.background,
-				Size:   guigui.FixedSize(h.form.Measure(context, guigui.FixedWidthConstraints(context.Bounds(h).Dx()-u)).Y + u/2),
+				Size:   guigui.FixedSize(h.form.Measure(context, guigui.FixedWidthConstraints(widgetBounds.Bounds().Dx())).Y + u),
 				Layout: guigui.LinearLayout{
 					Direction: guigui.LayoutDirectionVertical,
 					Items: []guigui.LinearLayoutItem{
@@ -81,13 +89,13 @@ func (h *Home) Layout(context *guigui.Context, widget guigui.Widget) image.Recta
 						},
 					},
 					Padding: guigui.Padding{
-						Start:  u / 4,
-						Top:    u / 4,
-						End:    u / 4,
-						Bottom: u / 4,
+						Start:  u / 2,
+						Top:    u / 2,
+						End:    u / 2,
+						Bottom: u / 2,
 					},
 				},
 			},
 		},
-	}).WidgetBounds(context, context.Bounds(h).Inset(u/2), widget)
+	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }

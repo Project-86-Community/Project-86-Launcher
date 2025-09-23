@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -74,14 +74,10 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func NewClient(config Config) *Client {
-	if config.Timeout == 0 {
-		config.Timeout = 30 * time.Second
-	}
-
+func NewClient() *Client {
 	return &Client{
 		httpClient: &http.Client{
-			Timeout: config.Timeout,
+			Timeout: 0 * time.Second,
 		},
 	}
 }
@@ -103,6 +99,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string) ([]byte, er
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", log.ErrGithubRequestDo, err)
 	}
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("%w: %d, %s", log.ErrGithubRequestStatus, resp.StatusCode, resp.Status)
@@ -111,10 +108,6 @@ func (c *Client) doRequest(ctx context.Context, method, path string) ([]byte, er
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", log.ErrGithubRequestBodyRead, err)
-	}
-
-	if err := resp.Body.Close(); err != nil {
-		return nil, fmt.Errorf("%w: %w", log.ErrGithubRequestBodyClose, err)
 	}
 
 	return body, nil

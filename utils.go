@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -27,16 +27,23 @@ import (
 	"image"
 	"os"
 	"p86l/assets"
+	"p86l/configs"
 	"p86l/internal/github"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/fyne-io/image/ico"
+	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 var (
-	LauncherVersion string = "dev"
-	DisableAPI      bool   = false
+	PathGameStable     = filepath.Join(configs.FolderBuild, configs.FolderGame, configs.FileGame)
+	PathGamePreRelease = filepath.Join(configs.FolderBuild, configs.FolderPreRelease, configs.FileGame)
 )
 
 func GetIcons() ([]image.Image, error) {
@@ -90,6 +97,89 @@ func MergeRectangles(rects ...image.Rectangle) image.Rectangle {
 		Min: mergedMin,
 		Max: mergedMax,
 	}
+}
+
+func NewBGMPlayer() (*audio.Player, error) {
+	const sampleRate = 44100
+	actx := audio.NewContext(sampleRate)
+
+	reader := bytes.NewReader(assets.P86lOst)
+	stream, err := vorbis.DecodeF32(reader)
+	if err != nil {
+		return nil, fmt.Errorf("vorbis decoder: %w", err)
+	}
+
+	loop := audio.NewInfiniteLoopF32(stream, stream.Length())
+
+	player, err := actx.NewPlayerF32(loop)
+	if err != nil {
+		return nil, fmt.Errorf("new player: %w", err)
+	}
+
+	return player, nil
+}
+
+func T(key string) string {
+	keyMsg, err := assets.Localizer.Localize(&i18n.LocalizeConfig{
+		MessageID: key,
+	})
+	if err != nil {
+		return fmt.Sprintf("!%s", key) // Fallback to key if translation fails.
+	}
+	return keyMsg
+}
+
+func FormattedCacheExpireText(cache CacheFile) string {
+	if cache.RateLimit != nil {
+		var endPart string
+		if cache.RateLimit.Remaining < 60 {
+			endPart = humanize.RelTime(time.Now(), time.Unix(cache.RateLimit.Reset, 0), "remaining", "ago")
+		}
+
+		return fmt.Sprintf(
+			"%d / %d - requests \n %s",
+			cache.RateLimit.Remaining,
+			cache.RateLimit.Limit,
+			endPart,
+		)
+	}
+
+	return "..."
+}
+
+func ReleasesChangelogText(cache CacheFile, usePreRelease bool) string {
+	if cache.Releases != nil {
+		if usePreRelease {
+			return fmt.Sprintf("%s\n\n%s", cache.Releases.PreRelease.Name, cache.Releases.PreRelease.Body)
+		}
+		return fmt.Sprintf("%s\n\n%s", cache.Releases.Stable.Name, cache.Releases.Stable.Body)
+	}
+
+	return "..."
+}
+
+func GameVersionText(cache CacheFile, usePreRelease bool) string {
+	if cache.Releases != nil {
+		if usePreRelease {
+			return cache.Releases.PreRelease.TagName
+		}
+		return cache.Releases.Stable.TagName
+	}
+
+	return "..."
+}
+
+func ReleasesDownloadCountText(cache CacheFile, usePreRelease bool) string {
+	if cache.Releases != nil {
+		if usePreRelease {
+			_, debugGameAsset := GetAssets(cache.Releases.PreRelease.Assets)
+			return fmt.Sprintf("%d", debugGameAsset.DownloadCount)
+		}
+		gameAsset, _ := GetAssets(cache.Releases.Stable.Assets)
+		return fmt.Sprintf("%d", gameAsset.DownloadCount)
+	}
+
+	return "..."
 }
 
 func isGameFile(filename string) bool {

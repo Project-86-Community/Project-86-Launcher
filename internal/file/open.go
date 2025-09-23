@@ -1,8 +1,11 @@
+//go:build !windows && !darwin
+// +build !windows,!darwin
+
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,8 +22,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package open
+package file
 
-func Open(input string) error {
-	return open(input).Start()
+import "os/exec"
+
+func open(input string) *exec.Cmd {
+	return exec.Command("xdg-open", input)
 }

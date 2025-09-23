@@ -61,12 +61,12 @@ const versionTemplate = `{
     "StringFileInfo": {
         "Comments": "",
         "CompanyName": "Project 86 Community",
-        "FileDescription": "A Launcher developed for Project-86 for managing game files.",
+        "FileDescription": "A Launcher developed for Project-86-Community-Game for managing game files.",
         "FileVersion": "{{.Version}}.{{.Build}}",
         "InternalName": "project86launcher.exe",
         "LegalCopyright": "Copyright © Project 86 Community",
         "LegalTrademarks": "",
-        "OriginalFilename": "project86launcher.exe",
+        "OriginalFilename": "project86launcher.exe",ico
         "PrivateBuild": "",
         "ProductName": "Project 86 Launcher",
         "ProductVersion": "{{.Version}}",
@@ -78,7 +78,7 @@ const versionTemplate = `{
             "CharsetID": "04B0"
         }
     },
-    "IconPath": "../../assets/p86l.ico",
+    "IconPath": "../../assets/images/icon.ico",
     "ManifestPath": "app.manifest"
 }`
 

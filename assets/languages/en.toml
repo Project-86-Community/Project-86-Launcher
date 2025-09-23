@@ -1,41 +1,52 @@
 [common]
 open = "Open"
+reset = "Reset"
 
 [home]
 title = "Home"
 welcome = "Welcome back,"
-downloaded = "Downloaded:"
-playtime = "Play time:"
-lastplayed = "Last played:"
-version = "Latest version:"
-downloads = "Downloads:"
+version = "Installed version"
+time = "Play time"
+last = "Last played"
 
 [play]
-title = "Play"
 install = "Install"
-prerelease = "Install Pre-release"
 update = "Update"
-launcher = "Update Launcher"
 play = "Play"
-
-[changelog]
-title = "Changelog"
-view = "View"
+version = "Version"
+total = "Total downloads"
+prerelease = "Enable Pre-release"
 
 [settings]
 title = "Settings"
-locale = "Language"
-colormode = "Change Launcher to dark-mode"
-appscale = "Change Launcher scale"
-prerelease = "Use Pre-release"
-company = "Open Project86 directory"
-launcher = "Open Launcher directory"
-resetdata = "Reset data"
-resetcache = "Reset cache"
+language = "Language"
+darkmode = "Use darkmode"
+scale = "Scale"
+remember = "Remember window size & position"
+backgroundm = "Disable background music"
+openp86 = "Open 86-Project folder"
+openl = "Open launcher folder"
+openlog = "Open logs folder"
+resetd = "Reset data"
+resetc = "Reset cache"
 
 [about]
 title = "About"
-lead = "Lead developer - Taliayaya"
-dev = "Launcher developer - Sky"
-info = "Welcome to Project 86 - a fan game in its early stages, with the primary goal of delivering a functional beta swiftly. We invite players to actively participate and provide feedback, steering the game in the right direction."
+content = "A Launcher developed for Project-86-Community-Game for managing game files."
+license = """Background music: "Project: 86 OST: Legion" by XYETRY.
 
+ Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
+ Copyright (C) 2025 Project 86 Community
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <https://www.gnu.org/licenses/>."""

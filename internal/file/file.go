@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -27,7 +27,9 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"p86l/configs"
 	"p86l/internal/log"
+	"path/filepath"
 )
 
 // Used to make folders.
@@ -64,6 +66,13 @@ func NewFilesystem(extra ...string) (*Filesystem, error) {
 		companyPath = defaultPath
 	}
 
+	if err := mkdirAll(filepath.Join(companyPath, configs.FolderBuild, configs.FolderGame)); err != nil {
+		return nil, err
+	}
+	if err := mkdirAll(filepath.Join(companyPath, configs.FolderBuild, configs.FolderPreRelease)); err != nil {
+		return nil, err
+	}
+
 	root, err := os.OpenRoot(companyPath)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", log.ErrRootInvalid, err)
@@ -93,19 +102,22 @@ func (f *Filesystem) Exist(filePath string) bool {
 	return err == nil
 }
 
+func (f *Filesystem) Open(path string) {
+	_ = open(path).Start()
+}
+
 func (f *Filesystem) Load(filePath string) ([]byte, error) {
 	loadFile, err := f.root.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", log.ErrFileLoad, err)
 	}
+	defer func() { _ = loadFile.Close() }()
+
 	fileBytes, err := io.ReadAll(loadFile)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", log.ErrFileLoad, err)
 	}
-	err = loadFile.Close()
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", log.ErrFileLoad, err)
-	}
+
 	return fileBytes, nil
 }
 
@@ -114,14 +126,13 @@ func (f *Filesystem) Save(filePath string, fileBytes []byte) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", log.ErrFileSave, err)
 	}
+	defer func() { _ = saveFile.Close() }()
+
 	_, err = saveFile.Write(fileBytes)
 	if err != nil {
 		return fmt.Errorf("%w: %w", log.ErrFileSave, err)
 	}
-	err = saveFile.Close()
-	if err != nil {
-		return fmt.Errorf("%w: %w", log.ErrFileSave, err)
-	}
+
 	return nil
 }
 

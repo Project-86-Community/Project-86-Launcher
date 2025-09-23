@@ -1,10 +1,10 @@
-//go:generate goversioninfo -icon=../../assets/p86l.ico -manifest=app.manifest
+//go:generate goversioninfo -icon=../../assets/images/icon.ico -manifest=app.manifest
 
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -27,144 +27,47 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"os"
 	"p86l"
 	"p86l/app"
 	"p86l/configs"
-	"p86l/internal/file"
 	"p86l/internal/log"
-	"path/filepath"
-	"strings"
-	"time"
 
+	"github.com/guigui-gui/guigui"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/guigui"
-	"github.com/rs/zerolog"
 )
 
 var VERSION = "dev"
-
-func setupLogger(fs *os.Root) (*zerolog.Logger, *os.File) {
-	switch VERSION {
-	case "dev":
-		output := zerolog.ConsoleWriter{
-			Out:        os.Stdout,
-			TimeFormat: time.RFC3339,
-		}
-		logger := zerolog.New(output).With().Timestamp().Logger()
-		logger.Info().Bool("Debug", true).Msg(log.AppManager.String())
-		for _, token := range strings.Split(os.Getenv("P86L_DEBUG"), ",") {
-			switch {
-			case token != "log":
-				zerolog.SetGlobalLevel(zerolog.Disabled)
-			case token == "noapi":
-				p86l.DisableAPI = true
-			}
-		}
-		return &logger, nil
-	default:
-		logFile, err := log.NewLogFile(fs, filepath.Join(configs.AppName, configs.FolderLogs))
-		if err != nil {
-			fmt.Printf("%v", err)
-			os.Exit(1)
-		}
-
-		multiWriter := zerolog.MultiLevelWriter(os.Stdout, logFile)
-		logger := zerolog.New(multiWriter).With().Timestamp().Logger()
-		return &logger, logFile
-	}
-}
 
 func main() {
 	port := flag.Int("instance", 54321, "Port to use for single-instance locking")
 	flag.Parse()
 
-	fs, err := file.NewFilesystem()
+	root, model, fs, logger, logFile, err := app.NewRoot(VERSION)
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
 	}
-	logger, logFile := setupLogger(fs.Root())
+	defer func() { _ = fs.Close(); _ = logFile.Close() }()
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
 	if err != nil {
-		logger.Error().Err(fmt.Errorf("another instance is already running (or port %d is in use): %w", *port, err)).Msg(log.NetworkManager.String())
-		os.Exit(1)
+		logger.Fatal().Err(fmt.Errorf("another instance is already running (or port %d is in use): %w", *port, err)).Msg(log.NetworkManager.String())
 	}
-
-	p86l.LauncherVersion = VERSION
-	model := &p86l.Model{}
-	player, err := model.StartBGM()
-	if err != nil {
-		logger.Error().Err(err).Msg(log.ErrorManager.String())
-		os.Exit(1)
-	}
-
-	model.SetListener(listener)
-	model.SetPlayer(player)
-	model.Log().SetLogger(logger)
-	model.Log().SetLogFile(logFile)
-	model.File().SetLogger(logger)
-	model.File().SetFS(fs)
-	model.Data().SetFS(fs)
-	model.Cache().SetLogger(logger)
-	model.Cache().SetFS(fs)
-
-	if fs.Exist(model.Data().Path()) {
-		if err := model.Data().Load(); err != nil {
-			logger.Error().Err(err).Msg(log.ErrorManager.String())
-			os.Exit(1)
-		}
-		if err := model.Data().Start(); err != nil {
-			logger.Error().Err(err).Msg(log.ErrorManager.String())
-			os.Exit(1)
-		}
-	} else {
-		if err := model.Data().Data(); err != nil {
-			logger.Error().Err(err).Msg(log.ErrorManager.String())
-			os.Exit(1)
-		}
-	}
-
-	go model.Cache().Start()
-
-	app := &app.Root{}
-	app.SetModel(model)
-	defer func() {
-		data := model.Data()
-		d := p86l.DataData{
-			Lang:           data.Lang().String(),
-			UseDarkmode:    data.UseDarkmode(),
-			AppScale2:      data.AppScale(),
-			DisableBgMusic: data.DisableBgMusic(),
-			UsePreRelease:  data.UsePreRelease(),
-		}
-		if err := model.Data().Save(d); err != nil {
-			logger.Error().Err(err).Msg(log.ErrorManager.String())
-		}
-
-		logger.Info().Str("main", "closing").Msg(log.AppManager.String())
-		if err := app.Close(); err != nil {
-			fmt.Println(err)
-		}
-	}()
+	defer func() { _ = listener.Close() }()
 
 	images, err := p86l.GetIcons()
 	if err != nil {
-		logger.Error().Err(err).Msg(log.ErrorManager.String())
-		os.Exit(1)
+		logger.Fatal().Err(err).Msg(log.ErrorManager.String())
 	}
 	ebiten.SetWindowIcon(images)
-	if !model.Data().DisableBgMusic() {
-		player.Play()
-	}
 
 	op := &guigui.RunOptions{
 		Title:         configs.AppTitle,
 		WindowMinSize: configs.AppWindowMinSize,
 	}
-	if err := guigui.Run(app, op); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	if err := guigui.Run(root, op); err != nil {
+		logger.Fatal().Err(err).Msg(log.ErrorManager.String())
 	}
+	logger.Info().Str(log.Lifecycle, "application closing, saving data...").Msg(log.AppManager.String())
+	model.Stop()
+	logger.Info().Str(log.Lifecycle, "application closed successfully").Msg(log.AppManager.String())
 }

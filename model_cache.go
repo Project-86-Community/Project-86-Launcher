@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,279 +22,205 @@
 package p86l
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"p86l/configs"
-	"p86l/internal/file"
 	"p86l/internal/github"
 	"p86l/internal/log"
-	"path/filepath"
+	"sync"
 	"time"
 
-	"github.com/dustin/go-humanize"
-	"github.com/rs/zerolog"
+	translator "github.com/Conight/go-googletrans"
 )
 
-type CacheData struct {
-	RateLimit2 *github.RateLimitCore  `json:"ratelimit_2"`
-	Releases   *github.LatestReleases `json:"releases"`
+type CacheFile struct {
+	Releases     *github.LatestReleases `json:"releases"`
+	RateLimit    *github.RateLimitCore  `json:"rate_limit"`
+	LastUpdated  time.Time              `json:"last_updated"`
+	ReleasesAge  time.Time              `json:"releases_age"`   // When releases were last fetched
+	RateLimitAge time.Time              `json:"rate_limit_age"` // When rate limit was last fetched
+
+	ChangelogTranslation string `json:"-"`
 }
 
-func (c *CacheData) Validate(ghRepo *github.RepositoryRelease) error {
-	if ghRepo == nil {
-		return log.ErrRepoEmpty
-	}
-	if ghRepo.Body == "" {
-		return log.ErrRepoBodyEmpty
-	}
-	if len(ghRepo.Assets) < 1 {
-		return log.ErrRepoAssetsEmpty
-	}
-
-	return nil
+type Cache struct {
+	mu   sync.RWMutex
+	file CacheFile
 }
 
-type CacheModel struct {
-	logger *zerolog.Logger
-	fs     *file.Filesystem
-	client *github.Client
-
-	data      *CacheData
-	expiresAt time.Time
-}
-
-// -- Getters for CacheModel --
-
-func (c *CacheModel) Client() *github.Client {
-	if c.client == nil {
-		c.client = github.NewClient(github.Config{})
-	}
-	return c.client
-}
-
-func (c *CacheModel) Data() *CacheData {
-	return c.data
-}
-
-func (c *CacheModel) ExpiresAt() time.Time {
-	return c.expiresAt
-}
-
-func (c *CacheModel) Path() string {
-	return filepath.Join(configs.AppName, configs.FileCache)
-}
-
-func (c *CacheModel) ExpireTimeFormatted() string {
-	if c.fs.Exist(c.Path()) {
-		if cacheData := c.data; cacheData != nil && cacheData.RateLimit2 != nil {
-			return fmt.Sprintf(
-				"%d / %d - requests - %s",
-				cacheData.RateLimit2.Remaining,
-				cacheData.RateLimit2.Limit,
-				humanize.RelTime(time.Now(), c.expiresAt, "remaining", "ago"),
-			)
-		}
-	}
-
-	return "..."
-}
-
-func (c *CacheModel) GameVersionText(value bool) string {
-	if c.data == nil && c.data.Releases == nil {
-		return "..."
-	}
-	if value {
-		_, debugGameAsset := GetAssets(c.data.Releases.PreRelease.Assets)
-		if debugGameAsset == nil {
-			return "..."
-		}
-		return fmt.Sprintf("%d", debugGameAsset.DownloadCount)
-	} else {
-		gameAsset, _ := GetAssets(c.data.Releases.Stable.Assets)
-		if gameAsset == nil {
-			return "..."
-		}
-		return fmt.Sprintf("%d", gameAsset.DownloadCount)
+func NewCache(initial CacheFile) *Cache {
+	return &Cache{
+		file: initial,
 	}
 }
 
-func (c *CacheModel) ChangelogText(value bool) string {
-	if c.data == nil && c.data.Releases == nil {
-		return "..."
-	}
-	if value {
-		return fmt.Sprintf("%s\n\n%s", c.data.Releases.PreRelease.Name, c.data.Releases.PreRelease.Body)
-	} else {
-		return fmt.Sprintf("%s\n\n%s", c.data.Releases.Stable.Name, c.data.Releases.Stable.Body)
-	}
+func (c *Cache) RateLimit() *github.RateLimitCore {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.file.RateLimit
 }
 
-func (c *CacheModel) Load() error {
-	b, err := c.fs.Load(c.Path())
-	if err != nil {
-		return err
-	}
-
-	var d *CacheData
-	if err := json.Unmarshal(b, &d); err != nil {
-		return err
-	}
-
-	c.data = d
-
-	// if err := d.Validate(d.Repo); err != nil {
-	// 	return err
-	// }
-	// if err := d.Validate(d.PreRepo); err != nil {
-	// 	return err
-	// }
-
-	//c.SetVaild(true)
-	//c.SetFile(d)
-
-	return nil
+func (c *Cache) Releases() *github.LatestReleases {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.file.Releases
 }
 
-// -- Setters for CacheModel --
-
-func (c *CacheModel) SetLogger(logger *zerolog.Logger) {
-	c.logger = logger
+func (c *Cache) SetRateLimit(rl *github.RateLimitCore) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.file.RateLimit = rl
+	c.file.RateLimitAge = time.Now()
+	c.file.LastUpdated = time.Now()
 }
 
-func (c *CacheModel) SetFS(fs *file.Filesystem) {
-	c.fs = fs
+func (c *Cache) SetReleases(lr *github.LatestReleases) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.file.Releases = lr
+	c.file.ReleasesAge = time.Now()
+	c.file.LastUpdated = time.Now()
 }
 
-func (c *CacheModel) Save() error {
-	b, err := json.Marshal(c.data)
-	if err != nil {
-		return err
+// GetReleasesAge returns how old the releases data is
+func (c *Cache) ReleasesAge() time.Duration {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.file.ReleasesAge.IsZero() {
+		return time.Duration(0)
 	}
-
-	err = c.fs.Save(c.Path(), b)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return time.Since(c.file.ReleasesAge)
 }
 
-func (c *CacheModel) Remove() error {
-	err := c.fs.Remove(c.Path())
-	if err != nil {
-		return err
+// RateLimitAge returns how old the rate limit data is
+func (c *Cache) RateLimitAge() time.Duration {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.file.RateLimitAge.IsZero() {
+		return time.Duration(0)
 	}
+	return time.Since(c.file.RateLimitAge)
+}
 
-	return nil
+func (c *Cache) ChangelogTranslation() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.file.ChangelogTranslation
+}
+
+func (c *Cache) SetChangelogTranslation(body string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.file.ChangelogTranslation = body
 }
 
 // -- common --
 
-func (c *CacheModel) fetchData() (*CacheData, error) {
-	ctx1 := context.Background()
-	ctx2 := context.Background()
-
-	release, err := c.Client().GetLatestReleases(ctx1, configs.RepoOwner, configs.RepoName)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", log.ErrCacheLatest, err)
-	}
-
-	ratelimit, err := c.Client().GetRateLimit(ctx2)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", log.ErrCacheRateLimit, err)
-	}
-
-	data := &CacheData{
-		RateLimit2: ratelimit,
-		Releases:   release,
-	}
-	return data, nil
+func (c *Cache) Get() CacheFile {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.file
 }
 
-func (c *CacheModel) refreshData() {
-	data, err := c.fetchData()
+func (c *Cache) Update(fn func(*CacheFile)) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	fn(&c.file)
+}
+
+func (m *Model) loadCache() error {
+	if !m.fs.Exist(m.cachePath) {
+		m.logger.Info().Str(log.Lifecycle, "cache file does not exist, using empty").Msg(log.FileManager.String())
+		m.cache.Update(func(cf *CacheFile) {
+			cf.LastUpdated = time.Now()
+		})
+		return nil
+	}
+
+	jsonData, err := m.fs.Load(m.cachePath)
 	if err != nil {
-		c.logger.Warn().Str("CacheModel", "refreshData").Err(err).Msg(log.ErrorManager.String())
+		m.logger.Warn().Str(log.Lifecycle, "failed to load cache").Err(err).Msg(log.ErrorManager.String())
+		return err
+	}
+
+	var cache CacheFile
+	if err := json.Unmarshal(jsonData, &cache); err != nil {
+		m.logger.Warn().Str(log.Lifecycle, "failed to unmarshal cache").Err(err).Msg(log.ErrorManager.String())
+		return err
+	}
+
+	m.cache.Update(func(cf *CacheFile) {
+		*cf = cache
+	})
+
+	m.logger.Info().Str(log.Lifecycle, "cache loaded successfully").Time("last_updated", cache.LastUpdated).Msg(log.FileManager.String())
+	return nil
+}
+
+func (m *Model) saveCache() error {
+	cacheData := m.cache.Get()
+
+	jsonData, err := json.MarshalIndent(cacheData, "", "	")
+	if err != nil {
+		m.logger.Warn().Str(log.Lifecycle, "failed to marshal cache").Err(err).Msg(log.ErrorManager.String())
+		return err
+	}
+
+	if err := m.fs.Save(m.cachePath, jsonData); err != nil {
+		m.logger.Warn().Str(log.Lifecycle, "failed to save cache").Err(err).Msg(log.ErrorManager.String())
+		return err
+	}
+
+	m.logger.Info().Str(log.Lifecycle, "cache saved successfully").Msg(log.FileManager.String())
+	return nil
+}
+
+func (m *Model) Cache() *Cache {
+	return m.cache
+}
+
+// -- commands --
+
+type TranslateChangelogCommand struct {
+	model            *Model
+	origin, dest     string
+	googleTranslator *translator.Translator
+}
+
+func (t TranslateChangelogCommand) Execute(m *Model) {
+	t.model.cache.SetChangelogTranslation("...")
+
+	result, err := t.googleTranslator.Translate(t.origin, "en", t.dest)
+	if err != nil {
+		m.logger.Warn().Err(err).Msg(log.ErrorManager.String())
+		t.model.cache.SetChangelogTranslation("Translation failed")
 		return
 	}
 
-	c.data = data
-	c.expiresAt = time.Unix(data.RateLimit2.Reset, 0)
+	t.model.cache.SetChangelogTranslation(result.Text)
+	t.model.handleUIRefresh()
+}
 
-	err = c.Save()
-	if err != nil {
-		c.logger.Warn().Str("CacheModel", "refreshData").Err(fmt.Errorf("failed to save cache: %w", err)).Msg(log.ErrorManager.String())
-	} else {
-		c.logger.Info().Str("CacheModel.refreshData", "saved latest cache").Msg(log.AppManager.String())
+func (m *Model) Translate(origin, dest string) {
+	m.logger.Info().Str(log.Lifecycle, "translating changelog...").Msg(log.NetworkManager.String())
+	m.commandChan <- TranslateChangelogCommand{
+		model:            m,
+		origin:           origin,
+		dest:             dest,
+		googleTranslator: m.googleTranslator,
 	}
 }
 
-func (c *CacheModel) Start() {
-	// Loads saved data
-	if c.fs.Exist(c.Path()) {
-		err := c.Load()
-		c.logger.Info().Str("CacheModel.Start", "loading cache file").Msg(log.AppManager.String())
-		if err != nil {
-			c.logger.Warn().Str("CacheModel", "Start").Err(fmt.Errorf("cache corrupted: %w", err)).Msg(log.ErrorManager.String())
-		}
-		// If cache is expired, set ratelimit to nil.
-		if c.data != nil && c.data.RateLimit2 != nil && time.Unix(c.data.RateLimit2.Reset, 0).Before(time.Now()) {
-			c.logger.Info().Str("CacheModel.Start", "cache is expired").Msg(log.AppManager.String())
-			c.data.RateLimit2 = nil
-			c.refreshData()
-		}
-	}
+type ResetCacheCommand struct{}
 
-	if DisableAPI {
-		c.logger.Info().Str("CacheModel", "API is disabled now").Msg(log.AppManager.String())
-		return
-	}
+func (r ResetCacheCommand) Execute(m *Model) {
+	m.cache.Update(func(df *CacheFile) {
+		*df = CacheFile{}
+	})
 
-	// Refresh data when, on startup and there is no cache.
-	if !c.fs.Exist(c.Path()) {
-		c.logger.Info().Str("CacheModel.Start", "no cache file found, getting new cache").Msg(log.AppManager.String())
-		c.refreshData()
-	}
+	m.cacheResetCommandChan <- struct{}{}
 
-	// Gets the ratelimit when api is ratelimited.
-	if c.data == nil {
-		ctx := context.Background()
-		ratelimit, err := c.Client().GetRateLimit(ctx)
-		if err != nil {
-			c.logger.Warn().Str("CacheModel", "Start").Err(fmt.Errorf("%w: %w", log.ErrCacheRateLimit, err)).Msg(log.ErrorManager.String())
-		} else {
-			c.logger.Info().Str("CacheModel.Start", "API is ratelimited").Msg(log.AppManager.String())
-			c.data = &CacheData{
-				RateLimit2: ratelimit,
-				Releases:   nil,
-			}
-			c.expiresAt = time.Unix(ratelimit.Reset, 0)
-		}
-	}
-
-	// Refresh data when sleep is over.
-	for {
-		// Wait for user to do ForceRefresh,
-		// this situation only happens when,
-		// 1. timestamp is expired.
-		// 2. there is no cache and internet to fetch data.
-		if c.data.RateLimit2 == nil {
-			continue
-		}
-		time.Sleep(time.Until(c.expiresAt))
-		c.refreshData()
-	}
+	m.handleUIRefresh()
 }
 
-// Removes data, but keeps ratelimit saved locally in app.
-func (c *CacheModel) ForceRefresh() {
-	if c.data != nil && c.data.Releases != nil {
-		c.data.Releases = nil
-	}
-	if err := c.Remove(); err != nil {
-		c.logger.Warn().Str("CacheModel", "ForceRefresh").Err(fmt.Errorf("failed to remove cache: %w", err))
-	}
-	c.logger.Info().Str("CacheModel.ForceRefresh", "force refreshing cache").Msg(log.AppManager.String())
-	c.refreshData()
+func (m *Model) ResetCacheAsync() {
+	m.commandChan <- ResetCacheCommand{}
 }

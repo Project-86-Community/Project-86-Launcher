@@ -1,6 +1,6 @@
 # Project-86-Launcher
 
-A Launcher developed for Project-86 for managing game files.
+A Launcher developed for Project-86-Community-Game for managing game files.
 
 ## Features
 

@@ -2,7 +2,7 @@ version: "3"
 
 vars:
   VERSION:
-    sh: git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD || echo "v0.0.0"
+    sh: git describe --tags --exact-match 2>/dev/null || echo "v0.0.0"
   COMMIT_COUNT:
     sh: git rev-list --count HEAD
 

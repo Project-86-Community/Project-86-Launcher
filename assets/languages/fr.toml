@@ -1,0 +1,75 @@
+[common]
+open = "Ouvrir"
+reset = "Réinitialiser"
+
+[home]
+title = "Maison"
+welcome = "Bienvenue à nouveau,"
+version = "Version installée"
+time = "temps joué"
+last = "Dernière partie jouée"
+
+[play]
+install = "Installer"
+update = "Mise à jour"
+play = "Jouer"
+version = "Version"
+total = "Nombre total de téléchargements"
+prerelease = "Activer la préversion"
+
+[settings]
+title = "Paramètres"
+language = "Langue"
+darkmode = "utiliser le mode sombre"
+scale = "échelle"
+remember = "N'oubliez pas la taille et la position de la fenêtre"
+backgroundm = "Désactiver la musique de fond"
+openp86 = "Ouvrir le dossier 86-Projet"
+openl = "Ouvrir le dossier du lanceur"
+openlog = "Ouvrir le dossier des journaux de débogage"
+resetd = "Réinitialiser les données"
+resetc = "Réinitialiser le cache"
+
+[about]
+title = "À propos"
+content = "Un lanceur développé pour Project-86-Community-Game permettant de gérer les fichiers du jeu."
+license = """ATTENTION : Traduction non officielle
+
+ Musique de fond : « Project: 86 OST: Legion » par XYETRY.
+
+ Project-86-Launcher: Un lanceur développé pour Project-86-Community-Game permettant de gérer les fichiers du jeu.
+ Copyright (C) 2025 Project 86 Community.
+ 
+ Ce programme est un logiciel libre ; vous pouvez le redistribuer ou le
+ modifier suivant les termes de la “GNU General Public License” telle que
+ publiée par la Free Software Foundation : soit la version 3 de cette
+ licence, soit (à votre gré) toute version ultérieure.
+ 
+ Ce programme est distribué dans l’espoir qu’il vous sera utile, mais SANS
+ AUCUNE GARANTIE : sans même la garantie implicite de COMMERCIALISABILITÉ
+ ni d’ADÉQUATION À UN OBJECTIF PARTICULIER. Consultez la Licence Générale
+ Publique GNU pour plus de détails.
+ 
+ Vous devriez avoir reçu une copie de la Licence Générale Publique GNU avec
+ ce programme ; si ce n’est pas le cas, consultez :
+ <https://tode.tuxfamily.org/?page_id=48>.
+
+ ---
+ 
+ Background music: "Project: 86 OST: Legion" by XYETRY.
+
+ Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
+ Copyright (C) 2025 Project 86 Community
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <https://www.gnu.org/licenses/>."""

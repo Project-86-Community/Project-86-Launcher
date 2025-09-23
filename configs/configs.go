@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  * SPDX-FileCopyrightText: 2025 Project 86 Community
  *
- * Project-86-Launcher: A Launcher developed for Project-86 for managing game files.
+ * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
  * Copyright (C) 2025 Project 86 Community
  *
  * This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@ package configs
 
 import "image"
 
-var AppWindowMinSize = image.Pt(600, 300)
+var AppWindowMinSize = image.Pt(300, 300)
 
 const (
 	InternetServer = "https://clients3.google.com/generate_204"
@@ -38,6 +38,11 @@ const (
 	FolderLogs = "logs"
 	FileData   = "data.json"
 	FileCache  = "cache.json"
+
+	FolderBuild      = "build"
+	FolderPreRelease = "prerelease"
+	FolderGame       = "game"
+	FileGame         = "Project-86.exe"
 
 	Website = "https://project-86-community.github.io/Project-86-Website/"
 	Github  = "https://github.com/Taliayaya/Project-86"
