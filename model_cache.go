@@ -56,8 +56,8 @@ func (c *CacheData) Validate(ghRepo *github.RepositoryRelease) error {
 }
 
 type CacheModel struct {
-	fs     *file.Filesystem
 	logger *zerolog.Logger
+	fs     *file.Filesystem
 	client *github.Client
 
 	data      *CacheData
@@ -158,12 +158,12 @@ func (c *CacheModel) Load() error {
 
 // -- Setters for CacheModel --
 
-func (c *CacheModel) SetFS(fs *file.Filesystem) {
-	c.fs = fs
-}
-
 func (c *CacheModel) SetLogger(logger *zerolog.Logger) {
 	c.logger = logger
+}
+
+func (c *CacheModel) SetFS(fs *file.Filesystem) {
+	c.fs = fs
 }
 
 func (c *CacheModel) Save() error {

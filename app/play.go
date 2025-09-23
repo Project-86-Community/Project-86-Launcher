@@ -84,6 +84,7 @@ func (p *Play) Update(context *guigui.Context) error {
 	p.cachedGameDownloadsText.SetValue(model.Cache().GameVersionText(model.Data().UsePreRelease()))
 
 	p.prereleaseToggle.SetOnValueChanged(func(value bool) {
+		model.Data().SetUsePreRelease(value)
 		if value {
 			model.Data().SetUsePreRelease(true)
 		} else {

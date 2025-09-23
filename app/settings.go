@@ -97,6 +97,7 @@ func (s *Settings) Update(context *guigui.Context) error {
 			context.SetAppLocales(nil)
 			return
 		}
+		model.Data().SetLang(item.Value)
 		context.SetAppLocales([]language.Tag{item.Value})
 	})
 	if !s.languageDropdownList.IsPopupOpen() {
@@ -108,6 +109,7 @@ func (s *Settings) Update(context *guigui.Context) error {
 	}
 
 	s.darkModeToggle.SetOnValueChanged(func(value bool) {
+		model.Data().SetUseDarkmode(value)
 		if value {
 			context.SetColorMode(guigui.ColorModeDark)
 		} else {
@@ -151,6 +153,7 @@ func (s *Settings) Update(context *guigui.Context) error {
 			context.SetAppScale(1)
 			return
 		}
+		model.Data().SetAppScale(item.Value)
 		context.SetAppScale(item.Value)
 	})
 	s.scaleSegmentedControl.SelectItemByValue(context.AppScale())

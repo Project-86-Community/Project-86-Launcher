@@ -104,16 +104,45 @@ func main() {
 	model.SetPlayer(player)
 	model.Log().SetLogger(logger)
 	model.Log().SetLogFile(logFile)
-	model.File().SetFS(fs)
 	model.File().SetLogger(logger)
-	model.Cache().SetFS(fs)
+	model.File().SetFS(fs)
+	model.Data().SetFS(fs)
 	model.Cache().SetLogger(logger)
+	model.Cache().SetFS(fs)
+
+	if fs.Exist(model.Data().Path()) {
+		if err := model.Data().Load(); err != nil {
+			logger.Error().Err(err).Msg(log.ErrorManager.String())
+			os.Exit(1)
+		}
+		if err := model.Data().Start(); err != nil {
+			logger.Error().Err(err).Msg(log.ErrorManager.String())
+			os.Exit(1)
+		}
+	} else {
+		if err := model.Data().Data(); err != nil {
+			logger.Error().Err(err).Msg(log.ErrorManager.String())
+			os.Exit(1)
+		}
+	}
 
 	go model.Cache().Start()
 
 	app := &app.Root{}
 	app.SetModel(model)
 	defer func() {
+		data := model.Data()
+		d := p86l.DataData{
+			Lang:           data.Lang().String(),
+			UseDarkmode:    data.UseDarkmode(),
+			AppScale2:      data.AppScale(),
+			DisableBgMusic: data.DisableBgMusic(),
+			UsePreRelease:  data.UsePreRelease(),
+		}
+		if err := model.Data().Save(d); err != nil {
+			logger.Error().Err(err).Msg(log.ErrorManager.String())
+		}
+
 		logger.Info().Str("main", "closing").Msg(log.AppManager.String())
 		if err := app.Close(); err != nil {
 			fmt.Println(err)

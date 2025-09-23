@@ -31,6 +31,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/guigui"
 	"github.com/hajimehoshi/guigui/basicwidget"
+	"golang.org/x/text/language"
 )
 
 type modelKey int
@@ -134,6 +135,20 @@ func (r *Root) Update(context *guigui.Context) error {
 		var gpuInfo ebiten.DebugInfo
 		ebiten.ReadDebugInfo(&gpuInfo)
 		logger.Info().Str("Graphics API", gpuInfo.GraphicsLibrary.String()).Msg("GPU")
+
+		data := r.model.Data()
+		context.SetAppLocales([]language.Tag{data.Lang()})
+		if data.IsNew() {
+			colorMode := context.ColorMode()
+			context.SetColorMode(colorMode)
+		} else {
+			if data.UseDarkmode() {
+				context.SetColorMode(guigui.ColorModeDark)
+			} else {
+				context.SetColorMode(guigui.ColorModeLight)
+			}
+		}
+		context.SetAppScale(data.AppScale())
 	})
 
 	r.backgroundImage.SetImage(assets.Banner)
