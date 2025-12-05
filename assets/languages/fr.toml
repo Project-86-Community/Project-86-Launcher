@@ -2,6 +2,9 @@
 open = "Ouvrir"
 reset = "Réinitialiser"
 
+[errors]
+translate_fail = "Échec de la traduction"
+
 [home]
 title = "Maison"
 welcome = "Bienvenue à nouveau,"
@@ -20,6 +23,7 @@ prerelease = "Activer la préversion"
 [settings]
 title = "Paramètres"
 language = "Langue"
+translate = "Traduire le journal des modifications - Google Traduction"
 darkmode = "utiliser le mode sombre"
 scale = "échelle"
 remember = "N'oubliez pas la taille et la position de la fenêtre"

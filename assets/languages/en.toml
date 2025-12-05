@@ -2,6 +2,9 @@
 open = "Open"
 reset = "Reset"
 
+[errors]
+translate_fail = "Translation failed"
+
 [home]
 title = "Home"
 welcome = "Welcome back,"
@@ -20,6 +23,7 @@ prerelease = "Enable Pre-release"
 [settings]
 title = "Settings"
 language = "Language"
+translate = "Translate changelog - Google Translate"
 darkmode = "Use darkmode"
 scale = "Scale"
 remember = "Remember window size & position"

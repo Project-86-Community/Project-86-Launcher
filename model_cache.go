@@ -191,7 +191,7 @@ func (t TranslateChangelogCommand) Execute(m *Model) {
 	result, err := t.googleTranslator.Translate(t.origin, "en", t.dest)
 	if err != nil {
 		m.logger.Warn().Err(err).Msg(log.ErrorManager.String())
-		t.model.cache.SetChangelogTranslation("Translation failed")
+		t.model.cache.SetChangelogTranslation(T("errors.translate_fail"))
 		return
 	}
 

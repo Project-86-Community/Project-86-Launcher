@@ -56,7 +56,7 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	cacheFile := model.Cache().Get()
 
 	s.languageText.SetValue(p86l.T("settings.language"))
-	s.translateChangelogText.SetValue("Translate changelog - Google Translate")
+	s.translateChangelogText.SetValue(p86l.T("settings.translate"))
 	s.darkModeText.SetValue(p86l.T("settings.darkmode"))
 	s.scaleText.SetValue(p86l.T("settings.scale"))
 	s.rememberWindowText.SetValue(p86l.T("settings.remember"))
@@ -95,15 +95,12 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 		}
 	}
 
+	context.SetEnabled(&s.translateChangelogToggle, dataFile.Lang != "en")
 	s.translateChangelogToggle.SetOnValueChanged(func(value bool) {
-		item, ok := s.languageSelect.SelectedItem()
-		if !ok {
-			return
-		}
 		data.SetTranslateChangelog(value)
 
-		if cacheFile.Releases != nil && value && item.Value != language.English {
-			model.Translate(p86l.ReleasesChangelogText(cacheFile, dataFile.UsePreRelease), item.Value.String())
+		if cacheFile.Releases != nil && value && dataFile.Lang != "en" {
+			model.Translate(p86l.ReleasesChangelogText(cacheFile, dataFile.UsePreRelease), dataFile.Lang)
 		}
 	})
 	if dataFile.TranslateChangelog {
