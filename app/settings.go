@@ -85,7 +85,7 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 			df.Lang = item.Value.String()
 		})
 
-		if cacheFile.Releases != nil && dataFile.TranslateChangelog && item.Value != language.English {
+		if cacheFile.Releases != nil {
 			model.Translate(p86l.ReleasesChangelogText(cacheFile, dataFile.UsePreRelease), item.Value.String())
 		}
 	})
@@ -103,7 +103,7 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 			df.TranslateChangelog = value
 		})
 
-		if cacheFile.Releases != nil && value && dataFile.Lang != "en" {
+		if cacheFile.Releases != nil {
 			model.Translate(p86l.ReleasesChangelogText(cacheFile, dataFile.UsePreRelease), dataFile.Lang)
 		}
 	})

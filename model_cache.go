@@ -180,6 +180,10 @@ func (t TranslateChangelogCommand) Execute(m *Model) {
 }
 
 func (m *Model) Translate(origin, dest string) {
+	if !m.data.Get().TranslateChangelog || m.data.Get().Lang == "en" {
+		return
+	}
+
 	m.logger.Info().Str(log.Lifecycle, "translating changelog...").Msg(log.NetworkManager.String())
 	m.commandChan <- TranslateChangelogCommand{
 		model:            m,

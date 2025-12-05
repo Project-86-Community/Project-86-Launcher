@@ -222,7 +222,7 @@ func (r *Root) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 				}
 			}
 
-			if cacheFile.Releases != nil && dataFile.TranslateChangelog && tag != language.English {
+			if cacheFile.Releases != nil {
 				m.Translate(p86l.ReleasesChangelogText(cacheFile, dataFile.UsePreRelease), tag.String())
 			}
 

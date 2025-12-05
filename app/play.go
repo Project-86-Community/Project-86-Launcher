@@ -95,7 +95,7 @@ func (p *Play) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 			df.UsePreRelease = value
 		})
 
-		if cacheFile.Releases != nil && dataFile.TranslateChangelog && dataFile.Lang != "en" {
+		if cacheFile.Releases != nil {
 			model.Translate(p86l.ReleasesChangelogText(cacheFile, value), dataFile.Lang)
 		}
 	})
