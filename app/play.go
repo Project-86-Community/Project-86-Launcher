@@ -25,51 +25,74 @@ import (
 	"p86l"
 	"p86l/assets"
 	"p86l/configs"
+	"time"
 
 	"github.com/guigui-gui/guigui"
 	"github.com/guigui-gui/guigui/basicwidget"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Play struct {
 	guigui.DefaultWidget
 
-	installButton, updateButton, playButton                         basicwidget.Button
+	actionButtons                                                   [3]basicwidget.Button
 	form                                                            basicwidget.Form
 	gameVersionText, versionText, downloadsText, totalDownloadsText basicwidget.Text
 	prereleaseText                                                  basicwidget.Text
 	prereleaseToggle                                                basicwidget.Toggle
 	changelogPanel                                                  basicwidget.Panel
 	changelogText                                                   basicwidget.Text
-	websiteButton, githubButton, discordButton, patreonButton       basicwidget.Button
+	linkButtons                                                     [4]basicwidget.Button
 }
 
 func (p *Play) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
-	adder.AddChild(&p.installButton)
-	adder.AddChild(&p.updateButton)
-	adder.AddChild(&p.playButton)
+	for i := range p.actionButtons {
+		adder.AddChild(&p.actionButtons[i])
+	}
 	adder.AddChild(&p.form)
 	adder.AddChild(&p.changelogPanel)
-	adder.AddChild(&p.websiteButton)
-	adder.AddChild(&p.githubButton)
-	adder.AddChild(&p.discordButton)
-	adder.AddChild(&p.patreonButton)
+	for i := range p.linkButtons {
+		adder.AddChild(&p.linkButtons[i])
+	}
 
 	model := context.Model(p, modelKeyModel).(*p86l.Model)
 	data := model.Data()
 	dataFile := data.Get()
 	cacheFile := model.Cache().Get()
 
-	p.installButton.SetText(p86l.T("play.install"))
-	p.updateButton.SetText(p86l.T("play.update"))
-	p.playButton.SetText(p86l.T("play.play"))
-
-	if dataFile.UsePreRelease {
-		preReleaseAvail, _ := model.CheckFilesCached(p86l.PathGamePreRelease)
-		context.SetEnabled(&p.playButton, preReleaseAvail)
+	inProgress := model.InProgress()
+	if inProgress {
+		for i := range p.actionButtons {
+			context.SetEnabled(&p.actionButtons[i], !inProgress)
+		}
 	} else {
-		stableAvail, _ := model.CheckFilesCached(p86l.PathGameStable)
-		context.SetEnabled(&p.playButton, stableAvail)
+		// Install & Play
+		if dataFile.UsePreRelease {
+			preReleaseAvail, _ := model.CheckFilesCached(p86l.PathGamePreRelease)
+			context.SetEnabled(&p.actionButtons[0], !preReleaseAvail)
+			context.SetEnabled(&p.actionButtons[2], preReleaseAvail)
+		} else {
+			stableAvail, _ := model.CheckFilesCached(p86l.PathGameStable)
+			context.SetEnabled(&p.actionButtons[0], !stableAvail)
+			context.SetEnabled(&p.actionButtons[2], stableAvail)
+		}
 	}
+
+	actionTexts := [3]string{p86l.T("play.install"), p86l.T("play.update"), p86l.T("play.play")}
+	for i := range p.actionButtons {
+		p.actionButtons[i].SetText(actionTexts[i])
+	}
+
+	p.actionButtons[0].SetOnDown(func() {
+		go func() {
+			model.InProgress(true)
+			time.Sleep(time.Second * 5)
+			model.InProgress(false)
+			for i := range p.actionButtons {
+				guigui.RequestRedraw(&p.actionButtons[i])
+			}
+		}()
+	})
 
 	p.changelogText.SetAutoWrap(true)
 	p.changelogText.SetMultiline(true)
@@ -120,15 +143,12 @@ func (p *Play) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 		},
 	})
 
-	p.websiteButton.SetOnDown(func() { model.OpenURL(configs.Website) })
-	p.githubButton.SetOnDown(func() { model.OpenURL(configs.Github) })
-	p.discordButton.SetOnDown(func() { model.OpenURL(configs.Discord) })
-	p.patreonButton.SetOnDown(func() { model.OpenURL(configs.Patreon) })
-
-	p.websiteButton.SetIcon(assets.IE)
-	p.githubButton.SetIcon(assets.Github)
-	p.discordButton.SetIcon(assets.Discord)
-	p.patreonButton.SetIcon(assets.Patreon)
+	linkIcons := [4]*ebiten.Image{assets.IE, assets.Github, assets.Discord, assets.Patreon}
+	linkUrls := [4]string{configs.Website, configs.Github, configs.Discord, configs.Patreon}
+	for i := range p.linkButtons {
+		p.linkButtons[i].SetIcon(linkIcons[i])
+		p.linkButtons[i].SetOnDown(func() { model.OpenURL(linkUrls[i]) })
+	}
 
 	return nil
 }
@@ -147,19 +167,19 @@ func (p *Play) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds
 							Size: guigui.FlexibleSize(1),
 						},
 						{
-							Widget: &p.websiteButton,
+							Widget: &p.linkButtons[0],
 							Size:   guigui.FixedSize(int(float64(u) * 1.5)),
 						},
 						{
-							Widget: &p.githubButton,
+							Widget: &p.linkButtons[1],
 							Size:   guigui.FixedSize(int(float64(u) * 1.5)),
 						},
 						{
-							Widget: &p.discordButton,
+							Widget: &p.linkButtons[2],
 							Size:   guigui.FixedSize(int(float64(u) * 1.5)),
 						},
 						{
-							Widget: &p.patreonButton,
+							Widget: &p.linkButtons[3],
 							Size:   guigui.FixedSize(int(float64(u) * 1.5)),
 						},
 						{
@@ -178,15 +198,15 @@ func (p *Play) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds
 							Size: guigui.FlexibleSize(1),
 						},
 						{
-							Widget: &p.installButton,
+							Widget: &p.actionButtons[0],
 							Size:   guigui.FixedSize(u * 4),
 						},
 						{
-							Widget: &p.updateButton,
+							Widget: &p.actionButtons[1],
 							Size:   guigui.FixedSize(u * 4),
 						},
 						{
-							Widget: &p.playButton,
+							Widget: &p.actionButtons[2],
 							Size:   guigui.FixedSize(u * 4),
 						},
 						{

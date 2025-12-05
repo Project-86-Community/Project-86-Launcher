@@ -63,6 +63,8 @@ type Model struct {
 	dataPath          string
 	data              *Data
 
+	inProgress bool
+
 	cachePath string
 	cache     *Cache
 
@@ -168,6 +170,14 @@ func (m *Model) OpenPath(path string) {
 func (m *Model) OpenURL(url string) {
 	m.logger.Info().Str("open url", url).Msg(log.AppManager.String())
 	m.fs.Open(url)
+}
+
+func (m *Model) InProgress(value ...bool) bool {
+	if len(value) > 0 {
+		m.inProgress = value[0]
+	}
+
+	return m.inProgress
 }
 
 // CheckFilesCached returns cached file availability (instant, non-blocking)
@@ -286,7 +296,6 @@ const (
 type CacheSubModel struct {
 	logger zerolog.Logger
 	model  *Model
-
 	client *github.Client
 }
 
