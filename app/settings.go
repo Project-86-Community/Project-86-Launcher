@@ -81,7 +81,9 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 
 		context.SetAppLocales([]language.Tag{item.Value})
 		assets.LoadLanguage(item.Value.String())
-		data.SetLang(item.Value)
+		data.Update(func(df *p86l.DataFile) {
+			df.Lang = item.Value.String()
+		})
 
 		if cacheFile.Releases != nil && dataFile.TranslateChangelog && item.Value != language.English {
 			model.Translate(p86l.ReleasesChangelogText(cacheFile, dataFile.UsePreRelease), item.Value.String())
@@ -97,7 +99,9 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 
 	context.SetEnabled(&s.translateChangelogToggle, dataFile.Lang != "en")
 	s.translateChangelogToggle.SetOnValueChanged(func(value bool) {
-		data.SetTranslateChangelog(value)
+		data.Update(func(df *p86l.DataFile) {
+			df.TranslateChangelog = value
+		})
 
 		if cacheFile.Releases != nil && value && dataFile.Lang != "en" {
 			model.Translate(p86l.ReleasesChangelogText(cacheFile, dataFile.UsePreRelease), dataFile.Lang)

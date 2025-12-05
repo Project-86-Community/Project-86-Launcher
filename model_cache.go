@@ -52,18 +52,6 @@ func NewCache(initial CacheFile) *Cache {
 	}
 }
 
-func (c *Cache) RateLimit() *github.RateLimitCore {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.file.RateLimit
-}
-
-func (c *Cache) Releases() *github.LatestReleases {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.file.Releases
-}
-
 func (c *Cache) SetRateLimit(rl *github.RateLimitCore) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -99,20 +87,6 @@ func (c *Cache) RateLimitAge() time.Duration {
 	}
 	return time.Since(c.file.RateLimitAge)
 }
-
-func (c *Cache) ChangelogTranslation() string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.file.ChangelogTranslation
-}
-
-func (c *Cache) SetChangelogTranslation(body string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.file.ChangelogTranslation = body
-}
-
-// -- common --
 
 func (c *Cache) Get() CacheFile {
 	c.mu.RLock()
@@ -186,16 +160,22 @@ type TranslateChangelogCommand struct {
 }
 
 func (t TranslateChangelogCommand) Execute(m *Model) {
-	t.model.cache.SetChangelogTranslation("...")
+	t.model.cache.Update(func(cf *CacheFile) {
+		cf.ChangelogTranslation = "..."
+	})
 
 	result, err := t.googleTranslator.Translate(t.origin, "en", t.dest)
 	if err != nil {
 		m.logger.Warn().Err(err).Msg(log.ErrorManager.String())
-		t.model.cache.SetChangelogTranslation(T("errors.translate_fail"))
+		t.model.cache.Update(func(cf *CacheFile) {
+			cf.ChangelogTranslation = T("errors.translate_fail")
+		})
 		return
 	}
 
-	t.model.cache.SetChangelogTranslation(result.Text)
+	t.model.cache.Update(func(cf *CacheFile) {
+		cf.ChangelogTranslation = result.Text
+	})
 	t.model.handleUIRefresh()
 }
 

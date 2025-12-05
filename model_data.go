@@ -68,8 +68,6 @@ func NewData(initial DataFile) *Data {
 	}
 }
 
-// -- Getters for Data --
-
 func (d *Data) Lang() (language.Tag, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -81,94 +79,6 @@ func (d *Data) Lang() (language.Tag, error) {
 
 	return tag, nil
 }
-
-func (d *Data) TranslateChangelog() bool {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.file.TranslateChangelog
-}
-
-func (d *Data) UseDarkmode() bool {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.file.UseDarkmode
-}
-
-func (d *Data) AppScale() float64 {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.file.AppScale
-}
-
-func (d *Data) DisableBgMusic() bool {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.file.DisableBgMusic
-}
-
-func (d *Data) UsePreRelease() bool {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.file.UsePreRelease
-}
-
-func (d *Data) Remember() DataRemember {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.file.Remember
-}
-
-// -- Setters for Data --
-
-func (d *Data) SetLang(tag language.Tag) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.file.Lang = tag.String()
-}
-
-func (d *Data) SetTranslateChangelog(value bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.file.TranslateChangelog = value
-}
-
-func (d *Data) SetUseDarkmode(value bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.file.UseDarkmode = value
-}
-
-func (d *Data) SetAppScale(scale float64) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.file.AppScale = scale
-}
-
-func (d *Data) SetDisableBgMusic(value bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.file.DisableBgMusic = value
-}
-
-func (d *Data) SetUsePreRelease(value bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.file.UsePreRelease = value
-}
-
-func (d *Data) SetRemember(remember DataRemember) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.file.Remember = remember
-}
-
-func (d *Data) SetPage(page SidebarPage) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.file.Remember.Page = int(page)
-}
-
-// -- common --
 
 func (d *Data) Get() DataFile {
 	d.mu.RLock()

@@ -209,7 +209,7 @@ func (r *Root) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 			context.SetAppLocales([]language.Tag{tag})
 			assets.LoadLanguage(tag.String())
 			if !value {
-				if data.UseDarkmode() {
+				if dataFile.UseDarkmode {
 					context.SetColorMode(guigui.ColorModeDark)
 				} else {
 					context.SetColorMode(guigui.ColorModeLight)
@@ -222,22 +222,24 @@ func (r *Root) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 				}
 			}
 
-			if cacheFile.Releases != nil && data.TranslateChangelog() && tag != language.English {
+			if cacheFile.Releases != nil && dataFile.TranslateChangelog && tag != language.English {
 				m.Translate(p86l.ReleasesChangelogText(cacheFile, dataFile.UsePreRelease), tag.String())
 			}
 
-			context.SetAppScale(data.AppScale())
+			context.SetAppScale(dataFile.AppScale)
 
-			remember := data.Remember()
+			remember := dataFile.Remember
 			if remember.Active {
 				if !value {
 					ebiten.SetWindowSize(max(configs.AppWindowMinSize.X, remember.WSizeX), max(configs.AppWindowMinSize.Y, remember.WSizeY))
 					ebiten.SetWindowPosition(max(0, remember.WPosX), max(0, remember.WPosY))
 				}
-				data.SetPage(p86l.SidebarPage(remember.Page))
+				data.Update(func(df *p86l.DataFile) {
+					df.Remember.Page = remember.Page
+				})
 			}
 
-			if !data.DisableBgMusic() {
+			if !dataFile.DisableBgMusic {
 				m.BGMPlayer().Play()
 			}
 			return nil

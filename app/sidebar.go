@@ -102,10 +102,14 @@ func (s *sidebarContent) Build(context *guigui.Context, adder *guigui.ChildAdder
 	s.list.SetOnItemSelected(func(index int) {
 		item, ok := s.list.ItemByIndex(index)
 		if !ok {
-			data.SetPage(p86l.PageHome)
+			data.Update(func(df *p86l.DataFile) {
+				df.Remember.Page = int(p86l.PageHome)
+			})
 			return
 		}
-		data.SetPage(item.Value)
+		data.Update(func(df *p86l.DataFile) {
+			df.Remember.Page = int(item.Value)
+		})
 	})
 
 	return nil

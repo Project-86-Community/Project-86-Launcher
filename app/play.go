@@ -91,13 +91,15 @@ func (p *Play) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	p.totalDownloadsText.SetValue(p86l.ReleasesDownloadCountText(cacheFile, dataFile.UsePreRelease))
 
 	p.prereleaseToggle.SetOnValueChanged(func(value bool) {
-		data.SetUsePreRelease(value)
+		data.Update(func(df *p86l.DataFile) {
+			df.UsePreRelease = value
+		})
 
 		if cacheFile.Releases != nil && dataFile.TranslateChangelog && dataFile.Lang != "en" {
 			model.Translate(p86l.ReleasesChangelogText(cacheFile, value), dataFile.Lang)
 		}
 	})
-	if model.Data().UsePreRelease() {
+	if dataFile.UsePreRelease {
 		p.prereleaseToggle.SetValue(true)
 	} else {
 		p.prereleaseToggle.SetValue(false)

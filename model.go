@@ -299,7 +299,7 @@ func NewCacheSubModel(model *Model) *CacheSubModel {
 }
 
 func (c *CacheSubModel) getRefreshInterval() time.Duration {
-	resetTime := c.model.Cache().RateLimit().Reset
+	resetTime := c.model.Cache().Get().RateLimit.Reset
 	if resetTime <= 0 {
 		return defaultRefreshInterval
 	}
@@ -359,9 +359,11 @@ func (c *CacheSubModel) Start(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (c *CacheSubModel) initialFetch(ctx context.Context) {
-	cache := c.model.Cache()
-	hasRateLimit := cache.RateLimit() != nil
-	hasReleases := cache.Releases() != nil
+	cache := c.model.cache
+	cacheFile := cache.Get()
+
+	hasRateLimit := cacheFile.RateLimit != nil
+	hasReleases := cacheFile.Releases != nil
 
 	rateLimitAge := cache.RateLimitAge()
 	releasesAge := cache.ReleasesAge()
@@ -416,7 +418,7 @@ func (c *CacheSubModel) fetchRateLimit(ctx context.Context) {
 func (c *CacheSubModel) fetchReleases(ctx context.Context) {
 	cache := c.model.Cache()
 
-	ratelimit := cache.RateLimit()
+	ratelimit := cache.Get().RateLimit
 	if ratelimit != nil && ratelimit.Remaining < 5 {
 		c.logger.Warn().
 			Str(log.FetchReleases, "rate limit low, skipping fetch").
