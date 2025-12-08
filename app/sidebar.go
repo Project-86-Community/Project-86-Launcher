@@ -22,7 +22,6 @@
 package app
 
 import (
-	"image"
 	"p86l"
 
 	"github.com/guigui-gui/guigui"
@@ -32,39 +31,44 @@ import (
 type Sidebar struct {
 	guigui.DefaultWidget
 
-	panel        basicwidget.Panel
-	panelContent sidebarContent
+	background basicwidget.Background
+	content    sidebarContent
+	bottom     bottomContent
 }
 
 func (s *Sidebar) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
-	adder.AddChild(&s.panel)
+	adder.AddChild(&s.background)
+	adder.AddChild(&s.content)
+	adder.AddChild(&s.bottom)
 
-	s.panel.SetStyle(basicwidget.PanelStyleSide)
-	s.panel.SetBorders(basicwidget.PanelBorder{
-		End: true,
-	})
-	context.SetOpacity(&s.panel, 0.9)
-	s.panel.SetContent(&s.panelContent)
+	context.SetOpacity(&s.background, 0.9)
 
 	return nil
 }
 
 func (s *Sidebar) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
-	s.panelContent.setSize(widgetBounds.Bounds().Size())
-	layouter.LayoutWidget(&s.panel, widgetBounds.Bounds())
+	layouter.LayoutWidget(&s.background, widgetBounds.Bounds())
+	(guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items: []guigui.LinearLayoutItem{
+			{
+				Widget: &s.content,
+			},
+			{
+				Size: guigui.FlexibleSize(1),
+			},
+			{
+				Widget: &s.bottom,
+			},
+		},
+	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }
 
 type sidebarContent struct {
 	guigui.DefaultWidget
 
 	list   basicwidget.List[p86l.SidebarPage]
-	bottom sidebarBottom
-
-	size image.Point
-}
-
-func (s *sidebarContent) setSize(size image.Point) {
-	s.size = size
+	bottom bottomContent
 }
 
 func (s *sidebarContent) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
@@ -116,81 +120,62 @@ func (s *sidebarContent) Build(context *guigui.Context, adder *guigui.ChildAdder
 }
 
 func (s *sidebarContent) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
-	u := basicwidget.UnitSize(context)
-	(guigui.LinearLayout{
-		Direction: guigui.LayoutDirectionVertical,
-		Items: []guigui.LinearLayoutItem{
-			{
-				Widget: &s.list,
-			},
-			{
-				Size: guigui.FlexibleSize(1),
-			},
-			{
-				Widget: &s.bottom,
-			},
-		},
-		Gap: u / 2,
-	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
+	layouter.LayoutWidget(&s.list, widgetBounds.Bounds())
 }
 
-func (s *sidebarContent) Measure(context *guigui.Context, constraints guigui.Constraints) image.Point {
-	return s.size
-}
-
-type sidebarBottom struct {
+type bottomContent struct {
 	guigui.DefaultWidget
 
-	progressText    basicwidget.Text
-	cacheExpireText basicwidget.Text
+	progressText basicwidget.Text
 
-	formattedCacheExpireText string
+	rateLimitText basicwidget.Text
+	rateLimitStr  string
 }
 
-func (s *sidebarBottom) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
-	adder.AddChild(&s.progressText)
-	adder.AddChild(&s.cacheExpireText)
+func (b *bottomContent) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
+	adder.AddChild(&b.progressText)
+	adder.AddChild(&b.rateLimitText)
 
-	s.progressText.SetAutoWrap(true)
+	b.progressText.SetScale(0.8)
+	b.progressText.SetAutoWrap(true)
+	b.progressText.SetMultiline(true)
+	b.progressText.SetValue(p86l.T("about.content"))
 
-	s.cacheExpireText.SetValue(s.formattedCacheExpireText)
-	s.cacheExpireText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
-	s.cacheExpireText.SetScale(0.8)
-	s.cacheExpireText.SetAutoWrap(true)
-	s.cacheExpireText.SetMultiline(true)
+	b.rateLimitText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
+	b.rateLimitText.SetScale(0.8)
+	b.rateLimitText.SetAutoWrap(true)
+	b.rateLimitText.SetMultiline(true)
+	b.rateLimitText.SetValue(b.rateLimitStr)
 
 	return nil
 }
 
-func (s *sidebarBottom) Tick(context *guigui.Context, widgetBounds *guigui.WidgetBounds) error {
-	model := context.Model(s, modelKeyModel).(*p86l.Model)
+func (b *bottomContent) Tick(context *guigui.Context, widgetBounds *guigui.WidgetBounds) error {
+	model := context.Model(b, modelKeyModel).(*p86l.Model)
 	newText := p86l.FormattedCacheExpireText(model.Cache().Get())
-	if newText != s.formattedCacheExpireText {
-		s.formattedCacheExpireText = newText
-		guigui.RequestRedraw(s)
+	if newText != b.rateLimitStr {
+		b.rateLimitStr = newText
+		guigui.RequestRedraw(&b.rateLimitText)
 	}
 
 	return nil
 }
 
-func (s *sidebarBottom) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
+func (b *bottomContent) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
 	u := basicwidget.UnitSize(context)
 	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionVertical,
 		Items: []guigui.LinearLayoutItem{
 			{
-				Size: guigui.FlexibleSize(1),
+				Widget: &b.progressText,
 			},
 			{
-				Widget: &s.progressText,
-			},
-			{
-				Widget: &s.cacheExpireText,
+				Widget: &b.rateLimitText,
 			},
 		},
 		Gap: u / 2,
 		Padding: guigui.Padding{
-			End: u / 6,
+			Start: u / 6,
 		},
 	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }
