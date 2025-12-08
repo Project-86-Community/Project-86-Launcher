@@ -354,11 +354,12 @@ func (c *CacheSubModel) Start(ctx context.Context, wg *sync.WaitGroup) {
 
 				return
 			case <-refreshTicker.C:
-				c.logger.Debug().Msg("time up")
+				c.logger.Info().Str(log.Lifecycle, "time to refresh cache").Msg(log.NetworkManager.String())
 				c.fetchReleases(ctx)
 				c.fetchRateLimit(ctx)
 				refreshTicker.Reset(c.getRefreshInterval())
 			case <-c.model.cacheResetCommandChan:
+				c.logger.Info().Str(log.Lifecycle, "forced refresh of cache").Msg(log.NetworkManager.String())
 				c.fetchReleases(ctx)
 				c.fetchRateLimit(ctx)
 				refreshTicker.Reset(c.getRefreshInterval())
