@@ -9,13 +9,13 @@ require (
 	github.com/Conight/go-googletrans v0.2.4
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fyne-io/image v0.1.1
-	github.com/guigui-gui/guigui v0.0.0-20251122051907-3601351aac1b
-	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.6
+	github.com/guigui-gui/guigui v0.0.0-20251205172047-76ea2b5eb23c
+	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.7.0.20251204180847-353b07a2d62b
 	github.com/kisielk/errcheck v1.9.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.0
 	github.com/rs/zerolog v1.34.0
-	golang.org/x/text v0.31.0
-	golang.org/x/tools v0.38.0
+	golang.org/x/text v0.32.0
+	golang.org/x/tools v0.39.0
 )
 
 require (
@@ -26,7 +26,7 @@ require (
 	github.com/ebitengine/purego v0.10.0-alpha.3 // indirect
 	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/hajimehoshi/oklab v0.1.0 // indirect
+	github.com/hajimehoshi/iro v0.1.0 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20250612000132-0ef82f21eade // indirect
 	github.com/jezek/xgb v1.2.0 // indirect
 	github.com/jfreymuth/oggvorbis v1.0.5 // indirect
@@ -35,9 +35,9 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	golang.org/x/image v0.32.0 // indirect
-	golang.org/x/mod v0.29.0 // indirect
-	golang.org/x/sync v0.18.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/image v0.33.0 // indirect
+	golang.org/x/mod v0.30.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
 	howett.net/plist v1.0.1 // indirect
 )
