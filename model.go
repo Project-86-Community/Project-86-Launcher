@@ -78,18 +78,32 @@ type Model struct {
 
 func NewModel(logger *zerolog.Logger, fs *file.Filesystem, bgmPlayer *audio.Player) *Model {
 	ctx, cancel := context.WithCancel(context.Background())
+	dataPath := filepath.Join(configs.AppName, configs.FileData)
+	cachePath := filepath.Join(configs.AppName, configs.FileCache)
+
+	isNew, df, err := loadData(logger, fs, dataPath)
+	if err != nil {
+		logger.Warn().Str(log.Lifecycle, "could not load initial data, using defaults").Err(err).Msg(log.ErrorManager.String())
+	}
+
+	cf, err := loadCache(logger, fs, cachePath)
+	if err != nil {
+		logger.Warn().Str(log.Lifecycle, "could not load cache").Err(err).Msg(log.ErrorManager.String())
+	}
+
 	return &Model{
 		ctx:                   ctx,
 		cancel:                cancel,
+		subModels:             make([]SubModel, 0),
 		logger:                logger,
 		fs:                    fs,
 		bgmPlayer:             bgmPlayer,
 		googleTranslator:      translator.New(),
-		subModels:             make([]SubModel, 0),
-		dataPath:              filepath.Join(configs.AppName, configs.FileData),
-		data:                  NewData(DataFile{}),
-		cachePath:             filepath.Join(configs.AppName, configs.FileCache),
-		cache:                 NewCache(CacheFile{}),
+		isNew:                 isNew,
+		dataPath:              dataPath,
+		data:                  NewData(df),
+		cachePath:             cachePath,
+		cache:                 NewCache(cf),
 		commandChan:           make(chan Command, 10),
 		cacheResetCommandChan: make(chan struct{}, 1),
 		fileAvailability:      make(map[string]bool),
@@ -220,10 +234,6 @@ func (d *DataSubModel) Start(ctx context.Context, wg *sync.WaitGroup) {
 
 	logger.Info().Str(log.Lifecycle, log.Starting).Msg(log.AppManager.String())
 
-	if err := d.model.loadData(); err != nil {
-		logger.Warn().Str(log.Lifecycle, "could not load initial data, using defaults").Err(err).Msg(log.ErrorManager.String())
-	}
-
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -323,10 +333,6 @@ func (c *CacheSubModel) getRefreshInterval() time.Duration {
 
 func (c *CacheSubModel) Start(ctx context.Context, wg *sync.WaitGroup) {
 	c.logger.Info().Str(log.Lifecycle, log.Starting).Msg(log.AppManager.String())
-
-	if err := c.model.loadCache(); err != nil {
-		c.logger.Warn().Str(log.Lifecycle, "could not load cache").Err(err).Msg(log.ErrorManager.String())
-	}
 
 	wg.Add(1)
 	go func() {

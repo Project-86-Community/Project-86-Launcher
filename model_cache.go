@@ -23,12 +23,14 @@ package p86l
 
 import (
 	"encoding/json"
+	"p86l/internal/file"
 	"p86l/internal/github"
 	"p86l/internal/log"
 	"sync"
 	"time"
 
 	translator "github.com/Conight/go-googletrans"
+	"github.com/rs/zerolog"
 )
 
 type CacheFile struct {
@@ -46,9 +48,9 @@ type Cache struct {
 	file CacheFile
 }
 
-func NewCache(initial CacheFile) *Cache {
+func NewCache(initial *CacheFile) *Cache {
 	return &Cache{
-		file: initial,
+		file: *initial,
 	}
 }
 
@@ -100,33 +102,29 @@ func (c *Cache) Update(fn func(*CacheFile)) {
 	fn(&c.file)
 }
 
-func (m *Model) loadCache() error {
-	if !m.fs.Exist(m.cachePath) {
-		m.logger.Info().Str(log.Lifecycle, "cache file does not exist, using empty").Msg(log.FileManager.String())
-		m.cache.Update(func(cf *CacheFile) {
-			cf.LastUpdated = time.Now()
-		})
-		return nil
+func loadCache(logger *zerolog.Logger, fs *file.Filesystem, cachePath string) (*CacheFile, error) {
+	if !fs.Exist(cachePath) {
+		logger.Info().Str(log.Lifecycle, "cache file does not exist, using empty").Msg(log.FileManager.String())
+		cf := &CacheFile{
+			LastUpdated: time.Now(),
+		}
+		return cf, nil
 	}
 
-	jsonData, err := m.fs.Load(m.cachePath)
+	jsonData, err := fs.Load(cachePath)
 	if err != nil {
-		m.logger.Warn().Str(log.Lifecycle, "failed to load cache").Err(err).Msg(log.ErrorManager.String())
-		return err
+		logger.Warn().Str(log.Lifecycle, "failed to load cache").Err(err).Msg(log.ErrorManager.String())
+		return nil, err
 	}
 
-	var cache CacheFile
-	if err := json.Unmarshal(jsonData, &cache); err != nil {
-		m.logger.Warn().Str(log.Lifecycle, "failed to unmarshal cache").Err(err).Msg(log.ErrorManager.String())
-		return err
+	var cf CacheFile
+	if err := json.Unmarshal(jsonData, &cf); err != nil {
+		logger.Warn().Str(log.Lifecycle, "failed to unmarshal cache").Err(err).Msg(log.ErrorManager.String())
+		return nil, err
 	}
 
-	m.cache.Update(func(cf *CacheFile) {
-		*cf = cache
-	})
-
-	m.logger.Info().Str(log.Lifecycle, "cache loaded successfully").Time("last_updated", cache.LastUpdated).Msg(log.FileManager.String())
-	return nil
+	logger.Info().Str(log.Lifecycle, "cache loaded successfully").Time("last_updated", cf.LastUpdated).Msg(log.FileManager.String())
+	return &cf, nil
 }
 
 func (m *Model) saveCache() error {

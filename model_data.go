@@ -23,9 +23,11 @@ package p86l
 
 import (
 	"encoding/json"
+	"p86l/internal/file"
 	"p86l/internal/log"
 	"sync"
 
+	"github.com/rs/zerolog"
 	"golang.org/x/text/language"
 )
 
@@ -62,9 +64,9 @@ type Data struct {
 	file DataFile
 }
 
-func NewData(initial DataFile) *Data {
+func NewData(initial *DataFile) *Data {
 	return &Data{
-		file: initial,
+		file: *initial,
 	}
 }
 
@@ -92,40 +94,35 @@ func (d *Data) Update(fn func(*DataFile)) {
 	fn(&d.file)
 }
 
-func (m *Model) loadData() error {
-	if !m.fs.Exist(m.dataPath) {
-		m.logger.Info().Str(log.Lifecycle, "data file does not exist, using defaults").Msg(log.FileManager.String())
+func loadData(logger *zerolog.Logger, fs *file.Filesystem, dataPath string) (bool, *DataFile, error) {
+	if !fs.Exist(dataPath) {
+		logger.Info().Str(log.Lifecycle, "data file does not exist, using defaults").Msg(log.FileManager.String())
 
-		m.data.Update(func(df *DataFile) {
-			df.Lang = language.English.String()
-			df.UseDarkmode = false
-			df.AppScale = 1
-			df.DisableBgMusic = false
-			df.UsePreRelease = false
-		})
-		m.isNew = true
+		df := &DataFile{
+			Lang:           language.English.String(),
+			UseDarkmode:    false,
+			AppScale:       1,
+			DisableBgMusic: false,
+			UsePreRelease:  false,
+		}
 
-		return nil
+		return true, df, nil
 	}
 
-	jsonData, err := m.fs.Load(m.dataPath)
+	jsonData, err := fs.Load(dataPath)
 	if err != nil {
-		m.logger.Warn().Str(log.Lifecycle, "failed to load data").Err(err).Msg(log.ErrorManager.String())
-		return err
+		logger.Warn().Str(log.Lifecycle, "failed to load data").Err(err).Msg(log.ErrorManager.String())
+		return false, nil, err
 	}
 
-	var data DataFile
-	if err := json.Unmarshal(jsonData, &data); err != nil {
-		m.logger.Warn().Str(log.Lifecycle, "failed to unmarshal data").Err(err).Msg(log.ErrorManager.String())
-		return err
+	var df DataFile
+	if err := json.Unmarshal(jsonData, &df); err != nil {
+		logger.Warn().Str(log.Lifecycle, "failed to unmarshal data").Err(err).Msg(log.ErrorManager.String())
+		return false, nil, err
 	}
 
-	m.data.Update(func(df *DataFile) {
-		*df = data
-	})
-
-	m.logger.Info().Str(log.Lifecycle, "data loaded successfully").Any("data", data).Msg(log.FileManager.String())
-	return nil
+	logger.Info().Str(log.Lifecycle, "data loaded successfully").Any("data", df).Msg(log.FileManager.String())
+	return false, &df, nil
 }
 
 func (m *Model) saveData() error {
