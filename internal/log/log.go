@@ -107,7 +107,6 @@ func newLogFile(root *os.Root, path string) (*os.File, *os.File, error) {
 
 	latest, err := root.Create(latestPath)
 	if err != nil {
-		main.Close()
 		return nil, nil, fmt.Errorf("failed to create latest log: %w", err)
 	}
 
