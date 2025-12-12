@@ -42,11 +42,13 @@ func main() {
 	port := flag.Int("instance", 54321, "Port to use for single-instance locking")
 	flag.Parse()
 
-	root, model, fs, logger, logFile, err := app.NewRoot(VERSION)
+	root, model, fs, logger, logFiles, err := app.NewRoot(VERSION)
 	if err != nil {
 		fmt.Println(err)
 	}
-	defer func() { _ = fs.Close(); _ = logFile.Close() }()
+	for _, logFile := range logFiles {
+		defer func() { _ = fs.Close(); _ = logFile.Close() }()
+	}
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
 	if err != nil {

@@ -92,24 +92,34 @@ var (
 	ErrGithubRequestBodyRead = errors.New("reading body failed")
 )
 
-func newLogFile(root *os.Root, path string) (*os.File, error) {
+func newLogFile(root *os.Root, path string) (*os.File, *os.File, error) {
 	timestamp := time.Now()
-	filename := fmt.Sprintf("log_%d-%d-%d-%d.txt", timestamp.Year(), timestamp.Month(), timestamp.Day(), timestamp.Unix())
+	filename := fmt.Sprintf("log_%d-%02d-%02d-%d.txt",
+		timestamp.Year(), timestamp.Month(), timestamp.Day(), timestamp.Unix())
 
-	file, err := root.Create(filepath.Join(path, filename))
+	mainPath := filepath.Join(path, filename)
+	latestPath := filepath.Join(path, "log-latest.txt")
+
+	main, err := root.Create(mainPath)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrLogFileInvalid, err)
+		return nil, nil, fmt.Errorf("%w: %w", ErrLogFileInvalid, err)
 	}
 
-	return file, nil
+	latest, err := root.Create(latestPath)
+	if err != nil {
+		main.Close()
+		return nil, nil, fmt.Errorf("failed to create latest log: %w", err)
+	}
+
+	return main, latest, nil
 }
 
-func NewLogger(VERSION string, fs *os.Root) (*zerolog.Logger, *os.File, bool, bool, error) {
+func NewLogger(VERSION string, fs *os.Root) (*zerolog.Logger, []*os.File, bool, bool, error) {
 	switch VERSION {
 	case "dev":
 		var saveLogs, disableFS, disableAPI bool
 		var logger zerolog.Logger
-		var logFile *os.File
+		var logFiles []*os.File
 
 		zerolog.SetGlobalLevel(zerolog.Disabled)
 
@@ -133,13 +143,13 @@ func NewLogger(VERSION string, fs *os.Root) (*zerolog.Logger, *os.File, bool, bo
 			}
 
 			if saveLogs {
-				newLogFile, err := newLogFile(fs, filepath.Join(configs.AppName, configs.FolderLogs))
+				mainLogFile, latestLogFile, err := newLogFile(fs, filepath.Join(configs.AppName, configs.FolderLogs))
 				if err != nil {
 					return nil, nil, disableFS, false, err
 				}
-				logFile = newLogFile
+				logFiles = []*os.File{mainLogFile, latestLogFile}
 
-				multiWriter := zerolog.MultiLevelWriter(lcw, logFile)
+				multiWriter := zerolog.MultiLevelWriter(lcw, mainLogFile, latestLogFile)
 				logger = zerolog.New(multiWriter).With().Timestamp().Logger()
 			} else {
 				logger = zerolog.New(lcw).With().Timestamp().Logger()
@@ -147,15 +157,15 @@ func NewLogger(VERSION string, fs *os.Root) (*zerolog.Logger, *os.File, bool, bo
 		}
 
 		logger.Info().Bool("Debug", true).Msg(AppManager.String())
-		return &logger, logFile, disableFS, disableAPI, nil
+		return &logger, logFiles, disableFS, disableAPI, nil
 	default:
-		logFile, err := newLogFile(fs, filepath.Join(configs.AppName, configs.FolderLogs))
+		mainLogFile, latestLogFile, err := newLogFile(fs, filepath.Join(configs.AppName, configs.FolderLogs))
 		if err != nil {
 			return nil, nil, false, false, err
 		}
 
-		multiWriter := zerolog.MultiLevelWriter(os.Stdout, logFile)
+		multiWriter := zerolog.MultiLevelWriter(os.Stdout, mainLogFile, latestLogFile)
 		logger := zerolog.New(multiWriter).With().Timestamp().Logger()
-		return &logger, logFile, false, false, nil
+		return &logger, []*os.File{mainLogFile, latestLogFile}, false, false, nil
 	}
 }

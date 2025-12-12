@@ -69,13 +69,13 @@ type Root struct {
 	faceSourceEntries []basicwidget.FaceSourceEntry
 }
 
-func NewRoot(VERSION string) (*Root, *p86l.Model, *file.Filesystem, *zerolog.Logger, *os.File, error) {
+func NewRoot(VERSION string) (*Root, *p86l.Model, *file.Filesystem, *zerolog.Logger, []*os.File, error) {
 	fs, err := file.NewFilesystem()
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 
-	logger, logFile, noFS, noAPI, err := log.NewLogger(VERSION, fs.Root())
+	logger, logFiles, noFS, noAPI, err := log.NewLogger(VERSION, fs.Root())
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
@@ -103,7 +103,7 @@ func NewRoot(VERSION string) (*Root, *p86l.Model, *file.Filesystem, *zerolog.Log
 
 	model.Start()
 
-	return &Root{model: model}, model, fs, logger, logFile, nil
+	return &Root{model: model}, model, fs, logger, logFiles, nil
 }
 
 func (r *Root) handleBackgroundImage(widgetBounds *guigui.WidgetBounds) {
