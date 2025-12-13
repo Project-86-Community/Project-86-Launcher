@@ -199,6 +199,7 @@ func (r *Root) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 		})
 		r.model.SetSyncDataFn(func(m *p86l.Model, value bool) error {
 			data := m.Data()
+			dataFile := m.Data().Get()
 			cacheFile := m.Cache().Get()
 
 			tag, err := data.Lang()
