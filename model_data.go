@@ -50,13 +50,17 @@ type DataRemember struct {
 }
 
 type DataFile struct {
-	Lang               string       `json:"lang"`
-	TranslateChangelog bool         `json:"translate_changelog"`
-	UseDarkmode        bool         `json:"use_darkmode"`
-	AppScale           float64      `json:"app_scale"`
-	DisableBgMusic     bool         `json:"disable_bgm"`
-	UsePreRelease      bool         `json:"use_pre_release"`
-	Remember           DataRemember `json:"remember"`
+	Lang                string       `json:"lang"`
+	TranslateChangelog  bool         `json:"translate_changelog"`
+	UseDarkmode         bool         `json:"use_darkmode"`
+	AppScale            float64      `json:"app_scale"`
+	DisableBgMusic      bool         `json:"disable_bgm"`
+	UsePreRelease       bool         `json:"use_pre_release"`
+	Remember            DataRemember `json:"remember"`
+	GameVersion         string       `json:"game_version"`
+	PreReleaseVersion   string       `json:"pre_release_version"`
+	InstalledGame       string       `json:"installed_game_version"`
+	InstalledPreRelease string       `json:"installed_pre_release_version"`
 }
 
 type Data struct {

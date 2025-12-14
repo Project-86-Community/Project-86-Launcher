@@ -23,6 +23,7 @@ package app
 
 import (
 	"p86l"
+	"sync"
 
 	"github.com/guigui-gui/guigui"
 	"github.com/guigui-gui/guigui/basicwidget"
@@ -130,16 +131,25 @@ type bottomContent struct {
 
 	rateLimitText basicwidget.Text
 	rateLimitStr  string
+
+	sync sync.Once
 }
 
 func (b *bottomContent) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	adder.AddChild(&b.progressText)
 	adder.AddChild(&b.rateLimitText)
 
+	model := context.Model(b, modelKeyModel).(*p86l.Model)
+	b.sync.Do(func() {
+		model.SetProgressRefreshFn(func() {
+			guigui.RequestRedraw(&b.progressText)
+		})
+	})
+
 	b.progressText.SetScale(0.8)
 	b.progressText.SetAutoWrap(true)
 	b.progressText.SetMultiline(true)
-	b.progressText.SetValue(p86l.T("about.content"))
+	b.progressText.SetValue(model.ProgressText())
 
 	b.rateLimitText.SetHorizontalAlign(basicwidget.HorizontalAlignCenter)
 	b.rateLimitText.SetScale(0.8)
@@ -168,6 +178,7 @@ func (b *bottomContent) Layout(context *guigui.Context, widgetBounds *guigui.Wid
 		Items: []guigui.LinearLayoutItem{
 			{
 				Widget: &b.progressText,
+				Size:   guigui.FlexibleSize(1),
 			},
 			{
 				Widget: &b.rateLimitText,

@@ -42,7 +42,11 @@ const (
 	FolderBuild      = "build"
 	FolderPreRelease = "prerelease"
 	FolderGame       = "game"
+	FileBuild        = "build.zip"
 	FileGame         = "Project-86.exe"
+
+	FileUpdateGame       = "update-g.zip"
+	FileUpdatePreRelease = "update-p.zip"
 
 	Website = "https://project-86-community.github.io/Project-86-Website/"
 	Github  = "https://github.com/Taliayaya/Project-86"

@@ -25,7 +25,6 @@ import (
 	"p86l"
 	"p86l/assets"
 	"p86l/configs"
-	"time"
 
 	"github.com/guigui-gui/guigui"
 	"github.com/guigui-gui/guigui/basicwidget"
@@ -67,15 +66,30 @@ func (p *Play) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 		}
 	} else {
 		// Install & Play
+		var gameAvail, isNew bool
+		var currentVersion, latestVersion string
+
 		if dataFile.UsePreRelease {
-			preReleaseAvail, _ := model.CheckFilesCached(p86l.PathGamePreRelease)
-			context.SetEnabled(&p.actionButtons[0], !preReleaseAvail)
-			context.SetEnabled(&p.actionButtons[2], preReleaseAvail)
+			gameAvail = model.CheckFilesCached(p86l.PathGamePreRelease)
+			currentVersion = dataFile.InstalledPreRelease
+			latestVersion = cacheFile.Releases.PreRelease.TagName
 		} else {
-			stableAvail, _ := model.CheckFilesCached(p86l.PathGameStable)
-			context.SetEnabled(&p.actionButtons[0], !stableAvail)
-			context.SetEnabled(&p.actionButtons[2], stableAvail)
+			gameAvail = model.CheckFilesCached(p86l.PathGameStable)
+			currentVersion = dataFile.InstalledGame
+			latestVersion = cacheFile.Releases.Stable.TagName
 		}
+
+		if currentVersion != "" {
+			isNew, _ = p86l.IsNewVersion(currentVersion, latestVersion)
+
+			if !gameAvail {
+				isNew = false
+			}
+		}
+
+		context.SetEnabled(&p.actionButtons[0], !gameAvail)
+		context.SetEnabled(&p.actionButtons[1], isNew)
+		context.SetEnabled(&p.actionButtons[2], gameAvail)
 	}
 
 	actionTexts := [3]string{p86l.T("play.install"), p86l.T("play.update"), p86l.T("play.play")}
@@ -83,16 +97,10 @@ func (p *Play) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 		p.actionButtons[i].SetText(actionTexts[i])
 	}
 
-	p.actionButtons[0].SetOnDown(func() {
-		go func() {
-			model.InProgress(true)
-			time.Sleep(time.Second * 5)
-			model.InProgress(false)
-			for i := range p.actionButtons {
-				guigui.RequestRedraw(&p.actionButtons[i])
-			}
-		}()
-	})
+	actionTypes := [3]p86l.PlayType{p86l.PlayInstall, p86l.PlayUpdate, p86l.PlayPlay}
+	for i := range p.actionButtons {
+		p.actionButtons[i].SetOnDown(func() { go model.Play(actionTypes[i]) })
+	}
 
 	p.changelogText.SetAutoWrap(true)
 	p.changelogText.SetMultiline(true)

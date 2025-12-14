@@ -23,6 +23,7 @@ package p86l
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"image"
 	"os"
@@ -38,6 +39,7 @@ import (
 	"github.com/fyne-io/image/ico"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
+	"github.com/hashicorp/go-version"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
@@ -210,4 +212,16 @@ func GetAssets(assets []github.ReleaseAsset) (*github.ReleaseAsset, *github.Rele
 	}
 
 	return gameAsset, debugGameAsset
+}
+
+// current, new
+func IsNewVersion(v1, v2 string) (bool, error) {
+	c, err1 := version.NewVersion(v1)
+	n, err2 := version.NewVersion(v2)
+
+	if err := cmp.Or(err1, err2); err != nil {
+		return false, err
+	}
+
+	return n.GreaterThan(c), nil
 }

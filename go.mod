@@ -1,16 +1,16 @@
 module p86l
 
-go 1.24.0
-
-toolchain go1.24.6
+go 1.25
 
 require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/Conight/go-googletrans v0.2.4
+	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fyne-io/image v0.1.1
 	github.com/guigui-gui/guigui v0.0.0-20251205172047-76ea2b5eb23c
 	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.7.0.20251204180847-353b07a2d62b
+	github.com/hashicorp/go-version v1.8.0
 	github.com/kisielk/errcheck v1.9.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.0
 	github.com/rs/zerolog v1.34.0

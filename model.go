@@ -63,7 +63,10 @@ type Model struct {
 	dataPath          string
 	data              *Data
 
-	inProgress bool
+	progressMutex     sync.RWMutex
+	progressRefreshFn func()
+	inProgress        bool
+	progressText      string
 
 	cachePath string
 	cache     *Cache
@@ -140,6 +143,12 @@ func (m *Model) SetIsAutoUseDarkmode(value bool) {
 	m.isAutoUseDarkmode = value
 }
 
+func (m *Model) SetProgressRefreshFn(fn func()) {
+	m.progressMutex.Lock()
+	defer m.progressMutex.Unlock()
+	m.progressRefreshFn = fn
+}
+
 // -- common --
 
 func (m *Model) AddSubModel(sub SubModel) {
@@ -186,20 +195,45 @@ func (m *Model) OpenURL(url string) {
 	m.fs.Open(url)
 }
 
+// Use for single purpose-only, dual will mess with mutex.
 func (m *Model) InProgress(value ...bool) bool {
 	if len(value) > 0 {
+		m.progressMutex.Lock()
+		defer m.progressMutex.Unlock()
 		m.inProgress = value[0]
+	} else {
+		m.progressMutex.RLock()
+		defer m.progressMutex.RUnlock()
 	}
 
 	return m.inProgress
 }
 
-// CheckFilesCached returns cached file availability (instant, non-blocking)
-func (m *Model) CheckFilesCached(filePath string) (bool, bool) {
+// Use for single purpose-only, dual will mess with mutex.
+func (m *Model) ProgressText(value ...string) string {
+	if len(value) > 0 {
+		m.progressMutex.Lock()
+		defer m.progressMutex.Unlock()
+		m.progressText = value[0]
+
+		refreshFn := m.progressRefreshFn
+		if refreshFn != nil {
+			refreshFn()
+		}
+	} else {
+		m.progressMutex.RLock()
+		defer m.progressMutex.RUnlock()
+	}
+
+	return m.progressText
+}
+
+// CheckFilesCached returns cached file exists
+func (m *Model) CheckFilesCached(filePath string) bool {
 	m.fileAvailMutex.RLock()
 	defer m.fileAvailMutex.RUnlock()
-	available, exists := m.fileAvailability[filePath]
-	return available, exists // (isAvailable, wasCached)
+	available := m.fileAvailability[filePath]
+	return available
 }
 
 func (m *Model) handleUIRefresh() {
@@ -276,8 +310,8 @@ func (d *DataSubModel) checkFiles() {
 
 	d.updateFilesCache(filesToCheck...)
 
-	value1, _ := d.model.CheckFilesCached(PathGameStable)
-	value2, _ := d.model.CheckFilesCached(PathGamePreRelease)
+	value1 := d.model.CheckFilesCached(PathGameStable)
+	value2 := d.model.CheckFilesCached(PathGamePreRelease)
 
 	if value1 != d.model.isAvailStable || value2 != d.model.isAvailPreRelease {
 		d.model.logger.Info().
@@ -294,6 +328,8 @@ func (d *DataSubModel) checkFiles() {
 		d.model.handleUIRefresh()
 	}
 }
+
+// --
 
 const (
 	// - Refresh intervals
