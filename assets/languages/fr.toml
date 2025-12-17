@@ -5,6 +5,22 @@ reset = "Réinitialiser"
 [errors]
 translate_fail = "Échec de la traduction"
 
+[model_play]
+missing_releases = "Versions manquantes dans le fichier cache"
+unknown_version = "Version inconnue"
+fail_resume = "Échec de la suppression des fichiers de compilation de reprise"
+missing_asset = "Fichier manquant pour le téléchargement"
+fail_asset = "Échec du téléchargement :"
+install_unzip = "Démarrage de l'installation..."
+fail_update = "Échec de la suppression des anciens fichiers"
+fail_unzip = "Échec de la décompression du fichier"
+fail_artifact = "Échec de la suppression des artefacts téléchargés"
+install = "Installation terminée."
+start = "Téléchargement en cours..."
+download = "Téléchargement du jeu"
+finished = "Téléchargement terminé."
+components = "Installer les composants"
+
 [home]
 title = "Maison"
 welcome = "Bienvenue à nouveau,"

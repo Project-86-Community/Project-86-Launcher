@@ -49,7 +49,7 @@ func (m *Model) downloadGame(gamePath, gameTag string, asset *github.ReleaseAsse
 	client := grab.NewClient()
 	req, _ := grab.NewRequest(gamePath, asset.BrowserDownloadURL)
 
-	m.ProgressText("Starting download…")
+	m.ProgressText(T("model_play.start"))
 
 	resp := client.Do(req)
 	m.ProgressText(resp.HTTPResponse.Status)
@@ -61,7 +61,8 @@ func (m *Model) downloadGame(gamePath, gameTag string, asset *github.ReleaseAsse
 		select {
 		case <-t.C:
 			m.ProgressText(fmt.Sprintf(
-				"Downloading game %s\n\n(%s/%s), %s, %s/s",
+				"%s %s\n\n(%s/%s), %s, %s/s",
+				T("model_play.download"),
 				gameTag,
 				humanize.Bytes(uint64(resp.BytesComplete())),
 				humanize.Bytes(uint64(resp.Size())),
@@ -70,7 +71,7 @@ func (m *Model) downloadGame(gamePath, gameTag string, asset *github.ReleaseAsse
 			))
 		case <-resp.Done:
 			done = true
-			m.ProgressText("Finished downloading.")
+			m.ProgressText(T("model_play.finished"))
 		}
 	}
 
@@ -89,7 +90,7 @@ func (m *Model) unzipGame(zipPath, dest string) error {
 	// Extract each files.
 	for i, f := range r.File {
 		progressInt := int(float64(i+1) / float64(totalFiles) * 100)
-		m.ProgressText(fmt.Sprintf("Install components %d%%", progressInt))
+		m.ProgressText(fmt.Sprintf("%s %d%%", T("model_play.components"), progressInt))
 
 		err := zipExtractFile(m.fs.Root(), dest, f)
 		if err != nil {
@@ -178,7 +179,7 @@ func (m *Model) playInstall(isUpdate bool) {
 	var resumeVersion string
 
 	if cacheFile.Releases == nil {
-		err := "Missing releases in cache file"
+		err := T("model_play.missing_releases")
 		m.ProgressText(err)
 		m.logger.Warn().Str(log.Lifecycle, strings.ToLower(err)).Msg(log.NetworkManager.String())
 		return
@@ -218,7 +219,7 @@ func (m *Model) playInstall(isUpdate bool) {
 	if resumeVersion != "" {
 		isNew, err := IsNewVersion(resumeVersion, downloadRelease.TagName)
 		if err != nil {
-			mErr := "Unknown version"
+			mErr := T("model_play.unknown_version")
 			m.ProgressText(fmt.Sprintf("%s: %v", mErr, err))
 			m.logger.Warn().Str(log.Lifecycle, strings.ToLower(mErr)).Err(err).Msg(log.ErrorManager.String())
 			return
@@ -226,7 +227,7 @@ func (m *Model) playInstall(isUpdate bool) {
 
 		if isNew && m.fs.Exist(zipPath) {
 			if err := m.fs.Remove(zipPath); err != nil {
-				mErr := "Failed to remove resume files"
+				mErr := T("model_play.fail_resume")
 				m.ProgressText(fmt.Sprintf("%s: %v", mErr, err))
 				m.logger.Warn().Str(log.Lifecycle, strings.ToLower(mErr)).Err(err).Msg(log.ErrorManager.String())
 				return
@@ -235,7 +236,7 @@ func (m *Model) playInstall(isUpdate bool) {
 	}
 
 	if downloadAsset == nil {
-		err := "Missing asset for download"
+		err := T("model_play.missing_asset")
 		m.ProgressText(err)
 		m.logger.Warn().Str(log.Lifecycle, strings.ToLower(err)).Msg(log.NetworkManager.String())
 		return
@@ -250,7 +251,7 @@ func (m *Model) playInstall(isUpdate bool) {
 
 	m.logger.Info().Str(log.Lifecycle, fmt.Sprintf("downloading file to %s", filepath.Join(m.fs.Path(), zipPath))).Msg(log.FileManager.String())
 	if err := m.downloadGame(filepath.Join(m.fs.Path(), zipPath), gameTag, downloadAsset); err != nil {
-		m.ProgressText(fmt.Sprintf("Download failed: %v", err))
+		m.ProgressText(fmt.Sprintf("%s %v", T("model_play.fail_asset"), err))
 		m.logger.Warn().
 			Str(log.Lifecycle, fmt.Sprintf("failed to download %s", gameTag)).
 			Err(err).
@@ -260,7 +261,7 @@ func (m *Model) playInstall(isUpdate bool) {
 	}
 	time.Sleep(2 * time.Second)
 
-	m.ProgressText("Starting installation...")
+	m.ProgressText(T("model_play.install_unzip"))
 	time.Sleep(2 * time.Second)
 
 	if isUpdate {
@@ -274,7 +275,7 @@ func (m *Model) playInstall(isUpdate bool) {
 		}
 
 		if err := m.fs.Root().RemoveAll(updatePath); err != nil {
-			mErr := "Failed to remove old files"
+			mErr := T("model_play.fail_update")
 			m.ProgressText(fmt.Sprintf("%s: %v", mErr, err))
 			m.logger.Warn().Str(log.Lifecycle, strings.ToLower(mErr)).Err(err).Caller().Msg(log.ErrorManager.String())
 			return
@@ -284,7 +285,7 @@ func (m *Model) playInstall(isUpdate bool) {
 
 	m.logger.Info().Str(log.Lifecycle, "unzipping files").Msg(log.FileManager.String())
 	if err := m.unzipGame(filepath.Join(m.fs.Path(), zipPath), gamePath); err != nil {
-		mErr := "Failed to unzip asset"
+		mErr := T("model_play.fail_unzip")
 		m.ProgressText(fmt.Sprintf("%s: %v", mErr, err))
 		m.logger.Warn().Str(log.Lifecycle, strings.ToLower(mErr)).Err(err).Caller().Msg(log.ErrorManager.String())
 		return
@@ -299,14 +300,14 @@ func (m *Model) playInstall(isUpdate bool) {
 	})
 	if m.fs.Exist(zipPath) {
 		if err := m.fs.Remove(zipPath); err != nil {
-			mErr := "Failed to remove downloaded artifacts"
+			mErr := T("model_play.fail_artifact")
 			m.ProgressText(fmt.Sprintf("%s: %v", mErr, err))
 			m.logger.Warn().Str(log.Lifecycle, strings.ToLower(mErr)).Err(err).Msg(log.ErrorManager.String())
 			return
 		}
 	}
 	m.logger.Info().Str(log.Lifecycle, "game installation done").Msg(log.FileManager.String())
-	m.ProgressText("Finished installation.")
+	m.ProgressText(T("model_play.install_finished"))
 	time.Sleep(2 * time.Second)
 }
 

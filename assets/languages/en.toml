@@ -5,6 +5,22 @@ reset = "Reset"
 [errors]
 translate_fail = "Translation failed"
 
+[model_play]
+missing_releases = "Missing releases in cache file"
+unknown_version = "Unknown version"
+fail_resume = "Failed to remove resume files"
+missing_asset = "Missing asset for download"
+fail_asset = "Download failed:"
+install_unzip = "Starting installation..."
+fail_update = "Failed to remove old files"
+fail_unzip = "Failed to unzip asset"
+fail_artifact = "Failed to remove downloaded artifacts"
+install_finished = "Finished Installation."
+start = "Starting download..."
+download = "Downloading game"
+finished = "Finished downloading."
+components = "Install components"
+
 [home]
 title = "Home"
 welcome = "Welcome back,"
