@@ -381,7 +381,12 @@ func (c *CacheSubModel) Start(ctx context.Context, wg *sync.WaitGroup) {
 		refT := c.getRefreshInterval()
 		c.logger.Info().Str("refresh ticker", refT.String()).Msg(log.AppManager.String())
 
+		rateLimitTicker := time.NewTimer(rateLimitRefreshInterval)
+		releasesTicker := time.NewTicker(releasesRefreshInterval)
 		refreshTicker := time.NewTicker(refT)
+
+		defer rateLimitTicker.Stop()
+		defer releasesTicker.Stop()
 		defer refreshTicker.Stop()
 
 		for {
@@ -395,6 +400,13 @@ func (c *CacheSubModel) Start(ctx context.Context, wg *sync.WaitGroup) {
 				}
 
 				return
+			case <-rateLimitTicker.C:
+				c.logger.Info().Str(log.Lifecycle, "time to refresh ratelimit cache").Msg(log.NetworkManager.String())
+				c.fetchRateLimit(ctx)
+			case <-releasesTicker.C:
+				c.logger.Info().Str(log.Lifecycle, "time to refresh releases cache").Msg(log.NetworkManager.String())
+				c.fetchReleases(ctx)
+				c.fetchRateLimit(ctx)
 			case <-refreshTicker.C:
 				c.logger.Info().Str(log.Lifecycle, "time to refresh cache").Msg(log.NetworkManager.String())
 				c.fetchReleases(ctx)
