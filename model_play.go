@@ -27,13 +27,11 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"os/signal"
 	"p86l/configs"
 	"p86l/internal/github"
 	"p86l/internal/log"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/cavaliergopher/grab/v3"
@@ -347,9 +345,6 @@ func (m *Model) handlePlay() {
 	})
 	m.logger.Info().Int("Launched", cmd.Process.Pid).Msg(log.AppManager.String())
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
 	done := make(chan error, 1)
 	go func() { done <- cmd.Wait() }()
 
@@ -361,14 +356,6 @@ func (m *Model) handlePlay() {
 				df.TotalPlayTime += sessionTime
 			})
 			m.logger.Info().Str("Exited after", humanize.RelTime(time.Now(), time.Now().Add(sessionTime), "", "")).Msg(log.AppManager.String())
-			return
-		case <-sigChan:
-			cmd.Process.Kill()
-			sessionTime := time.Since(startTime)
-			data.Update(func(df *DataFile) {
-				df.TotalPlayTime += sessionTime
-			})
-			m.logger.Info().Str("Stopped after", humanize.RelTime(time.Now(), time.Now().Add(sessionTime), "", "")).Msg(log.AppManager.String())
 			return
 		}
 	}
