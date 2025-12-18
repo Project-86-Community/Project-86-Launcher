@@ -23,7 +23,9 @@ package app
 
 import (
 	"p86l"
+	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/guigui-gui/guigui"
 	"github.com/guigui-gui/guigui/basicwidget"
 )
@@ -61,6 +63,10 @@ func (h *Home) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	}
 	h.playTimeText.SetValue(p86l.T("home.time"))
 	h.lastPlayedText.SetValue(p86l.T("home.last"))
+	if !dataFile.LastPlayed.IsZero() {
+		h.timeText.SetValue(humanize.RelTime(time.Now(), time.Now().Add(dataFile.TotalPlayTime), "", ""))
+		h.lastText.SetValue(humanize.Time(dataFile.LastPlayed))
+	}
 
 	h.form1.SetItems([]basicwidget.FormItem{
 		{
@@ -111,11 +117,11 @@ func (h *Home) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds
 					Items: []guigui.LinearLayoutItem{
 						{
 							Widget: &h.formPanel1,
-							Size:   guigui.FlexibleSize(3),
+							Size:   guigui.FlexibleSize(2),
 						},
 						{
 							Widget: &h.formPanel2,
-							Size:   guigui.FlexibleSize(2),
+							Size:   guigui.FlexibleSize(3),
 						},
 					},
 					Gap: u / 2,

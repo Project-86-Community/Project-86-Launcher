@@ -26,11 +26,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"os/signal"
 	"p86l/configs"
 	"p86l/internal/github"
 	"p86l/internal/log"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/cavaliergopher/grab/v3"
@@ -169,7 +172,7 @@ func zipMkdirAll(root *os.Root, path string, perm os.FileMode) error {
 	return err
 }
 
-func (m *Model) playInstall(isUpdate bool) {
+func (m *Model) installOrUpdate(isUpdate bool) {
 	dataFile := m.Data().Get()
 	cacheFile := m.Cache().Get()
 
@@ -311,15 +314,77 @@ func (m *Model) playInstall(isUpdate bool) {
 	time.Sleep(2 * time.Second)
 }
 
+func (m *Model) handlePlay() {
+	var exePath string
+	data := m.Data()
+	dataFile := data.Get()
+
+	if dataFile.UsePreRelease {
+		exePath = PathGamePreRelease
+	} else {
+		exePath = PathGameStable
+	}
+
+	if ok := m.CheckFilesCached(exePath); !ok {
+		// Failed to find exe
+		m.logger.Info().Msg("no exe?")
+		return
+	}
+
+	cmd := exec.Command(filepath.Join(m.fs.Path(), exePath))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		// Failed to run exe
+		m.logger.Info().Msg("can't run exe?")
+		return
+	}
+
+	startTime := time.Now()
+	data.Update(func(df *DataFile) {
+		df.LastPlayed = startTime
+	})
+	m.logger.Info().Int("Launched", cmd.Process.Pid).Msg(log.AppManager.String())
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+
+	for {
+		select {
+		case <-done:
+			sessionTime := time.Since(startTime)
+			data.Update(func(df *DataFile) {
+				df.TotalPlayTime += sessionTime
+			})
+			m.logger.Info().Str("Exited after", humanize.RelTime(time.Now(), time.Now().Add(sessionTime), "", "")).Msg(log.AppManager.String())
+			return
+		case <-sigChan:
+			cmd.Process.Kill()
+			sessionTime := time.Since(startTime)
+			data.Update(func(df *DataFile) {
+				df.TotalPlayTime += sessionTime
+			})
+			m.logger.Info().Str("Stopped after", humanize.RelTime(time.Now(), time.Now().Add(sessionTime), "", "")).Msg(log.AppManager.String())
+			return
+		}
+	}
+}
+
 func (m *Model) Play(playType PlayType) {
 	m.InProgress(true)
 	defer m.InProgress(false)
 
 	switch playType {
 	case PlayInstall:
-		m.playInstall(false)
+		m.installOrUpdate(false)
 	case PlayUpdate:
-		m.playInstall(true)
+		m.installOrUpdate(true)
+	case PlayPlay:
+		m.handlePlay()
 	default:
 		return
 	}
