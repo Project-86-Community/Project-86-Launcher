@@ -57,7 +57,6 @@ func (a *About) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	a.text4.SetScale(0.8)
 	a.text4.SetAutoWrap(true)
 	a.text4.SetMultiline(true)
-	a.text4.SetSelectable(true)
 	a.text4.SetValue(p86l.T("about.license"))
 
 	a.image1.setIcon(assets.LeadDeveloper)
