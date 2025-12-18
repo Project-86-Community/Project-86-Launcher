@@ -31,6 +31,7 @@ import (
 	"p86l/internal/github"
 	"p86l/internal/log"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -329,13 +330,20 @@ func (m *Model) handlePlay() {
 		return
 	}
 
-	cmd := exec.Command(filepath.Join(m.fs.Path(), exePath))
+	path := filepath.Join(m.fs.Path(), exePath)
+
+	var cmd *exec.Cmd
+	if runtime.GOOS == "linux" {
+		cmd = exec.Command("wine", path)
+	} else {
+		cmd = exec.Command(path)
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Start(); err != nil {
 		// Failed to run exe
-		m.logger.Info().Msg("can't run exe?")
+		m.logger.Info().Str("Path", exePath).Err(err).Msg("can't run exe?")
 		return
 	}
 
