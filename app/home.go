@@ -117,11 +117,11 @@ func (h *Home) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds
 					Items: []guigui.LinearLayoutItem{
 						{
 							Widget: &h.formPanel1,
-							Size:   guigui.FlexibleSize(2),
+							Size:   guigui.FlexibleSize(1),
 						},
 						{
 							Widget: &h.formPanel2,
-							Size:   guigui.FlexibleSize(3),
+							Size:   guigui.FlexibleSize(1),
 						},
 					},
 					Gap: u / 2,
