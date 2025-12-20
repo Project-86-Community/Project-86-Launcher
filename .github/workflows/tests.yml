@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        go: ["1.24.x"]
+        go: ["1.25.x"]
     name: Test with Go ${{ matrix.go }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     env:
@@ -37,9 +37,13 @@ jobs:
 
       - name: Vet
         run: |
+          go vet -v ./...
+
+      - name: Vet (errcheck)
+        run: |
           go build ./internal/vettool
           go vet -vettool=./vettool${{ runner.os == 'Windows' && '.exe' || '' }} -v ./...
 
       - name: Test
         run: |
-          go test -vet=all -v ./...
+          go test -v ./...
