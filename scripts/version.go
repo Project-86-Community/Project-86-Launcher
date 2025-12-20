@@ -63,10 +63,10 @@ const versionTemplate = `{
         "CompanyName": "Project 86 Community",
         "FileDescription": "A Launcher developed for Project-86-Community-Game for managing game files.",
         "FileVersion": "{{.Version}}.{{.Build}}",
-        "InternalName": "project86launcher.exe",
+        "InternalName": "p86l.exe",
         "LegalCopyright": "Copyright © Project 86 Community",
         "LegalTrademarks": "",
-        "OriginalFilename": "project86launcher.exe",ico
+        "OriginalFilename": "Project-86-Launcher.exe",
         "PrivateBuild": "",
         "ProductName": "Project 86 Launcher",
         "ProductVersion": "{{.Version}}",
