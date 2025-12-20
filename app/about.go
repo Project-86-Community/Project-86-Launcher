@@ -48,10 +48,10 @@ func (a *About) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	a.text1.SetValue(p86l.T("about.content"))
 	a.text1.SetAutoWrap(true)
 
-	a.text2.SetValue("Tali")
+	a.text2.SetValue(p86l.T("about.lead"))
 	a.text2.SetScale(1.2)
 
-	a.text3.SetValue("Sky")
+	a.text3.SetValue(p86l.T("about.dev"))
 	a.text3.SetScale(1.2)
 
 	a.text4.SetScale(0.8)

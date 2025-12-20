@@ -53,6 +53,8 @@ resetc = "Reset cache"
 [about]
 title = "About"
 content = "A Launcher developed for Project-86-Community-Game for managing game files."
+lead = "Taliayaya - Lead Developer"
+dev = "realskyquest - Launcher Developer"
 license = """Background music: "Project: 86 OST: Legion" by XYETRY.
 
  Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.

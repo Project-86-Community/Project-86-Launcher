@@ -53,6 +53,8 @@ resetc = "Réinitialiser le cache"
 [about]
 title = "À propos"
 content = "Un lanceur développé pour Project-86-Community-Game permettant de gérer les fichiers du jeu."
+lead = "Taliayaya - Développeur principal"
+dev = "realskyquest - Développeur de lanceurs de jeux"
 license = """ATTENTION : Traduction non officielle
 
  Musique de fond : « Project: 86 OST: Legion » par XYETRY.
