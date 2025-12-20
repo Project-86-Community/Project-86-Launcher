@@ -56,6 +56,7 @@ jobs:
       - name: Build artifacts
         if: runner.os == 'Linux'
         run: |
+          go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
           task clean
           task generate:version-info
           task build

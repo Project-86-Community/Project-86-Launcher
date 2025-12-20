@@ -66,7 +66,6 @@ tasks:
   generate:version-info:
     desc: Generate versioninfo.json with proper version data
     cmds:
-      - go install 
       - go run ./scripts/version.go {{default "v0.0.0" .VERSION}} {{.COMMIT_COUNT}}
       - go generate ./cmd/p86l
     sources:
