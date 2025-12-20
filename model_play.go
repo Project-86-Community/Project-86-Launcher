@@ -373,7 +373,7 @@ func (m *Model) handlePlay() {
 			m.logger.Info().Str("Exited after", humanize.RelTime(time.Now(), time.Now().Add(sessionTime), "", "")).Msg(log.AppManager.String())
 			return
 		case <-sigChan:
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill()
 			sessionTime := time.Since(startTime)
 			data.Update(func(df *DataFile) {
 				df.TotalPlayTime += sessionTime
