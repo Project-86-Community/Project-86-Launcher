@@ -99,7 +99,7 @@ func (p *Play) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 
 	actionTypes := [3]p86l.PlayType{p86l.PlayInstall, p86l.PlayUpdate, p86l.PlayPlay}
 	for i := range p.actionButtons {
-		p.actionButtons[i].SetOnDown(func() { go model.Play(actionTypes[i]) })
+		p.actionButtons[i].SetOnDown(func(context *guigui.Context) { go model.Play(actionTypes[i]) })
 	}
 
 	p.changelogText.SetAutoWrap(true)
@@ -121,7 +121,7 @@ func (p *Play) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	p.versionText.SetValue(p86l.GameVersionText(cacheFile, dataFile.UsePreRelease))
 	p.totalDownloadsText.SetValue(p86l.ReleasesDownloadCountText(cacheFile, dataFile.UsePreRelease))
 
-	p.prereleaseToggle.SetOnValueChanged(func(value bool) {
+	p.prereleaseToggle.SetOnValueChanged(func(context *guigui.Context, value bool) {
 		data.Update(func(df *p86l.DataFile) {
 			df.UsePreRelease = value
 		})
@@ -155,7 +155,7 @@ func (p *Play) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	linkUrls := [4]string{configs.Website, configs.Github, configs.Discord, configs.Patreon}
 	for i := range p.linkButtons {
 		p.linkButtons[i].SetIcon(linkIcons[i])
-		p.linkButtons[i].SetOnDown(func() { model.OpenURL(linkUrls[i]) })
+		p.linkButtons[i].SetOnDown(func(context *guigui.Context) { model.OpenURL(linkUrls[i]) })
 	}
 
 	return nil

@@ -104,7 +104,7 @@ func (s *sidebarContent) Build(context *guigui.Context, adder *guigui.ChildAdder
 	s.list.SetItems(items)
 	s.list.SelectItemByValue(p86l.SidebarPage(dataFile.Remember.Page))
 	s.list.SetItemHeight(basicwidget.UnitSize(context))
-	s.list.SetOnItemSelected(func(index int) {
+	s.list.SetOnItemSelected(func(context *guigui.Context, index int) {
 		item, ok := s.list.ItemByIndex(index)
 		if !ok {
 			data.Update(func(df *p86l.DataFile) {

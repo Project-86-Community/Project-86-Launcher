@@ -72,7 +72,7 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 			Value: language.French,
 		},
 	})
-	s.languageSelect.SetOnItemSelected(func(index int) {
+	s.languageSelect.SetOnItemSelected(func(context *guigui.Context, index int) {
 		item, ok := s.languageSelect.ItemByIndex(index)
 		if !ok {
 			context.SetAppLocales(nil)
@@ -98,7 +98,7 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	}
 
 	context.SetEnabled(&s.translateChangelogToggle, dataFile.Lang != "en")
-	s.translateChangelogToggle.SetOnValueChanged(func(value bool) {
+	s.translateChangelogToggle.SetOnValueChanged(func(context *guigui.Context, value bool) {
 		data.Update(func(df *p86l.DataFile) {
 			df.TranslateChangelog = value
 		})
@@ -113,7 +113,7 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 		s.translateChangelogToggle.SetValue(false)
 	}
 
-	s.darkModeToggle.SetOnValueChanged(func(value bool) {
+	s.darkModeToggle.SetOnValueChanged(func(context *guigui.Context, value bool) {
 		if value {
 			context.SetColorMode(guigui.ColorModeDark)
 		} else {
@@ -151,7 +151,7 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 			Value: 1.50,
 		},
 	})
-	s.scaleSegmentedControl.SetOnItemSelected(func(index int) {
+	s.scaleSegmentedControl.SetOnItemSelected(func(context *guigui.Context, index int) {
 		item, ok := s.scaleSegmentedControl.ItemByIndex(index)
 		if !ok {
 			context.SetAppScale(1)
@@ -164,7 +164,7 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	})
 	s.scaleSegmentedControl.SelectItemByValue(context.AppScale())
 
-	s.rememberWindowToggle.SetOnValueChanged(func(value bool) {
+	s.rememberWindowToggle.SetOnValueChanged(func(context *guigui.Context, value bool) {
 		data.Update(func(df *p86l.DataFile) {
 			df.Remember.Active = value
 		})
@@ -175,7 +175,7 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 		s.rememberWindowToggle.SetValue(false)
 	}
 
-	s.disableBgmToggle.SetOnValueChanged(func(value bool) {
+	s.disableBgmToggle.SetOnValueChanged(func(context *guigui.Context, value bool) {
 		if value {
 			model.BGMPlayer().Pause()
 		} else {
@@ -194,13 +194,13 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	launcherPath := configs.AppName
 	logsPath := filepath.Join(launcherPath, configs.FolderLogs)
 
-	s.companyButton.SetOnDown(func() {
+	s.companyButton.SetOnDown(func(context *guigui.Context) {
 		model.OpenPath("")
 	})
-	s.launcherButton.SetOnDown(func() {
+	s.launcherButton.SetOnDown(func(context *guigui.Context) {
 		model.OpenPath(launcherPath)
 	})
-	s.logsButton.SetOnDown(func() {
+	s.logsButton.SetOnDown(func(context *guigui.Context) {
 		model.OpenPath(logsPath)
 	})
 
@@ -211,11 +211,11 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	s.launcherButton.SetText(p86l.T("common.open"))
 	s.logsButton.SetText(p86l.T("common.open"))
 
-	s.resetDataButton.SetOnDown(model.ResetDataAsync)
+	s.resetDataButton.SetOnDown(func(context *guigui.Context) { model.ResetDataAsync() })
 	s.resetDataText.SetValue(p86l.T("settings.resetd"))
 	s.resetDataButton.SetText(p86l.T("common.reset"))
 
-	s.resetCacheButton.SetOnDown(model.ResetCacheAsync)
+	s.resetCacheButton.SetOnDown(func(context *guigui.Context) { model.ResetCacheAsync() })
 	s.resetCacheText.SetValue(p86l.T("settings.resetc"))
 	s.resetCacheButton.SetText(p86l.T("common.reset"))
 
