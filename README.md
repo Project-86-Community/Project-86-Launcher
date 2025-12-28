@@ -25,6 +25,8 @@ Use the [Github releases](https://github.com/Project-86-Community/Project-86-Lau
 
 ## Support
 
+userfiles in `C:\Users\<MyUser>\AppData\Roaming\Project-86-Community`  
+logs in `C:\Users\<MyUser>\AppData\Roaming\Project-86-Community\Project-86-Launcher\logs`  
 For support, join our [discord server](https://discord.gg/A8Fr6yEsUn).
 
 
