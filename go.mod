@@ -8,8 +8,8 @@ require (
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fyne-io/image v0.1.1
-	github.com/guigui-gui/guigui v0.0.0-20251219094405-75685484fa88
-	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.7.0.20251210155341-7d0692124a95
+	github.com/guigui-gui/guigui v0.0.0-20251224052127-adae7eff2238
+	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.7.0.20251222071550-4d51505eb5cb
 	github.com/hashicorp/go-version v1.8.0
 	github.com/kisielk/errcheck v1.9.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.0
@@ -23,7 +23,7 @@ require (
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/ebitengine/oto/v3 v3.4.0 // indirect
 	github.com/ebitengine/purego v0.10.0-alpha.3 // indirect
-	github.com/go-text/typesetting v0.3.0 // indirect
+	github.com/go-text/typesetting v0.3.2 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/hajimehoshi/iro v0.1.0 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20250612000132-0ef82f21eade // indirect
