@@ -9,12 +9,14 @@ require (
 	github.com/fyne-io/image v0.1.1
 	github.com/guigui-gui/guigui v0.0.0-20260402081428-d624e1db8c65
 	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.10.0.20260323163356-439a0ff7b1d1
+	github.com/kisielk/errcheck v1.10.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/saracen/fastzip v0.2.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spf13/afero v1.15.0
 	golang.org/x/sys v0.42.0
 	golang.org/x/text v0.35.0
+	golang.org/x/tools v0.43.0
 )
 
 require (
@@ -58,7 +60,6 @@ require (
 	golang.org/x/mod v0.34.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260311193753-579e4da9a98c // indirect
-	golang.org/x/tools v0.43.0 // indirect
 	golang.org/x/tools/cmd/cover v0.1.0-deprecated // indirect
 	howett.net/plist v1.0.1 // indirect
 )

@@ -30,6 +30,9 @@ const (
 	Name     = "project-86-community"
 	Title    = "Project 86 Launcher"
 
+	LogPrefix = "log_"
+	LogExt    = ".log"
+
 	Issues  = "https://github.com/Project-86-Community/Project-86-Launcher/issues"
 	Website = "https://project-86-community.github.io/Project-86-Website/"
 	Github  = "https://github.com/Taliayaya/Project-86"

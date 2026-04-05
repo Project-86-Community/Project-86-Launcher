@@ -2,10 +2,16 @@ package p86l
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"os"
 	"p86l/assets"
+	"p86l/configs"
 	"p86l/internal/fs"
+	"p86l/internal/logger"
 	"p86l/internal/types"
+	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/afero"
@@ -94,13 +100,58 @@ func (m *Model) OpenFolder(folder types.Folder) {
 
 	path, err := fs.RealPath(m.fs, rel)
 	if err != nil {
+		logger.Warn.Printf("OpenFolder: could not resolve %q: %v", rel, err)
 		return
 	}
+
+	logger.Info.Printf("opening folder in file manager: %s", rel)
 	_ = open.Start(path)
-	log.Println(path)
+}
+
+func (m *Model) ReadLatestLog() (string, error) {
+	if m.fake {
+		return "[fake mode - no real log file]", nil
+	}
+
+	logsDir, err := fs.RealPath(m.fs, "logs")
+	if err != nil {
+		return "", err
+	}
+
+	entries, err := os.ReadDir(logsDir)
+	if err != nil {
+		return "", err
+	}
+
+	var logs []string
+	for _, e := range entries {
+		name := e.Name()
+		if strings.HasPrefix(name, configs.LogPrefix) && strings.HasSuffix(name, configs.LogExt) {
+			logs = append(logs, name)
+		}
+	}
+
+	if len(logs) == 0 {
+		return "[no previous session log found]", nil
+	}
+
+	sort.Strings(logs)
+	prev := filepath.Join(logsDir, logs[len(logs)-1])
+
+	data, err := os.ReadFile(prev)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
 
 func (m *Model) InstallVersion(ctx context.Context, url string, onProgress func(InstallProgress)) error {
+	version, err := fs.ParseVersion(url)
+	if err != nil {
+		return fmt.Errorf("InstallVersion: could not parse version from URL: %w", err)
+	}
+	logger.Info.Printf("install started - version: %s url: %s", version, url)
+
 	p := InstallProgress{Phase: types.PhaseDownload}
 
 	zipPath, err := m.dl.Download(ctx, m.fs, fs.DownloadOptions{
@@ -114,13 +165,16 @@ func (m *Model) InstallVersion(ctx context.Context, url string, onProgress func(
 		},
 	})
 	if err != nil {
-		return err
+		logger.Error.Printf("download failed [%s]: %v", version, err)
+		return fmt.Errorf("InstallVersion: download: %w", err)
 	}
+	logger.Info.Printf("download complete [%s]: %s", version, zipPath)
 
 	p.Phase = types.PhaseExtract
 	if onProgress != nil {
 		onProgress(p)
 	}
+	logger.Info.Printf("extraction started [%s]", version)
 
 	err = m.ex.Extract(ctx, m.fs, zipPath, fs.ExtractOptions{
 		OnFile: func(extracted, total int) {
@@ -132,8 +186,11 @@ func (m *Model) InstallVersion(ctx context.Context, url string, onProgress func(
 		},
 	})
 	if err != nil {
-		return err
+		logger.Error.Printf("extraction failed [%s]: %v", version, err)
+		return fmt.Errorf("InstallVersion: extract: %w", err)
 	}
+	logger.Info.Printf("extraction complete [%s]", version)
+	logger.Info.Printf("install finished [%s]", version)
 
 	p.Phase = types.PhaseDone
 	if onProgress != nil {

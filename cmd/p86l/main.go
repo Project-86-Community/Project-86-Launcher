@@ -3,60 +3,88 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"p86l"
 	"p86l/app"
 	"p86l/assets"
 	"p86l/configs"
 	"p86l/internal/fs"
+	"p86l/internal/logger"
 
 	"github.com/guigui-gui/guigui"
 	"github.com/hajimehoshi/ebiten/v2"
 )
+
+const VERSION = "dev"
 
 func main() {
 	fake := flag.Bool("fake", false, "use fake downloader/extractor for UI testing")
 	flag.Parse()
 
 	// Prevent multiple instances.
+	logger.Info.Println("acquiring instance lock...")
 	lock, err := tryLock()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, "fatal: another instance is already running")
+		os.Exit(1)
 	}
 	defer func() { _ = lock.Close() }()
 
 	// Fs
-	fs, err := fs.New()
+	logger.Info.Println("initialising application filesystem...")
+	afs, err := fs.New()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, "fatal: fs init:", err)
+		os.Exit(1)
 	}
+
+	// Logger
+	if err := logger.Init(afs); err != nil {
+		fmt.Fprintln(os.Stderr, "fatal: logger init:", err)
+		os.Exit(1)
+	}
+	logger.LogStartup(VERSION)
+
+	logger.Info.Println("instance lock acquired")
 
 	// Webview
+	logger.Info.Println("starting webview thread...")
 	wvCh := p86l.RunWebviewThread()
+	logger.Info.Println("webview thread ready")
 
 	// Background music
+	logger.Info.Println("loading background music...")
 	player, err := assets.NewAudioPlayer()
 	if err != nil {
-		log.Fatal(err)
+		logger.Error.Fatalf("failed to load audio: %v", err)
 	}
-	player.Play()
+	defer func() { _ = player.Close() }()
 
-	root := app.NewRoot(fs, wvCh, player)
+	player.Play()
+	logger.Info.Println("background music playing")
+
+	// UI
+	logger.Info.Println("building UI root...")
+	root := app.NewRoot(afs, wvCh, player)
 	if *fake {
 		root.UseFakes()
+		logger.Warn.Println("running in FAKE mode - no real downloads or disk writes")
 	}
 
+	logger.Info.Printf("setting window title: %s %s", configs.Title, VERSION)
 	ebiten.SetWindowIcon(assets.Icons["icon"])
+
 	op := &guigui.RunOptions{
-		Title:         configs.Title,
+		Title:         fmt.Sprintf("%s %s", configs.Title, VERSION),
 		WindowMinSize: configs.WindowMinSize,
 		RunGameOptions: &ebiten.RunGameOptions{
 			ApplePressAndHoldEnabled: true,
 		},
 	}
+
+	logger.Info.Println("entering main UI loop")
 	if err := guigui.Run(root, op); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		logger.Error.Fatalf("UI loop exited with error: %v", err)
 	}
+	logger.Info.Println("UI loop exited cleanly - shutting down")
 }

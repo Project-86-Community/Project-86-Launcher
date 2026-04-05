@@ -19,6 +19,8 @@ const (
 	ModeSettings Mode = "settings"
 	// ModeAbout is a Mode of type about.
 	ModeAbout Mode = "about"
+	// ModeLogs is a Mode of type logs.
+	ModeLogs Mode = "logs"
 )
 
 var ErrInvalidMode = errors.New("not a valid Mode")
@@ -40,6 +42,7 @@ var _ModeValue = map[string]Mode{
 	"home":     ModeHome,
 	"settings": ModeSettings,
 	"about":    ModeAbout,
+	"logs":     ModeLogs,
 }
 
 // ParseMode attempts to convert a string to a Mode.
