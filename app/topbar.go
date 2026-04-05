@@ -6,6 +6,7 @@ import (
 	"image"
 	"p86l"
 	"p86l/configs"
+	"p86l/customwidget"
 	"p86l/internal/types"
 	"slices"
 	"sync/atomic"
@@ -22,9 +23,9 @@ type TopBar struct {
 
 	background     basicwidget.Background
 	installButton  basicwidget.Button
-	folderSelect   basicwidget.Select[types.Folder]
+	folderDropdown customwidget.Dropdown[types.Folder]
 	settingsButton basicwidget.Button
-	helpsSelect    basicwidget.Select[types.Helps]
+	helpsDropdown  customwidget.Dropdown[types.Helps]
 
 	dlPopup        basicwidget.Popup
 	dlPopupContent guigui.WidgetWithSize[*dlPopupContent]
@@ -39,9 +40,9 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 	adder.AddWidget(&t.dlPopup)
 	adder.AddWidget(&t.background)
 	adder.AddWidget(&t.installButton)
-	adder.AddWidget(&t.folderSelect)
+	adder.AddWidget(&t.folderDropdown)
 	adder.AddWidget(&t.settingsButton)
-	adder.AddWidget(&t.helpsSelect)
+	adder.AddWidget(&t.helpsDropdown)
 
 	v, ok := context.Env(t, modelKeyModel)
 	if !ok {
@@ -92,11 +93,8 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 		}()
 	})
 
-	t.folderSelect.SetItems([]basicwidget.SelectItem[types.Folder]{
-		{
-			Text:  _t.Get("topbar.folders"),
-			Value: types.FolderFolders,
-		},
+	t.folderDropdown.SetLabel(_t.Get("topbar.folders"))
+	t.folderDropdown.SetItems([]customwidget.DropdownItem[types.Folder]{
 		{
 			Text:  _t.Get("topbar.f.root"),
 			Value: types.FolderRoot,
@@ -110,30 +108,21 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 			Value: types.FolderLogs,
 		},
 	})
-	t.folderSelect.OnItemSelected(func(context *guigui.Context, index int) {
-		item, ok := t.folderSelect.ItemByIndex(index)
+	t.folderDropdown.OnItemSelected(func(context *guigui.Context, index int) {
+		item, ok := t.folderDropdown.ItemByIndex(index)
 		if !ok {
-			t.folderSelect.SelectItemByValue(types.FolderFolders)
 			return
 		}
-
 		model.OpenFolder(item.Value)
-		t.folderSelect.SelectItemByValue(types.FolderFolders)
 	})
-	if !t.folderSelect.IsPopupOpen() {
-		t.folderSelect.SelectItemByValue(types.FolderFolders)
-	}
 
 	t.settingsButton.SetText(_t.Get("topbar.settings"))
 	t.settingsButton.OnUp(func(context *guigui.Context) {
 		model.SetMode(types.ModeSettings)
 	})
 
-	t.helpsSelect.SetItems([]basicwidget.SelectItem[types.Helps]{
-		{
-			Text:  _t.Get("topbar.help"),
-			Value: types.HelpsHelp,
-		},
+	t.helpsDropdown.SetLabel(_t.Get("topbar.help"))
+	t.helpsDropdown.SetItems([]customwidget.DropdownItem[types.Helps]{
 		{
 			Text:  _t.Get("topbar.h.cache"),
 			Value: types.HelpsCache,
@@ -145,6 +134,9 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 		{
 			Text:  _t.Get("topbar.h.view"),
 			Value: types.HelpsLogs,
+		},
+		{
+			Border: true,
 		},
 		{
 			Text:  _t.Get("topbar.h.website"),
@@ -163,18 +155,18 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 			Value: types.HelpsPatreon,
 		},
 		{
+			Border: true,
+		},
+		{
 			Text:  _t.Get("topbar.h.about"),
 			Value: types.HelpsAbout,
 		},
 	})
-	t.helpsSelect.OnItemSelected(func(context *guigui.Context, index int) {
-		item, ok := t.helpsSelect.ItemByIndex(index)
+	t.helpsDropdown.OnItemSelected(func(context *guigui.Context, index int) {
+		item, ok := t.helpsDropdown.ItemByIndex(index)
 		if !ok {
-			model.SetMode(types.ModeAbout)
-			t.helpsSelect.SelectItemByValue(types.HelpsHelp)
 			return
 		}
-
 		switch item.Value {
 		case types.HelpsReport:
 			_ = open.Start(configs.Issues)
@@ -191,12 +183,7 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 		case types.HelpsAbout:
 			model.SetMode(types.ModeAbout)
 		}
-
-		t.helpsSelect.SelectItemByValue(types.HelpsHelp)
 	})
-	if !t.helpsSelect.IsPopupOpen() {
-		t.helpsSelect.SelectItemByValue(types.HelpsHelp)
-	}
 
 	t.dlPopupContent.Widget().SetPopup(&t.dlPopup)
 	t.dlPopup.SetContent(&t.dlPopupContent)
@@ -233,13 +220,13 @@ func (t *TopBar) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBoun
 			Widget: &t.installButton,
 		},
 		guigui.LinearLayoutItem{
-			Widget: &t.folderSelect,
+			Widget: &t.folderDropdown,
 		},
 		guigui.LinearLayoutItem{
 			Widget: &t.settingsButton,
 		},
 		guigui.LinearLayoutItem{
-			Widget: &t.helpsSelect,
+			Widget: &t.helpsDropdown,
 		},
 	)
 	(guigui.LinearLayout{
