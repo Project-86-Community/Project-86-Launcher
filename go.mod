@@ -1,45 +1,66 @@
 module p86l
 
-go 1.25
+go 1.26
 
 require (
-	github.com/BurntSushi/toml v1.5.0
-	github.com/Conight/go-googletrans v0.2.4
+	github.com/BurntSushi/toml v1.6.0
 	github.com/cavaliergopher/grab/v3 v3.0.1
-	github.com/dustin/go-humanize v1.0.1
+	github.com/crgimenes/glaze v0.0.13
 	github.com/fyne-io/image v0.1.1
-	github.com/guigui-gui/guigui v0.0.0-20251224052127-adae7eff2238
-	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.7.0.20251222071550-4d51505eb5cb
-	github.com/hashicorp/go-version v1.8.0
-	github.com/kisielk/errcheck v1.9.0
-	github.com/nicksnyder/go-i18n/v2 v2.6.0
-	github.com/rs/zerolog v1.34.0
-	golang.org/x/text v0.32.0
-	golang.org/x/tools v0.39.0
+	github.com/guigui-gui/guigui v0.0.0-20260402081428-d624e1db8c65
+	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.10.0.20260323163356-439a0ff7b1d1
+	github.com/nicksnyder/go-i18n/v2 v2.6.1
+	github.com/saracen/fastzip v0.2.0
+	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
+	github.com/spf13/afero v1.15.0
+	golang.org/x/sys v0.42.0
+	golang.org/x/text v0.35.0
 )
 
 require (
-	github.com/ebitengine/gomobile v0.0.0-20250923094054-ea854a63cce1 // indirect
+	dario.cat/mergo v1.0.1 // indirect
+	github.com/Masterminds/goutils v1.1.1 // indirect
+	github.com/Masterminds/semver/v3 v3.3.0 // indirect
+	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
+	github.com/abice/go-enum v0.9.2 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
+	github.com/ebitengine/gomobile v0.0.0-20260211053922-3d992dae95d1 // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
-	github.com/ebitengine/oto/v3 v3.4.0 // indirect
-	github.com/ebitengine/purego v0.10.0-alpha.3 // indirect
-	github.com/go-text/typesetting v0.3.2 // indirect
-	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/hajimehoshi/iro v0.1.0 // indirect
+	github.com/ebitengine/oto/v3 v3.5.0-alpha.2 // indirect
+	github.com/ebitengine/purego v0.11.0-alpha.1 // indirect
+	github.com/go-text/typesetting v0.3.5-0.20260309142344-94fe510e6837 // indirect
+	github.com/golang/mock v1.6.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/hajimehoshi/iro v0.2.0 // indirect
+	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20250612000132-0ef82f21eade // indirect
-	github.com/jezek/xgb v1.2.0 // indirect
-	github.com/jfreymuth/oggvorbis v1.0.5 // indirect
-	github.com/jfreymuth/vorbis v1.0.2 // indirect
+	github.com/jezek/xgb v1.3.0 // indirect
 	github.com/jsummers/gobmp v0.0.0-20230614200233-a9de23ed2e25 // indirect
-	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/kazzmir/opus-go v1.3.0 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/labstack/gommon v0.4.2 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/mattn/goveralls v0.0.12 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/saracen/zipextra v0.0.0-20250129175152-f1aa42d25216 // indirect
+	github.com/shopspring/decimal v1.4.0 // indirect
+	github.com/spf13/cast v1.7.0 // indirect
+	github.com/urfave/cli/v2 v2.27.7 // indirect
+	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	golang.design/x/clipboard v0.7.1 // indirect
+	golang.org/x/crypto v0.49.0 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
-	golang.org/x/image v0.33.0 // indirect
+	golang.org/x/image v0.38.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
-	golang.org/x/mod v0.30.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/mod v0.34.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260311193753-579e4da9a98c // indirect
+	golang.org/x/tools v0.43.0 // indirect
+	golang.org/x/tools/cmd/cover v0.1.0-deprecated // indirect
 	howett.net/plist v1.0.1 // indirect
 )
+
+tool github.com/abice/go-enum

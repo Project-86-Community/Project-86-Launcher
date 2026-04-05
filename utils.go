@@ -1,229 +1,96 @@
-/*
- * SPDX-License-Identifier: GPL-3.0-only
- * SPDX-FileCopyrightText: 2025 Project 86 Community
- *
- * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
- * Copyright (C) 2025 Project 86 Community
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package p86l
 
 import (
-	"bytes"
-	"cmp"
-	"fmt"
-	"image"
-	"os"
-	"p86l/assets"
-	"p86l/configs"
-	"p86l/internal/github"
-	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
-	"github.com/dustin/go-humanize"
-	"github.com/fyne-io/image/ico"
-	"github.com/hajimehoshi/ebiten/v2/audio"
-	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
-	"github.com/hashicorp/go-version"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
+	webview "github.com/crgimenes/glaze"
+	_ "github.com/crgimenes/glaze/embedded"
 )
 
-var (
-	PathGameStable     = filepath.Join(configs.FolderBuilds, configs.FolderStable, configs.FileGame)
-	PathGamePreRelease = filepath.Join(configs.FolderBuilds, configs.FolderPreRelease, configs.FileGame)
-)
-
-func GetIcons() ([]image.Image, error) {
-	images, err := ico.DecodeAll(bytes.NewReader(assets.P86lIco))
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode icons: %w", err)
-	}
-
-	return images, nil
+// WebviewRequest is sent to the dedicated webview goroutine.
+type WebviewRequest struct {
+	Source string
+	Reply  chan string
 }
 
-func GetUsername() string {
-	var username string
-	switch runtime.GOOS {
-	case "windows":
-		username = os.Getenv("USERNAME")
+// RunWebviewThread starts a dedicated OS-locked goroutine that serves
+// webview requests. Call this once before guigui.Run().
+// Send requests to the returned channel to open a webview window.
+func RunWebviewThread() chan<- WebviewRequest {
+	ch := make(chan WebviewRequest)
+	go func() {
+		// Lock this goroutine to its OS thread permanently.
+		runtime.LockOSThread()
+		for req := range ch {
+			req.Reply <- webviewOpen(req.Source)
+		}
+	}()
+	return ch
+}
+
+func webviewOpen(source string) string {
+	selectedURL := make(chan string, 1)
+
+	w, err := webview.New(true)
+	if err != nil {
+		return ""
+	}
+	defer func() {
+		w.Unbind("reportURL")
+		w.Destroy()
+	}()
+
+	w.SetTitle("Select a release asset")
+	w.SetSize(1024, 768, webview.HintNone)
+
+	if err := w.Bind("reportURL", func(url string) {
+		if strings.Contains(url, "/releases/download/") {
+			select {
+			case selectedURL <- url:
+				w.Terminate()
+			default:
+			}
+		}
+	}); err != nil {
+		return ""
+	}
+
+	w.Init(`
+		(function() {
+			function setup() {
+				document.addEventListener('mousedown', function(e) {
+					var a = e.target.closest('a[href]');
+					if (a && a.href && window.reportURL) {
+						window.reportURL(a.href);
+					}
+				}, true);
+
+				var lastURL = window.location.href;
+				setInterval(function() {
+					var cur = window.location.href;
+					if (cur !== lastURL) {
+						lastURL = cur;
+						if (window.reportURL) window.reportURL(cur);
+					}
+				}, 300);
+			}
+
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', setup);
+			} else {
+				setup();
+			}
+		})();
+	`)
+
+	w.Navigate(source)
+	w.Run()
+
+	select {
+	case url := <-selectedURL:
+		return url
 	default:
-		username = os.Getenv("USER")
+		return ""
 	}
-
-	if username == "" {
-		username = os.Getenv("LOGNAME")
-	}
-	return strings.TrimSpace(username)
-}
-
-func MergeRectangles(rects ...image.Rectangle) image.Rectangle {
-	if len(rects) == 0 {
-		return image.Rectangle{}
-	}
-
-	mergedMin := rects[0].Min
-	mergedMax := rects[0].Max
-
-	for _, r := range rects[1:] {
-		if r.Min.X < mergedMin.X {
-			mergedMin.X = r.Min.X
-		}
-		if r.Min.Y < mergedMin.Y {
-			mergedMin.Y = r.Min.Y
-		}
-		if r.Max.X > mergedMax.X {
-			mergedMax.X = r.Max.X
-		}
-		if r.Max.Y > mergedMax.Y {
-			mergedMax.Y = r.Max.Y
-		}
-	}
-
-	return image.Rectangle{
-		Min: mergedMin,
-		Max: mergedMax,
-	}
-}
-
-func NewBGMPlayer() (*audio.Player, error) {
-	const sampleRate = 44100
-	actx := audio.NewContext(sampleRate)
-
-	reader := bytes.NewReader(assets.P86lOst)
-	stream, err := vorbis.DecodeF32(reader)
-	if err != nil {
-		return nil, fmt.Errorf("vorbis decoder: %w", err)
-	}
-
-	loop := audio.NewInfiniteLoopF32(stream, stream.Length())
-
-	player, err := actx.NewPlayerF32(loop)
-	if err != nil {
-		return nil, fmt.Errorf("new player: %w", err)
-	}
-
-	return player, nil
-}
-
-func T(key string) string {
-	keyMsg, err := assets.Localizer.Localize(&i18n.LocalizeConfig{
-		MessageID: key,
-	})
-	if err != nil {
-		return fmt.Sprintf("!%s", key) // Fallback to key if translation fails.
-	}
-	return keyMsg
-}
-
-func FormattedCacheExpireText(cache CacheFile) string {
-	if cache.RateLimit != nil {
-		var endPart string
-		if cache.RateLimit.Remaining < 60 {
-			endPart = humanize.RelTime(time.Now(), time.Unix(cache.RateLimit.Reset, 0), "remaining", "ago")
-		}
-
-		return fmt.Sprintf(
-			"%d / %d - requests \n %s",
-			cache.RateLimit.Remaining,
-			cache.RateLimit.Limit,
-			endPart,
-		)
-	}
-
-	return "..."
-}
-
-func ReleasesChangelogText(cache CacheFile, usePreRelease bool) string {
-	if cache.Releases != nil {
-		if usePreRelease {
-			return fmt.Sprintf("%s\n\n%s", cache.Releases.PreRelease.Name, cache.Releases.PreRelease.Body)
-		}
-		return fmt.Sprintf("%s\n\n%s", cache.Releases.Stable.Name, cache.Releases.Stable.Body)
-	}
-
-	return "..."
-}
-
-func GameVersionText(cache CacheFile, usePreRelease bool) string {
-	if cache.Releases != nil {
-		if usePreRelease {
-			return cache.Releases.PreRelease.TagName
-		}
-		return cache.Releases.Stable.TagName
-	}
-
-	return "..."
-}
-
-func ReleasesDownloadCountText(cache CacheFile, usePreRelease bool) string {
-	if cache.Releases != nil {
-		if usePreRelease {
-			gameAsset := GetAssets(cache.Releases.PreRelease.Assets)
-			return fmt.Sprintf("%d", gameAsset.DownloadCount)
-		}
-		gameAsset := GetAssets(cache.Releases.Stable.Assets)
-		return fmt.Sprintf("%d", gameAsset.DownloadCount)
-	}
-
-	return "..."
-}
-
-func isGameFile(filename string) bool {
-	return strings.Contains(filename, "Project86-v") &&
-		strings.Contains(filename, ".zip") &&
-		!strings.Contains(filename, "dev") &&
-		!strings.Contains(filename, "linux") &&
-		!strings.Contains(filename, "macOS")
-}
-
-func isPrereleaseGameFile(filename string) bool {
-	return strings.Contains(filename, "Project86-v") &&
-		strings.Contains(filename, ".zip") &&
-		!strings.Contains(filename, "linux") &&
-		!strings.Contains(filename, "macOS")
-}
-
-func GetAssets(assets []github.ReleaseAsset) *github.ReleaseAsset {
-	var gameAsset *github.ReleaseAsset
-
-	for _, asset := range assets {
-		switch {
-		case isGameFile(asset.Name):
-			gameAsset = &asset
-			continue
-		case isPrereleaseGameFile(asset.Name):
-			gameAsset = &asset
-			continue
-		}
-	}
-
-	return gameAsset
-}
-
-// current, new
-func IsNewVersion(v1, v2 string) (bool, error) {
-	c, err1 := version.NewVersion(v1)
-	n, err2 := version.NewVersion(v2)
-
-	if err := cmp.Or(err1, err2); err != nil {
-		return false, err
-	}
-
-	return n.GreaterThan(c), nil
 }

@@ -1,550 +1,143 @@
-/*
- * SPDX-License-Identifier: GPL-3.0-only
- * SPDX-FileCopyrightText: 2025 Project 86 Community
- *
- * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
- * Copyright (C) 2025 Project 86 Community
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package p86l
 
 import (
 	"context"
-	"p86l/configs"
-	"p86l/internal/file"
-	"p86l/internal/github"
-	"p86l/internal/log"
-	"path/filepath"
-	"sync"
-	"time"
+	"log"
+	"p86l/assets"
+	"p86l/internal/fs"
+	"p86l/internal/types"
 
-	translator "github.com/Conight/go-googletrans"
-	"github.com/hajimehoshi/ebiten/v2/audio"
-	"github.com/rs/zerolog"
+	"github.com/skratchdot/open-golang/open"
+	"github.com/spf13/afero"
 )
 
-type Command interface {
-	Execute(*Model)
-}
+type InstallProgress struct {
+	// Download phase
+	DownloadDone  int64
+	DownloadTotal int64
+	// Extract phase, non-zero means download finished
+	ExtractDone  int
+	ExtractTotal int
 
-type SubModel interface {
-	Start(ctx context.Context, wg *sync.WaitGroup)
+	Phase types.Phase
 }
 
 type Model struct {
-	ctx       context.Context
-	cancel    context.CancelFunc
-	wg        sync.WaitGroup
-	subModels []SubModel
+	fake bool
 
-	logger           *zerolog.Logger
-	logCapture       *log.LogCapture
-	fs               *file.Filesystem
-	bgmPlayer        *audio.Player
-	googleTranslator *translator.Translator
+	mode types.Mode
+	t    assets.T
 
-	logCaptureText    string
-	oldLogCaptureText string
-
-	uiRefreshFn func()
-	syncDataFn  func(m *Model, value bool) error
-
-	isAutoUseDarkmode bool
-	isNew             bool
-	dataPath          string
-	data              *Data
-
-	progressMutex     sync.RWMutex
-	progressRefreshFn func()
-	inProgress        bool
-	progressText      string
-
-	cachePath string
-	cache     *Cache
-
-	commandChan           chan Command
-	cacheResetCommandChan chan struct{}
-
-	isAvailStable, isAvailPreRelease bool
-	fileAvailability                 map[string]bool
-	fileAvailMutex, uiRefreshFnMutex sync.RWMutex
+	fs afero.Fs
+	dl fs.Downloader
+	ex fs.Extractor
 }
 
-func NewModel(logger *zerolog.Logger, logCapture *log.LogCapture, fs *file.Filesystem, bgmPlayer *audio.Player) *Model {
-	ctx, cancel := context.WithCancel(context.Background())
-	dataPath := filepath.Join(configs.AppName, configs.FileData)
-	cachePath := filepath.Join(configs.AppName, configs.FileCache)
-
-	isNew, df, err := loadData(logger, fs, dataPath)
-	if err != nil {
-		logger.Warn().Str(log.Lifecycle, "could not load initial data, using defaults").Err(err).Msg(log.ErrorManager.String())
-	}
-
-	cf, err := loadCache(logger, fs, cachePath)
-	if err != nil {
-		logger.Warn().Str(log.Lifecycle, "could not load cache").Err(err).Msg(log.ErrorManager.String())
-	}
-
-	return &Model{
-		ctx:                   ctx,
-		cancel:                cancel,
-		subModels:             make([]SubModel, 0),
-		logger:                logger,
-		logCapture:            logCapture,
-		fs:                    fs,
-		bgmPlayer:             bgmPlayer,
-		googleTranslator:      translator.New(),
-		isNew:                 isNew,
-		dataPath:              dataPath,
-		data:                  NewData(df),
-		cachePath:             cachePath,
-		cache:                 NewCache(cf),
-		commandChan:           make(chan Command, 10),
-		cacheResetCommandChan: make(chan struct{}, 1),
-		fileAvailability:      make(map[string]bool),
+func NewModel(afs afero.Fs) Model {
+	return Model{
+		fs: afs,
+		dl: fs.GrabDownloader{},
+		ex: fs.FastExtractor{},
 	}
 }
 
-func (m *Model) BGMPlayer() *audio.Player {
-	return m.bgmPlayer
+// Only for testing.
+
+const FakeDownloadURL = "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip"
+
+func (m *Model) Fake() bool {
+	return m.fake
 }
 
-func (m *Model) IsAutoUseDarkmode() bool {
-	return m.isAutoUseDarkmode
+func (m *Model) UseFakes() {
+	m.dl = fs.FakeDownloader{}
+	m.ex = fs.FakeExtractor{}
+	m.fake = true
+	m.fs = fs.NewMem()
 }
 
-// - SetUIRefreshFn & SetSyncDataFn both are involved in ui refresh.
-
-// SetUIRefreshFn used for resetting ui, when new info needs to be shown.
-func (m *Model) SetUIRefreshFn(fn func()) {
-	m.uiRefreshFnMutex.Lock()
-	defer m.uiRefreshFnMutex.Unlock()
-	m.uiRefreshFn = fn
-}
-
-// SetSyncDataFn used for syncing data from Model to UI.
-func (m *Model) SetSyncDataFn(fn func(m *Model, value bool) error) {
-	m.uiRefreshFnMutex.Lock()
-	defer m.uiRefreshFnMutex.Unlock()
-	m.syncDataFn = fn
-}
-
-// SetIsAutoUseDarkmode whether the user's device uses darkmode by default,
-// used for ResetDataAsync, to change theme back to automode.
-func (m *Model) SetIsAutoUseDarkmode(value bool) {
-	m.isAutoUseDarkmode = value
-}
-
-func (m *Model) SetProgressRefreshFn(fn func()) {
-	m.progressMutex.Lock()
-	defer m.progressMutex.Unlock()
-	m.progressRefreshFn = fn
-}
-
-// -- common --
-
-func (m *Model) AddSubModel(sub SubModel) {
-	m.subModels = append(m.subModels, sub)
-}
-
-func (m *Model) Start() {
-	logger := m.logger.With().Str(log.UnknownModel.String(), log.MainModel.String()).Logger()
-
-	logger.Info().Str(log.Lifecycle, log.Starting).Msg(log.AppManager.String())
-
-	for _, sub := range m.subModels {
-		sub.Start(m.ctx, &m.wg)
+func (m *Model) Mode() types.Mode {
+	if m.mode == types.ModeUnknown {
+		return types.ModeHome
 	}
-
-	m.wg.Add(1)
-	go func() {
-		defer m.wg.Done()
-		logger.Info().Str(log.BackgroundLoop, log.Starting).Msg(log.AppManager.String())
-
-		captureLogLifetimeTicker := time.NewTicker(time.Second * 6)
-		defer captureLogLifetimeTicker.Stop()
-
-		for {
-			select {
-			case <-captureLogLifetimeTicker.C:
-				msg := m.logCapture.Msg()
-
-				m.LogCaptureText(msg)
-
-				if m.oldLogCaptureText == msg {
-					m.LogCaptureText("")
-				}
-
-				m.oldLogCaptureText = msg
-			case <-m.ctx.Done():
-				logger.Info().Str(log.BackgroundLoop, log.Stopped).Msg(log.AppManager.String())
-
-				if err := m.saveData(); err != nil {
-					logger.Warn().Str(log.BackgroundLoop, "failed to save data on shutdown").Err(err).Msg(log.ErrorManager.String())
-				}
-
-				if err := m.saveCache(); err != nil {
-					m.logger.Warn().Str(log.BackgroundLoop, "failed to save cache on shutdown").Err(err).Msg(log.ErrorManager.String())
-				}
-
-				return
-			case cmd := <-m.commandChan:
-				cmd.Execute(m)
-			}
-		}
-	}()
+	return m.mode
 }
 
-func (m *Model) OpenPath(path string) {
-	m.logger.Info().Str("open path", path).Msg(log.AppManager.String())
-	m.fs.Open(filepath.Join(m.fs.Path(), path))
+func (m *Model) SetMode(mode types.Mode) {
+	m.mode = mode
 }
 
-func (m *Model) OpenURL(url string) {
-	m.logger.Info().Str("open url", url).Msg(log.AppManager.String())
-	m.fs.Open(url)
+func (m *Model) T() assets.T {
+	return m.t
 }
 
-func (m *Model) LogCaptureText(value ...string) string {
-	if len(value) > 0 {
-		m.progressMutex.Lock()
-		defer m.progressMutex.Unlock()
-		m.logCaptureText = value[0]
-
-		refreshFn := m.uiRefreshFn
-		if refreshFn != nil {
-			refreshFn()
-		}
-	} else {
-		m.progressMutex.RLock()
-		defer m.progressMutex.RUnlock()
-	}
-
-	return m.logCaptureText
+func (m *Model) SetT(lang string) {
+	m.t = assets.NewT(lang)
 }
 
-// Use for single purpose-only, dual will mess with mutex.
-func (m *Model) InProgress(value ...bool) bool {
-	if len(value) > 0 {
-		m.progressMutex.Lock()
-		defer m.progressMutex.Unlock()
-		m.inProgress = value[0]
-	} else {
-		m.progressMutex.RLock()
-		defer m.progressMutex.RUnlock()
-	}
-
-	return m.inProgress
-}
-
-// Use for single purpose-only, dual will mess with mutex.
-func (m *Model) ProgressText(value ...string) string {
-	if len(value) > 0 {
-		m.progressMutex.Lock()
-		defer m.progressMutex.Unlock()
-		m.progressText = value[0]
-
-		refreshFn := m.progressRefreshFn
-		if refreshFn != nil {
-			refreshFn()
-		}
-	} else {
-		m.progressMutex.RLock()
-		defer m.progressMutex.RUnlock()
-	}
-
-	return m.progressText
-}
-
-// CheckFilesCached returns cached file exists
-func (m *Model) CheckFilesCached(filePath string) bool {
-	m.fileAvailMutex.RLock()
-	defer m.fileAvailMutex.RUnlock()
-	available := m.fileAvailability[filePath]
-	return available
-}
-
-func (m *Model) handleUIRefresh() {
-	m.uiRefreshFnMutex.RLock()
-	refreshFn := m.uiRefreshFn
-	m.uiRefreshFnMutex.RUnlock()
-
-	if refreshFn != nil {
-		refreshFn()
-	}
-}
-
-func (m *Model) Stop() {
-	m.cancel()
-	m.wg.Wait()
-}
-
-// -- subModels --
-
-type DataSubModel struct {
-	model *Model
-}
-
-func NewDataSubModel(model *Model) *DataSubModel {
-	return &DataSubModel{
-		model: model,
-	}
-}
-
-func (d *DataSubModel) Start(ctx context.Context, wg *sync.WaitGroup) {
-	logger := d.model.logger.With().Str(log.UnknownModel.String(), log.DataModel.String()).Logger()
-
-	logger.Info().Str(log.Lifecycle, log.Starting).Msg(log.AppManager.String())
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		logger.Info().Str(log.BackgroundLoop, log.Starting).Msg(log.AppManager.String())
-
-		ticker := time.NewTicker(500 * time.Millisecond)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				logger.Info().Str(log.BackgroundLoop, log.Stopped).Msg(log.AppManager.String())
-				return
-			case <-ticker.C:
-				d.checkFiles()
-			}
-		}
-	}()
-}
-
-func (d *DataSubModel) updateFilesCache(filePaths ...string) {
-	results := make(map[string]bool)
-	for _, path := range filePaths {
-		results[path] = d.model.fs.Exist(path)
-	}
-
-	d.model.fileAvailMutex.Lock()
-	for path, available := range results {
-		d.model.fileAvailability[path] = available
-	}
-	d.model.fileAvailMutex.Unlock()
-}
-
-func (d *DataSubModel) checkFiles() {
-	filesToCheck := []string{
-		PathGameStable,
-		PathGamePreRelease,
-	}
-
-	d.updateFilesCache(filesToCheck...)
-
-	value1 := d.model.CheckFilesCached(PathGameStable)
-	value2 := d.model.CheckFilesCached(PathGamePreRelease)
-
-	if value1 != d.model.isAvailStable || value2 != d.model.isAvailPreRelease {
-		d.model.logger.Info().
-			Str(log.Lifecycle, "game files availability changed").
-			Bool("stable_was", d.model.isAvailStable).
-			Bool("stable_now", value1).
-			Bool("prerelease_was", d.model.isAvailPreRelease).
-			Bool("prerelease_now", value2).
-			Msg(log.AppManager.String())
-
-		d.model.isAvailStable = value1
-		d.model.isAvailPreRelease = value2
-
-		d.model.handleUIRefresh()
-	}
-}
-
-// --
-
-const (
-	// - Refresh intervals
-	defaultRefreshInterval   = time.Minute
-	minRefreshInterval       = time.Second * 5
-	rateLimitRefreshInterval = 5 * time.Minute
-	releasesRefreshInterval  = 30 * time.Minute
-)
-
-type CacheSubModel struct {
-	logger zerolog.Logger
-	model  *Model
-	client *github.Client
-}
-
-func NewCacheSubModel(model *Model) *CacheSubModel {
-	return &CacheSubModel{
-		logger: model.logger.With().Str(log.UnknownModel.String(), log.CacheModel.String()).Logger(),
-		model:  model,
-		client: github.NewClient(),
-	}
-}
-
-func (c *CacheSubModel) getRefreshInterval() time.Duration {
-	cacheFile := c.model.cache.Get()
-	if cacheFile.RateLimit == nil {
-		return minRefreshInterval
-	}
-	resetTime := cacheFile.RateLimit.Reset
-	if resetTime <= 0 {
-		return defaultRefreshInterval
-	}
-
-	interval := time.Until(time.Unix(resetTime, 0))
-	if interval <= 0 {
-		return minRefreshInterval
-	}
-
-	return interval
-}
-
-func (c *CacheSubModel) Start(ctx context.Context, wg *sync.WaitGroup) {
-	c.logger.Info().Str(log.Lifecycle, log.Starting).Msg(log.AppManager.String())
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		c.logger.Info().Str(log.BackgroundLoop, log.Starting).Msg(log.AppManager.String())
-
-		c.initialFetch(ctx)
-
-		refT := c.getRefreshInterval()
-		c.logger.Info().Str("refresh ticker", refT.String()).Msg(log.AppManager.String())
-
-		rateLimitTicker := time.NewTimer(rateLimitRefreshInterval)
-		releasesTicker := time.NewTicker(releasesRefreshInterval)
-		refreshTicker := time.NewTicker(refT)
-
-		defer rateLimitTicker.Stop()
-		defer releasesTicker.Stop()
-		defer refreshTicker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				c.logger.Info().Str(log.BackgroundLoop, log.Stopped).Msg(log.AppManager.String())
-				return
-			case <-rateLimitTicker.C:
-				c.logger.Info().Str(log.Lifecycle, "time to refresh ratelimit cache").Msg(log.NetworkManager.String())
-				c.fetchRateLimit(ctx)
-			case <-releasesTicker.C:
-				c.logger.Info().Str(log.Lifecycle, "time to refresh releases cache").Msg(log.NetworkManager.String())
-				c.fetchReleases(ctx)
-				c.fetchRateLimit(ctx)
-			case <-refreshTicker.C:
-				c.logger.Info().Str(log.Lifecycle, "time to refresh cache").Msg(log.NetworkManager.String())
-				c.fetchReleases(ctx)
-				c.fetchRateLimit(ctx)
-				refreshTicker.Reset(c.getRefreshInterval())
-			case <-c.model.cacheResetCommandChan:
-				c.logger.Info().Str(log.Lifecycle, "forced refresh of cache").Msg(log.NetworkManager.String())
-				c.fetchReleases(ctx)
-				c.fetchRateLimit(ctx)
-				refreshTicker.Reset(c.getRefreshInterval())
-			}
-		}
-	}()
-}
-
-func (c *CacheSubModel) initialFetch(ctx context.Context) {
-	cache := c.model.cache
-	cacheFile := cache.Get()
-
-	hasRateLimit := cacheFile.RateLimit != nil
-	hasReleases := cacheFile.Releases != nil
-
-	rateLimitAge := cache.RateLimitAge()
-	releasesAge := cache.ReleasesAge()
-
-	c.logger.Info().
-		Str(log.InitialFetch, "cache status").
-		Bool("has_releases", hasReleases).
-		Bool("has_rate_limit", hasRateLimit).
-		Dur("releases_age", releasesAge).
-		Dur("rate_limit_age", rateLimitAge).
-		Msg(log.AppManager.String())
-
-	// Always fetch rate limit on start (no rate limit on this endpoint)
-	if !hasRateLimit || rateLimitAge > rateLimitRefreshInterval {
-		c.logger.Info().Str(log.InitialFetch, "fetching initial rate limit").Msg(log.AppManager.String())
-		c.fetchRateLimit(ctx)
-	}
-
-	// Only fetch releases if we don't have them or they're very old
-	if !hasReleases || releasesAge > releasesRefreshInterval {
-		c.logger.Info().Str(log.InitialFetch, "fetching initial releases").Msg(log.AppManager.String())
-		c.fetchReleases(ctx)
-		c.fetchRateLimit(ctx)
-	} else {
-		c.logger.Info().
-			Str(log.InitialFetch, "using cached releases").
-			Dur("age", releasesAge).
-			Msg(log.AppManager.String())
-	}
-}
-
-func (c *CacheSubModel) fetchRateLimit(ctx context.Context) {
-	c.logger.Info().Str(log.FetchRateLimit, "fetching rate limit").Msg(log.AppManager.String())
-	cache := c.model.Cache()
-
-	rl, err := c.client.GetRateLimit(ctx)
-	if err != nil {
-		c.logger.Warn().Str(log.FetchRateLimit, "failed to fetch rate limit").Err(err).Msg(log.ErrorManager.String())
+func (m *Model) OpenFolder(folder types.Folder) {
+	if m.fake {
 		return
 	}
 
-	c.logger.Info().
-		Str(log.FetchRateLimit, "rate limit updated").
-		Int("remaining", rl.Remaining).
-		Int("limit", rl.Limit).
-		Msg(log.AppManager.String())
+	var rel string
+	switch folder {
+	case types.FolderRoot:
+		rel = "."
+	case types.FolderVersions:
+		rel = "versions"
+	case types.FolderLogs:
+		rel = "logs"
+	default:
+		return
+	}
 
-	cache.SetRateLimit(rl)
-	c.model.handleUIRefresh()
+	path, err := fs.RealPath(m.fs, rel)
+	if err != nil {
+		return
+	}
+	_ = open.Start(path)
+	log.Println(path)
 }
 
-func (c *CacheSubModel) fetchReleases(ctx context.Context) {
-	cache := c.model.Cache()
+func (m *Model) InstallVersion(ctx context.Context, url string, onProgress func(InstallProgress)) error {
+	p := InstallProgress{Phase: types.PhaseDownload}
 
-	ratelimit := cache.Get().RateLimit
-	if ratelimit != nil && ratelimit.Remaining < 5 {
-		c.logger.Warn().
-			Str(log.FetchReleases, "rate limit low, skipping fetch").
-			Int("remaining", ratelimit.Remaining).
-			Msg(log.ErrorManager.String())
-		return
-	}
-
-	c.logger.Info().Str(log.FetchReleases, "fetching releases").Msg(log.AppManager.String())
-
-	lr, err := c.client.GetLatestReleases(ctx, configs.RepoOwner, configs.RepoName)
+	zipPath, err := m.dl.Download(ctx, m.fs, fs.DownloadOptions{
+		URL: url,
+		Progress: func(done, total int64) {
+			p.DownloadDone = done
+			p.DownloadTotal = total
+			if onProgress != nil {
+				onProgress(p)
+			}
+		},
+	})
 	if err != nil {
-		c.logger.Warn().
-			Str(log.FetchReleases, "failed to fetch releases").
-			Err(err).
-			Msg(log.ErrorManager.String())
-		return
+		return err
 	}
 
-	c.logger.Info().
-		Str(log.FetchReleases, "releases updated").
-		Msg(log.AppManager.String())
+	p.Phase = types.PhaseExtract
+	if onProgress != nil {
+		onProgress(p)
+	}
 
-	cache.SetReleases(lr)
-	c.model.handleUIRefresh()
+	err = m.ex.Extract(ctx, m.fs, zipPath, fs.ExtractOptions{
+		OnFile: func(extracted, total int) {
+			p.ExtractDone = extracted
+			p.ExtractTotal = total
+			if onProgress != nil {
+				onProgress(p)
+			}
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	p.Phase = types.PhaseDone
+	if onProgress != nil {
+		onProgress(p)
+	}
+	return nil
 }
