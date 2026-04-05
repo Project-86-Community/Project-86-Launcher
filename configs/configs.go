@@ -23,32 +23,14 @@ package configs
 
 import "image"
 
-var AppWindowMinSize = image.Pt(300, 300)
+var WindowMinSize = image.Pt(300, 300)
 
 const (
-	InternetServer = "https://clients3.google.com/generate_204"
+	LockFile = "app.project86community.project86launcher"
+	Name     = "project-86-community"
+	Title    = "Project 86 Launcher"
 
-	CompanyName = "Project-86-Community"
-	AppName     = "Project-86-Launcher"
-	AppTitle    = "Project 86 Launcher"
-
-	RepoOwner = "Taliayaya"
-	RepoName  = "Project-86"
-
-	FolderLogs = "logs"
-
-	FileData  = "data.json"
-	FileCache = "cache.json"
-
-	FolderBuilds     = "builds"
-	FolderTemp       = "temp"
-	FolderPreRelease = "prerelease"
-	FolderStable     = "stable"
-
-	FileStableZip     = "stable-build.zip"
-	FilePrereleaseZip = "prerelease-build.zip"
-	FileGame          = "Project-86.exe"
-
+	Issues  = "https://github.com/Project-86-Community/Project-86-Launcher/issues"
 	Website = "https://project-86-community.github.io/Project-86-Website/"
 	Github  = "https://github.com/Taliayaya/Project-86"
 	Discord = "https://discord.com/invite/Yh2TQH97yA"
