@@ -1,119 +1,80 @@
-/*
- * SPDX-License-Identifier: GPL-3.0-only
- * SPDX-FileCopyrightText: 2025 Project 86 Community
- *
- * Project-86-Launcher: A Launcher developed for Project-86-Community-Game for managing game files.
- * Copyright (C) 2025 Project 86 Community
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package app
 
 import (
 	"image"
-	"os"
 	"p86l"
 	"p86l/assets"
 	"p86l/configs"
-	"p86l/internal/file"
-	"p86l/internal/log"
-	"runtime"
+	"p86l/internal/types"
 	"slices"
 	"sync"
 
 	"github.com/guigui-gui/guigui"
 	"github.com/guigui-gui/guigui/basicwidget"
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/rs/zerolog"
+	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/spf13/afero"
 	"golang.org/x/text/language"
 )
 
-type modelKey int
-
-const (
-	modelKeyModel modelKey = iota
+var (
+	modelKeyModel      = guigui.GenerateEnvKey()
+	webviewChKey       = guigui.GenerateEnvKey()
+	backgroundMusicKey = guigui.GenerateEnvKey()
 )
 
 type Root struct {
 	guigui.DefaultWidget
 
 	backgroundImage basicwidget.Image
-	background      basicwidget.Background
-	sidebar         Sidebar
-	home            Home
+	topbar          TopBar
+	settings        Settings
+	about           About
+	bottombar       BottomBar
 
-	play     Play
-	settings Settings
-	about    About
+	model    p86l.Model
+	wvCh     chan<- p86l.WebviewRequest
+	player   *audio.Player
+	initOnce sync.Once
 
-	toastBackground basicwidget.Background
-	toastForm       basicwidget.Form
-	toastPanel      basicwidget.Panel
-	toastText       basicwidget.Text
-
-	backgroundImageSize     image.Point
-	backgroundImagePosition image.Point
-
-	model *p86l.Model
-
-	sync sync.Once
-
-	locales           []language.Tag
-	faceSourceEntries []basicwidget.FaceSourceEntry
+	layoutItems []guigui.LinearLayoutItem
 }
 
-func NewRoot(VERSION string) (*Root, *p86l.Model, *file.Filesystem, *zerolog.Logger, []*os.File, error) {
-	fs, err := file.NewFilesystem()
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
+func NewRoot(afs afero.Fs, wvCh chan<- p86l.WebviewRequest, player *audio.Player) *Root {
+	return &Root{
+		model:  p86l.NewModel(afs),
+		wvCh:   wvCh,
+		player: player,
 	}
-
-	logger, logCapture, logFiles, noFS, noAPI, err := log.NewLogger(VERSION, fs.Root())
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-
-	logger.Info().Str(log.Lifecycle, "app start").Msg(log.AppManager.String())
-	logger.Info().Str(log.Lifecycle, "logging started").Msg(log.AppManager.String())
-	logger.Info().Str("operating system", runtime.GOOS).Msg(log.AppManager.String())
-	logger.Info().Str(log.Lifecycle, "init filesystem").Msg(log.FileManager.String())
-
-	player, err := p86l.NewBGMPlayer()
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-
-	model := p86l.NewModel(logger, logCapture, fs, player)
-
-	if !noFS {
-		dataSubModel := p86l.NewDataSubModel(model)
-		model.AddSubModel(dataSubModel)
-	}
-	if !noAPI {
-		cacheSubModel := p86l.NewCacheSubModel(model)
-		model.AddSubModel(cacheSubModel)
-	}
-
-	model.Start()
-
-	return &Root{model: model}, model, fs, logger, logFiles, nil
 }
 
-func (r *Root) handleBackgroundImage(widgetBounds *guigui.WidgetBounds) {
-	imgWidth := assets.Banner.Bounds().Dx()
-	imgHeight := assets.Banner.Bounds().Dy()
+func (r *Root) UseFakes() {
+	r.model.UseFakes()
+}
+
+func (r *Root) Env(context *guigui.Context, key guigui.EnvKey, source *guigui.EnvSource) (any, bool) {
+	switch key {
+	case modelKeyModel:
+		return &r.model, true
+	case webviewChKey:
+		return r.wvCh, true
+	default:
+		return nil, false
+	}
+}
+
+func (r *Root) contentWidget() guigui.Widget {
+	switch r.model.Mode() {
+	case types.ModeSettings:
+		return &r.settings
+	case types.ModeAbout:
+		return &r.about
+	}
+	return nil
+}
+
+func (r *Root) handleBackgroundImage(widgetBounds *guigui.WidgetBounds) image.Rectangle {
+	imgWidth := assets.Images["banner"].Bounds().Dx()
+	imgHeight := assets.Images["banner"].Bounds().Dy()
 
 	windowBounds := widgetBounds.Bounds()
 	windowWidth := windowBounds.Dx()
@@ -139,186 +100,50 @@ func (r *Root) handleBackgroundImage(widgetBounds *guigui.WidgetBounds) {
 		yOffset = (windowHeight - newHeight) / 2
 	}
 
-	r.backgroundImageSize = image.Pt(newWidth, newHeight)
-	r.backgroundImagePosition = image.Pt(xOffset, yOffset)
-}
+	backgroundImagePosition := image.Pt(xOffset, yOffset)
+	backgroundImageSize := image.Pt(newWidth, newHeight)
 
-func (r *Root) updateFontFaceSources(context *guigui.Context) {
-	r.locales = slices.Delete(r.locales, 0, len(r.locales))
-	r.locales = context.AppendLocales(r.locales)
-
-	r.faceSourceEntries = slices.Delete(r.faceSourceEntries, 0, len(r.faceSourceEntries))
-	//r.faceSourceEntries = cjkfont.AppendRecommendedFaceSourceEntries(r.faceSourceEntries, r.locales)
-	basicwidget.SetFaceSources(r.faceSourceEntries)
-}
-
-func (r *Root) contentWidget() guigui.Widget {
-	dataFile := r.model.Data().Get()
-	page := dataFile.Remember.Page
-
-	switch p86l.SidebarPage(page) {
-	case p86l.PageHome:
-		return &r.home
-	case p86l.PagePlay:
-		return &r.play
-	case p86l.PageSettings:
-		return &r.settings
-	case p86l.PageAbout:
-		return &r.about
-	}
-
-	return nil
-}
-
-func (r *Root) Model(key any) any {
-	switch key {
-	case modelKeyModel:
-		return r.model
-	default:
-		return nil
-	}
+	return image.Rect(
+		backgroundImagePosition.X,
+		backgroundImagePosition.Y,
+		backgroundImagePosition.X+backgroundImageSize.X,
+		backgroundImagePosition.Y+backgroundImageSize.Y,
+	)
 }
 
 func (r *Root) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
-	dataFile := r.model.Data().Get()
-	page := dataFile.Remember.Page
-
-	adder.AddChild(&r.backgroundImage)
-
-	if p86l.SidebarPage(page) != p86l.PageHome {
-		adder.AddChild(&r.background)
-	}
-
-	adder.AddChild(&r.sidebar)
-	if content := r.contentWidget(); content != nil {
-		adder.AddChild(content)
-	}
-
-	captureText := r.model.LogCaptureText()
-
-	if captureText != "" {
-		adder.AddChild(&r.toastBackground)
-		adder.AddChild(&r.toastForm)
-		adder.AddChild(&r.toastPanel)
-	}
-
-	var err error
-	r.sync.Do(func() {
-		if context.ColorMode() == guigui.ColorModeDark {
-			r.model.SetIsAutoUseDarkmode(true)
+	r.initOnce.Do(func() {
+		if locales := context.AppendAppLocales(nil); len(locales) > 0 {
+			r.model.SetT(locales[0].String())
+		} else {
+			r.model.SetT(language.English.String())
 		}
-		r.model.SetUIRefreshFn(func() {
-			guigui.RequestRedraw(r)
-		})
-		r.model.SetSyncDataFn(func(m *p86l.Model, value bool) error {
-			data := m.Data()
-			dataFile := m.Data().Get()
-			cacheFile := m.Cache().Get()
-
-			tag, err := data.Lang()
-			if err != nil {
-				return err
-			}
-
-			context.SetAppLocales([]language.Tag{tag})
-			assets.LoadLanguage(tag.String())
-			if !value {
-				if dataFile.UseDarkmode {
-					context.SetColorMode(guigui.ColorModeDark)
-				} else {
-					context.SetColorMode(guigui.ColorModeLight)
-				}
-			} else {
-				if m.IsAutoUseDarkmode() {
-					m.Data().Update(func(df *p86l.DataFile) {
-						df.UseDarkmode = true
-					})
-				}
-			}
-
-			if cacheFile.Releases != nil {
-				m.Translate(p86l.ReleasesChangelogText(cacheFile, dataFile.UsePreRelease), tag.String())
-			}
-
-			context.SetAppScale(dataFile.AppScale)
-
-			remember := dataFile.Remember
-			if remember.Active {
-				if !value {
-					ebiten.SetWindowSize(max(configs.AppWindowMinSize.X, remember.WSizeX), max(configs.AppWindowMinSize.Y, remember.WSizeY))
-					ebiten.SetWindowPosition(max(0, remember.WPosX), max(0, remember.WPosY))
-				}
-				data.Update(func(df *p86l.DataFile) {
-					df.Remember.Page = remember.Page
-				})
-			}
-
-			if !dataFile.DisableBgMusic {
-				m.BGMPlayer().Play()
-			}
-			return nil
-		})
-		err = r.model.SyncData()
 	})
-	if err != nil {
-		return err
-	}
 
-	r.backgroundImage.SetImage(assets.Banner)
+	adder.AddWidget(&r.backgroundImage)
+	adder.AddWidget(&r.topbar)
+	if content := r.contentWidget(); content != nil {
+		adder.AddWidget(content)
+	}
+	adder.AddWidget(&r.bottombar)
+
+	r.backgroundImage.SetImage(assets.Images["banner"])
+
 	{
-		wMinX := int(float64(configs.AppWindowMinSize.X)*context.AppScale()) + basicwidget.UnitSize(context)*2
-		wMinY := int(float64(configs.AppWindowMinSize.Y)*context.AppScale()) + basicwidget.UnitSize(context)*2
-		ebiten.SetWindowSizeLimits(
-			wMinX,
-			wMinY,
+		w := int(float64(configs.WindowMinSize.X)*context.AppScale()) + basicwidget.UnitSize(context)*2
+		h := int(float64(configs.WindowMinSize.Y)*context.AppScale()) + basicwidget.UnitSize(context)*2
+		context.SetWindowSizeLimits(
+			w,
+			h,
 			-1,
 			-1,
 		)
 	}
 
-	r.toastText.SetValue(captureText)
-
-	r.toastPanel.SetContent(&r.toastText)
-	r.toastPanel.SetAutoBorder(true)
-	r.toastPanel.SetContentConstraints(basicwidget.PanelContentConstraintsFixedHeight)
-
-	r.updateFontFaceSources(context)
-
-	return nil
-}
-
-func (r *Root) Tick(context *guigui.Context, widgetBounds *guigui.WidgetBounds) error {
-	data := r.model.Data()
-	dataFile := data.Get()
-
-	sx, sy := ebiten.WindowSize()
-	px, py := ebiten.WindowPosition()
-	page := dataFile.Remember.Page
-
-	data.Update(func(df *p86l.DataFile) {
-		df.Remember = p86l.DataRemember{
-			WSizeX: sx,
-			WSizeY: sy,
-			WPosX:  px,
-			WPosY:  py,
-			Page:   int(page),
-			Active: dataFile.Remember.Active,
-		}
-	})
-
 	return nil
 }
 
 func (r *Root) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
-	u := basicwidget.UnitSize(context)
-
-	r.handleBackgroundImage(widgetBounds)
-	bgBounds := image.Rect(
-		r.backgroundImagePosition.X,
-		r.backgroundImagePosition.Y,
-		r.backgroundImagePosition.X+r.backgroundImageSize.X,
-		r.backgroundImagePosition.Y+r.backgroundImageSize.Y,
-	)
 	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionVertical,
 		Items: []guigui.LinearLayoutItem{
@@ -327,86 +152,35 @@ func (r *Root) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds
 				Size:   guigui.FlexibleSize(1),
 			},
 		},
-	}).LayoutWidgets(context, bgBounds, layouter)
+	}).LayoutWidgets(context, r.handleBackgroundImage(widgetBounds), layouter)
 
+	u := basicwidget.UnitSize(context)
+	r.layoutItems = slices.Delete(r.layoutItems, 0, len(r.layoutItems))
+	if r.model.Mode() == types.ModeHome {
+		r.layoutItems = append(r.layoutItems,
+			guigui.LinearLayoutItem{
+				Widget: &r.topbar,
+				Size:   guigui.FixedSize(int(float64(u) * 1.6)),
+			},
+			guigui.LinearLayoutItem{
+				Widget: r.contentWidget(),
+				Size:   guigui.FlexibleSize(1),
+			},
+			guigui.LinearLayoutItem{
+				Widget: &r.bottombar,
+				Size:   guigui.FixedSize(u),
+			},
+		)
+	} else {
+		r.layoutItems = append(r.layoutItems,
+			guigui.LinearLayoutItem{
+				Widget: r.contentWidget(),
+				Size:   guigui.FlexibleSize(1),
+			},
+		)
+	}
 	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionVertical,
-		Items: []guigui.LinearLayoutItem{
-			{
-				Size: guigui.FlexibleSize(1),
-				Layout: guigui.LinearLayout{
-					Direction: guigui.LayoutDirectionHorizontal,
-					Items: []guigui.LinearLayoutItem{
-						{
-							Widget: &r.sidebar,
-							Size:   guigui.FixedSize(4 * u),
-						},
-						{
-							Widget: &r.background,
-							Size:   guigui.FlexibleSize(1),
-							Layout: guigui.LinearLayout{
-								Direction: guigui.LayoutDirectionVertical,
-								Items: []guigui.LinearLayoutItem{
-									{
-										Widget: r.contentWidget(),
-										Size:   guigui.FlexibleSize(1),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+		Items:     r.layoutItems,
 	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
-
-	(guigui.LinearLayout{
-		Direction: guigui.LayoutDirectionVertical,
-		Items: []guigui.LinearLayoutItem{
-			{
-				Size: guigui.FlexibleSize(1),
-			},
-			{
-				Size: guigui.FixedSize(int(float64(u) * 1.5)),
-				Layout: guigui.LinearLayout{
-					Direction: guigui.LayoutDirectionHorizontal,
-					Items: []guigui.LinearLayoutItem{
-						{
-							Size: guigui.FlexibleSize(1),
-						},
-						{
-							Widget: &r.toastBackground,
-							Size:   guigui.FlexibleSize(2),
-							Layout: guigui.LinearLayout{
-								Direction: guigui.LayoutDirectionVertical,
-								Items: []guigui.LinearLayoutItem{
-									{
-										Widget: &r.toastForm,
-										Size:   guigui.FixedSize(int(float64(u) * 1.5)),
-										Layout: guigui.LinearLayout{
-											Direction: guigui.LayoutDirectionVertical,
-											Items: []guigui.LinearLayoutItem{
-												{
-													Widget: &r.toastPanel,
-													Size:   guigui.FixedSize(u),
-												},
-											},
-											Padding: guigui.Padding{
-												Start: u / 4,
-												Top:   u / 4,
-												End:   u / 4,
-											},
-										},
-									},
-								},
-							},
-						},
-						{
-							Size: guigui.FlexibleSize(1),
-						},
-					},
-				},
-			},
-		},
-	}.LayoutWidgets(context, widgetBounds.Bounds(), layouter))
 }

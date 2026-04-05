@@ -1,0 +1,459 @@
+package app
+
+import (
+	gocontext "context"
+	"fmt"
+	"image"
+	"p86l"
+	"p86l/configs"
+	"p86l/internal/types"
+	"slices"
+	"sync/atomic"
+
+	"github.com/guigui-gui/guigui"
+	"github.com/guigui-gui/guigui/basicwidget"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/skratchdot/open-golang/open"
+)
+
+type TopBar struct {
+	guigui.DefaultWidget
+
+	background     basicwidget.Background
+	installButton  basicwidget.Button
+	folderSelect   basicwidget.Select[types.Folder]
+	settingsButton basicwidget.Button
+	helpsSelect    basicwidget.Select[types.Helps]
+
+	dlPopup        basicwidget.Popup
+	dlPopupContent guigui.WidgetWithSize[*dlPopupContent]
+
+	downloadDone chan error
+	progress     atomic.Pointer[p86l.InstallProgress]
+
+	layoutItems []guigui.LinearLayoutItem
+}
+
+func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
+	adder.AddWidget(&t.dlPopup)
+	adder.AddWidget(&t.background)
+	adder.AddWidget(&t.installButton)
+	adder.AddWidget(&t.folderSelect)
+	adder.AddWidget(&t.settingsButton)
+	adder.AddWidget(&t.helpsSelect)
+
+	v, ok := context.Env(t, modelKeyModel)
+	if !ok {
+		return nil
+	}
+	model := v.(*p86l.Model)
+	_t := model.T()
+
+	t.installButton.SetText(_t.Get("topbar.install"))
+	t.installButton.OnUp(func(context *guigui.Context) {
+		v, ok := context.Env(t, webviewChKey)
+		if !ok {
+			return
+		}
+		wvCh := v.(chan<- p86l.WebviewRequest)
+
+		context.SetEnabled(&t.installButton, false)
+		t.downloadDone = make(chan error, 1)
+		t.dlPopupContent.Widget().Reset()
+		t.dlPopup.SetOpen(true)
+
+		go func() {
+			var url string
+			if model.Fake() {
+				url = p86l.FakeDownloadURL
+			} else {
+				t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.wait_select"))
+				reply := make(chan string, 1)
+				wvCh <- p86l.WebviewRequest{Source: configs.Github + "/releases", Reply: reply}
+				url = <-reply
+			}
+
+			if url == "" {
+				t.downloadDone <- nil
+				return
+			}
+
+			t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.connect"))
+
+			err := model.InstallVersion(
+				gocontext.Background(),
+				url,
+				func(p p86l.InstallProgress) {
+					t.progress.Store(&p)
+				},
+			)
+			t.downloadDone <- err
+		}()
+	})
+
+	t.folderSelect.SetItems([]basicwidget.SelectItem[types.Folder]{
+		{
+			Text:  _t.Get("topbar.folders"),
+			Value: types.FolderFolders,
+		},
+		{
+			Text:  _t.Get("topbar.f.root"),
+			Value: types.FolderRoot,
+		},
+		{
+			Text:  _t.Get("topbar.f.versions"),
+			Value: types.FolderVersions,
+		},
+		{
+			Text:  _t.Get("topbar.f.logs"),
+			Value: types.FolderLogs,
+		},
+	})
+	t.folderSelect.OnItemSelected(func(context *guigui.Context, index int) {
+		item, ok := t.folderSelect.ItemByIndex(index)
+		if !ok {
+			t.folderSelect.SelectItemByValue(types.FolderFolders)
+			return
+		}
+
+		model.OpenFolder(item.Value)
+		t.folderSelect.SelectItemByValue(types.FolderFolders)
+	})
+	if !t.folderSelect.IsPopupOpen() {
+		t.folderSelect.SelectItemByValue(types.FolderFolders)
+	}
+
+	t.settingsButton.SetText(_t.Get("topbar.settings"))
+	t.settingsButton.OnUp(func(context *guigui.Context) {
+		model.SetMode(types.ModeSettings)
+	})
+
+	t.helpsSelect.SetItems([]basicwidget.SelectItem[types.Helps]{
+		{
+			Text:  _t.Get("topbar.help"),
+			Value: types.HelpsHelp,
+		},
+		{
+			Text:  _t.Get("topbar.h.cache"),
+			Value: types.HelpsCache,
+		},
+		{
+			Text:  _t.Get("topbar.h.report"),
+			Value: types.HelpsReport,
+		},
+		{
+			Text:  _t.Get("topbar.h.view"),
+			Value: types.HelpsLogs,
+		},
+		{
+			Text:  _t.Get("topbar.h.website"),
+			Value: types.HelpsWebsite,
+		},
+		{
+			Text:  "Github",
+			Value: types.HelpsGithub,
+		},
+		{
+			Text:  "Discord",
+			Value: types.HelpsDiscord,
+		},
+		{
+			Text:  "Patreon",
+			Value: types.HelpsPatreon,
+		},
+		{
+			Text:  _t.Get("topbar.h.about"),
+			Value: types.HelpsAbout,
+		},
+	})
+	t.helpsSelect.OnItemSelected(func(context *guigui.Context, index int) {
+		item, ok := t.helpsSelect.ItemByIndex(index)
+		if !ok {
+			model.SetMode(types.ModeAbout)
+			t.helpsSelect.SelectItemByValue(types.HelpsHelp)
+			return
+		}
+
+		switch item.Value {
+		case types.HelpsReport:
+			_ = open.Start(configs.Issues)
+		case types.HelpsWebsite:
+			_ = open.Start(configs.Website)
+		case types.HelpsGithub:
+			_ = open.Start(configs.Github)
+		case types.HelpsDiscord:
+			_ = open.Start(configs.Discord)
+		case types.HelpsPatreon:
+			_ = open.Start(configs.Patreon)
+		case types.HelpsAbout:
+			model.SetMode(types.ModeAbout)
+		}
+
+		t.helpsSelect.SelectItemByValue(types.HelpsHelp)
+	})
+	if !t.helpsSelect.IsPopupOpen() {
+		t.helpsSelect.SelectItemByValue(types.HelpsHelp)
+	}
+
+	t.dlPopupContent.Widget().SetPopup(&t.dlPopup)
+	t.dlPopup.SetContent(&t.dlPopupContent)
+	t.dlPopup.SetBackgroundDark(true)
+	t.dlPopup.SetAnimated(true)
+
+	return nil
+}
+
+func (t *TopBar) contentSize(context *guigui.Context) image.Point {
+	u := basicwidget.UnitSize(context)
+	return image.Pt(int(12*u), int(6*u))
+}
+
+func (t *TopBar) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
+	layouter.LayoutWidget(&t.background, widgetBounds.Bounds())
+
+	popupBounds := context.AppBounds()
+	t.dlPopup.SetBackgroundBounds(popupBounds)
+	contentSize := t.contentSize(context)
+	center := image.Point{
+		X: popupBounds.Min.X + (popupBounds.Dx()-contentSize.X)/2,
+		Y: popupBounds.Min.Y + (popupBounds.Dy()-contentSize.Y)/2,
+	}
+	layouter.LayoutWidget(&t.dlPopup, image.Rectangle{
+		Min: center,
+		Max: center.Add(contentSize),
+	})
+
+	u := basicwidget.UnitSize(context)
+	t.layoutItems = slices.Delete(t.layoutItems, 0, len(t.layoutItems))
+	t.layoutItems = append(t.layoutItems,
+		guigui.LinearLayoutItem{
+			Widget: &t.installButton,
+		},
+		guigui.LinearLayoutItem{
+			Widget: &t.folderSelect,
+		},
+		guigui.LinearLayoutItem{
+			Widget: &t.settingsButton,
+		},
+		guigui.LinearLayoutItem{
+			Widget: &t.helpsSelect,
+		},
+	)
+	(guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionHorizontal,
+		Items:     t.layoutItems,
+		Gap:       u / 2,
+		Padding: guigui.Padding{
+			Start:  u / 2,
+			Top:    u / 4,
+			End:    u / 2,
+			Bottom: u / 4,
+		},
+	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
+}
+
+func (t *TopBar) HandleButtonInput(context *guigui.Context, widgetBounds *guigui.WidgetBounds) guigui.HandleInputResult {
+	v, ok := context.Env(t, modelKeyModel)
+	if !ok {
+		return guigui.HandleInputResult{}
+	}
+	model := v.(*p86l.Model)
+
+	if inpututil.IsKeyJustReleased(ebiten.KeyEscape) {
+		model.SetMode(types.ModeHome)
+		return guigui.HandleInputByWidget(t)
+	}
+
+	return guigui.HandleInputResult{}
+}
+
+func (t *TopBar) Tick(context *guigui.Context, windowBounds *guigui.WidgetBounds) error {
+	v, ok := context.Env(t, modelKeyModel)
+	if !ok {
+		return nil
+	}
+	model := v.(*p86l.Model)
+	_t := model.T()
+
+	if t.downloadDone != nil {
+		select {
+		case err := <-t.downloadDone:
+			t.downloadDone = nil
+			t.progress.Store(nil)
+			context.SetEnabled(&t.installButton, true)
+			if err != nil {
+				t.dlPopupContent.Widget().SetPhase(context, types.PhaseError, err.Error())
+			} else {
+				t.dlPopupContent.Widget().SetPhase(context, types.PhaseDone, _t.Get("topbar.dl.install_complete"))
+			}
+		default:
+			if p := t.progress.Load(); p != nil {
+				t.dlPopupContent.Widget().SetInstallProgress(context, *p)
+			}
+		}
+	}
+	return nil
+}
+
+type dlPopupContent struct {
+	guigui.DefaultWidget
+
+	popup *basicwidget.Popup
+
+	titleText   basicwidget.Text
+	statusText  basicwidget.Text
+	progress    basicwidget.Slider
+	closeButton basicwidget.Button
+
+	showClose   atomic.Bool
+	layoutItems []guigui.LinearLayoutItem
+}
+
+func (d *dlPopupContent) Reset() {
+	d.showClose.Store(false)
+	d.titleText.SetValue("")
+	d.statusText.SetValue("")
+	d.progress.SetValue(0)
+}
+
+func (d *dlPopupContent) SetPopup(popup *basicwidget.Popup) {
+	d.popup = popup
+}
+
+func (d *dlPopupContent) SetInstallProgress(context *guigui.Context, p p86l.InstallProgress) {
+	v, ok := context.Env(d, modelKeyModel)
+	if !ok {
+		return
+	}
+	model := v.(*p86l.Model)
+	t := model.T()
+
+	switch p.Phase {
+	case types.PhaseDownload:
+		d.titleText.SetValue(t.Get("topbar.dl.downloading"))
+		if p.DownloadTotal > 0 {
+			pct := float64(p.DownloadDone) / float64(p.DownloadTotal)
+			d.progress.SetValue(int(pct * 100))
+			d.statusText.SetValue(fmt.Sprintf("%.0f%%  (%s / %s)",
+				pct*100,
+				formatBytes(p.DownloadDone),
+				formatBytes(p.DownloadTotal),
+			))
+		} else {
+			d.statusText.SetValue(t.Get("topbar.dl.connecting"))
+		}
+	case types.PhaseExtract:
+		d.titleText.SetValue(t.Get("topbar.dl.extracting"))
+		if p.ExtractTotal > 0 {
+			pct := float64(p.ExtractDone) / float64(p.ExtractTotal)
+			d.progress.SetValue(int(pct * 100))
+			d.statusText.SetValue(fmt.Sprintf(t.Get("topbar.dl.extracting_files"), p.ExtractDone, p.ExtractTotal))
+		} else {
+			d.progress.SetValue(0)
+			d.statusText.SetValue(fmt.Sprintf(t.Get("topbar.dl.extracted_count"), p.ExtractDone))
+		}
+	}
+}
+
+func (d *dlPopupContent) SetPhase(context *guigui.Context, phase types.Phase, msg string) {
+	v, ok := context.Env(d, modelKeyModel)
+	if !ok {
+		return
+	}
+	model := v.(*p86l.Model)
+	t := model.T()
+
+	switch phase {
+	case types.PhaseDone:
+		d.showClose.Store(true)
+		d.titleText.SetValue(t.Get("topbar.dl.done"))
+		d.progress.SetValue(100)
+		d.statusText.SetValue(msg)
+	case types.PhaseError:
+		d.showClose.Store(true)
+		d.titleText.SetValue(t.Get("topbar.dl.failed"))
+		d.progress.SetValue(0)
+		d.statusText.SetValue(msg)
+	}
+}
+
+func (d *dlPopupContent) SetStatus(msg string) {
+	d.statusText.SetValue(msg)
+}
+
+func (d *dlPopupContent) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
+	adder.AddWidget(&d.titleText)
+	adder.AddWidget(&d.progress)
+	adder.AddWidget(&d.statusText)
+	adder.AddWidget(&d.closeButton)
+
+	v, ok := context.Env(d, modelKeyModel)
+	if !ok {
+		return nil
+	}
+	model := v.(*p86l.Model)
+	t := model.T()
+
+	d.titleText.SetScale(1.2)
+	d.statusText.SetAutoWrap(true)
+	d.progress.SetMinimumValue(0)
+	d.progress.SetMaximumValue(100)
+	context.SetEnabled(&d.progress, false)
+
+	showClose := d.showClose.Load()
+	d.closeButton.SetText(t.Get("common.close"))
+	context.SetEnabled(&d.closeButton, showClose)
+
+	d.closeButton.OnUp(func(context *guigui.Context) {
+		if d.popup != nil {
+			d.popup.SetOpen(false)
+			d.showClose.Store(false)
+		}
+	})
+
+	return nil
+}
+
+func (d *dlPopupContent) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
+	u := basicwidget.UnitSize(context)
+	d.layoutItems = slices.Delete(d.layoutItems, 0, len(d.layoutItems))
+	d.layoutItems = append(d.layoutItems,
+		guigui.LinearLayoutItem{
+			Widget: &d.titleText,
+		},
+		guigui.LinearLayoutItem{
+			Widget: &d.progress,
+		},
+		guigui.LinearLayoutItem{
+			Widget: &d.statusText,
+		},
+		guigui.LinearLayoutItem{
+			Widget: &d.closeButton,
+		},
+	)
+	(guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items:     d.layoutItems,
+		Gap:       u / 2,
+		Padding: guigui.Padding{
+			Start:  u / 2,
+			Top:    u / 4,
+			End:    u / 2,
+			Bottom: u / 4,
+		},
+	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
+}
+
+func formatBytes(b int64) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "KMGTPE"[exp])
+}
