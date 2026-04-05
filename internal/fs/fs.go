@@ -58,8 +58,8 @@ func New() (afero.Fs, error) {
 // NewMem returns an in-memory filesystem with the same structure for tests.
 func NewMem() afero.Fs {
 	fs := afero.NewMemMapFs()
-	fs.MkdirAll("logs", 0755)
-	fs.MkdirAll("versions", 0755)
+	_ = fs.MkdirAll("logs", 0755)
+	_ = fs.MkdirAll("versions", 0755)
 	return fs
 }
 

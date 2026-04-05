@@ -4,81 +4,126 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"regexp"
+	"time"
 
 	grab "github.com/cavaliergopher/grab/v3"
 	"github.com/spf13/afero"
 )
 
-// DownloadOptions configures a file download.
+var versionFromURL = regexp.MustCompile(`/download/(v[^/]+)/`)
+
+func ParseVersion(url string) (string, error) {
+	m := versionFromURL.FindStringSubmatch(url)
+	if len(m) < 2 {
+		return "", fmt.Errorf("could not parse version from URL: %s", url)
+	}
+	return m[1], nil
+}
+
 type DownloadOptions struct {
-	// URL to download from.
-	URL string
-	// Dest is the relative path inside versions/, e.g. "1.2.3/game.zip"
-	Dest string
-	// Progress is called periodically with bytes done and total. Can be nil.
+	URL      string
 	Progress func(done, total int64)
 }
 
-// Downloader abstracts downloading so tests can swap in a fake.
 type Downloader interface {
-	Download(ctx context.Context, fs afero.Fs, opts DownloadOptions) error
+	Download(ctx context.Context, fs afero.Fs, opts DownloadOptions) (zipPath string, err error)
 }
 
-// GrabDownloader is the real implementation using cavaliergopher/grab.
 type GrabDownloader struct{}
 
-func (GrabDownloader) Download(ctx context.Context, fs afero.Fs, opts DownloadOptions) error {
-	destRel := filepath.Join("versions", opts.Dest)
-
-	// Ensure destination directory exists inside the jail.
-	if err := fs.MkdirAll(filepath.Dir(destRel), 0755); err != nil {
-		return fmt.Errorf("download: mkdir: %w", err)
+func (GrabDownloader) Download(ctx context.Context, afs afero.Fs, opts DownloadOptions) (string, error) {
+	version, err := ParseVersion(opts.URL)
+	if err != nil {
+		return "", err
 	}
 
-	// grab needs a real OS path, not a relative path.
-	destAbs, err := RealPath(fs, destRel)
+	destDir := filepath.Join("versions", version)
+	zipName := filepath.Base(opts.URL)
+	destRel := filepath.Join(destDir, zipName)
+
+	if err := afs.MkdirAll(destDir, 0755); err != nil {
+		return "", fmt.Errorf("download: mkdir: %w", err)
+	}
+
+	destAbs, err := RealPath(afs, destRel)
 	if err != nil {
-		return fmt.Errorf("download: resolve path: %w", err)
+		return "", fmt.Errorf("download: resolve path: %w", err)
 	}
 
 	req, err := grab.NewRequest(destAbs, opts.URL)
 	if err != nil {
-		return fmt.Errorf("download: build request: %w", err)
+		return "", fmt.Errorf("download: build request: %w", err)
 	}
 	req = req.WithContext(ctx)
 
-	// grab auto-resumes if a partial file exists and server supports Range.
 	client := grab.NewClient()
 	resp := client.Do(req)
 
-	// Stream progress updates if caller wants them.
+	// Tick progress at 200ms intervals regardless of how fast chunks arrive.
 	if opts.Progress != nil {
-		for !resp.IsComplete() {
-			opts.Progress(resp.BytesComplete(), resp.Size())
-			// small sleep is fine here, grab updates these atomically.
+		ticker := time.NewTicker(200 * time.Millisecond)
+		defer ticker.Stop()
+	loop:
+		for {
 			select {
-			case <-ctx.Done():
-				return ctx.Err()
+			case <-ticker.C:
+				opts.Progress(resp.BytesComplete(), resp.Size())
 			case <-resp.Done:
+				// Final update with exact values.
+				opts.Progress(resp.BytesComplete(), resp.Size())
+				break loop
+			case <-ctx.Done():
+				return "", ctx.Err()
 			}
 		}
 	} else {
-		<-resp.Done
+		select {
+		case <-resp.Done:
+		case <-ctx.Done():
+			return "", ctx.Err()
+		}
 	}
 
 	if err := resp.Err(); err != nil {
-		return fmt.Errorf("download: %w", err)
+		return "", fmt.Errorf("download: %w", err)
 	}
-	return nil
+
+	return destRel, nil
 }
 
-// FakeDownloader writes a stub file, use in tests to avoid real HTTP.
 type FakeDownloader struct{}
 
-func (FakeDownloader) Download(_ context.Context, fs afero.Fs, opts DownloadOptions) error {
-	dest := filepath.Join("versions", opts.Dest)
-	if err := fs.MkdirAll(filepath.Dir(dest), 0755); err != nil {
-		return err
+func (FakeDownloader) Download(ctx context.Context, afs afero.Fs, opts DownloadOptions) (string, error) {
+	version, err := ParseVersion(opts.URL)
+	if err != nil {
+		return "", err
 	}
-	return afero.WriteFile(fs, dest, []byte("fake content"), 0644)
+	destDir := filepath.Join("versions", version)
+	zipName := filepath.Base(opts.URL)
+	destRel := filepath.Join(destDir, zipName)
+
+	if err := afs.MkdirAll(destDir, 0755); err != nil {
+		return "", err
+	}
+
+	// Simulate download progress over 3 seconds.
+	if opts.Progress != nil {
+		const total = 100 * 1024 * 1024 // fake 100MB
+		const steps = 30
+		for i := range steps {
+			select {
+			case <-ctx.Done():
+				return "", ctx.Err()
+			case <-time.After(100 * time.Millisecond):
+				done := int64(i+1) * (total / steps)
+				opts.Progress(done, total)
+			}
+		}
+	}
+
+	if err := afero.WriteFile(afs, destRel, []byte("fake zip"), 0644); err != nil {
+		return "", err
+	}
+	return destRel, nil
 }

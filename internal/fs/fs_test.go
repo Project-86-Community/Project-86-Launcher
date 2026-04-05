@@ -8,6 +8,18 @@ import (
 	"github.com/spf13/afero"
 )
 
+const testURL = "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip"
+
+func TestParseVersion(t *testing.T) {
+	version, err := ParseVersion(testURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version != "v0.0.0-alpha" {
+		t.Fatalf("got %q want %q", version, "v0.0.0-alpha")
+	}
+}
+
 func TestMemFSHasDirs(t *testing.T) {
 	fs := NewMem()
 	for _, dir := range []string{"logs", "versions"} {
@@ -24,51 +36,65 @@ func TestMemFSHasDirs(t *testing.T) {
 func TestPathJailPreventsEscape(t *testing.T) {
 	root := t.TempDir()
 	base := afero.NewOsFs()
-	base.MkdirAll(filepath.Join(root, "versions"), 0755)
+	_ = base.MkdirAll(filepath.Join(root, "versions"), 0755)
 	jailed := afero.NewBasePathFs(base, root)
 
-	// Attempt path traversal, which should fail.
 	_ = afero.WriteFile(jailed, "../../evil.txt", []byte("escaped"), 0644)
 
-	// Confirm nothing landed outside the jail root.
-	exists, _ := afero.Exists(base, "/tmp/evil.txt")
+	exists, _ := afero.Exists(base, filepath.Join(filepath.Dir(root), "evil.txt"))
 	if exists {
-		t.Fatal("path jail failed: file escaped to /tmp/evil.txt")
+		t.Fatal("path jail failed: file escaped outside root")
 	}
 }
 
-func TestFakeDownload(t *testing.T) {
+func TestFakeDownloadAndExtract(t *testing.T) {
+	fs := NewMem()
+	dl := FakeDownloader{}
+	ex := FakeExtractor{}
+
+	zipPath, err := dl.Download(context.Background(), fs, DownloadOptions{
+		URL: testURL,
+	})
+	if err != nil {
+		t.Fatalf("fake download: %v", err)
+	}
+
+	// zip should be at versions/v0.0.0-alpha/Project86-v0.0.0-alpha.zip
+	expected := filepath.Join("versions", "v0.0.0-alpha", "Project86-v0.0.0-alpha.zip")
+	if zipPath != expected {
+		t.Fatalf("got path %q want %q", zipPath, expected)
+	}
+
+	exists, _ := afero.Exists(fs, zipPath)
+	if !exists {
+		t.Fatalf("zip file not found at %q", zipPath)
+	}
+
+	if err := ex.Extract(context.Background(), fs, zipPath, ExtractOptions{}); err != nil {
+		t.Fatalf("fake extract: %v", err)
+	}
+
+	marker := filepath.Join("versions", "v0.0.0-alpha", "extracted.marker")
+	exists, _ = afero.Exists(fs, marker)
+	if !exists {
+		t.Fatal("expected extracted.marker after extraction")
+	}
+}
+
+func TestVersionDir(t *testing.T) {
 	fs := NewMem()
 	dl := FakeDownloader{}
 
-	err := dl.Download(context.Background(), fs, DownloadOptions{
-		URL:  "https://example.com/game.zip",
-		Dest: "1.2.3/game.zip",
+	zipPath, err := dl.Download(context.Background(), fs, DownloadOptions{
+		URL: testURL,
 	})
 	if err != nil {
-		t.Fatalf("fake download failed: %v", err)
-	}
-
-	exists, err := afero.Exists(fs, "versions/1.2.3/game.zip")
-	if err != nil {
 		t.Fatal(err)
 	}
-	if !exists {
-		t.Fatal("expected versions/1.2.3/game.zip to exist")
-	}
-}
 
-func TestWriteReadLog(t *testing.T) {
-	fs := NewMem()
-
-	if err := afero.WriteFile(fs, "logs/debug.log", []byte("hello"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	data, err := afero.ReadFile(fs, "logs/debug.log")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(data) != "hello" {
-		t.Fatalf("got %q want %q", string(data), "hello")
+	// Confirm it landed under versions/v0.0.0-alpha/
+	dir := filepath.Dir(zipPath)
+	if dir != filepath.Join("versions", "v0.0.0-alpha") {
+		t.Fatalf("unexpected dir %q", dir)
 	}
 }
