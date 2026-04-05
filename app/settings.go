@@ -173,9 +173,9 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 		}
 		player := v.(*audio.Player)
 		if value {
-			player.Play()
-		} else {
 			player.Pause()
+		} else {
+			player.Play()
 		}
 	})
 

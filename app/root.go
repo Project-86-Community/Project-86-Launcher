@@ -58,6 +58,8 @@ func (r *Root) Env(context *guigui.Context, key guigui.EnvKey, source *guigui.En
 		return &r.model, true
 	case webviewChKey:
 		return r.wvCh, true
+	case backgroundMusicKey:
+		return r.player, true
 	default:
 		return nil, false
 	}
