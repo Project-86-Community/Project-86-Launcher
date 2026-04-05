@@ -23,7 +23,7 @@ package configs
 
 import "image"
 
-var WindowMinSize = image.Pt(300, 300)
+var WindowMinSize = image.Pt(320, 300)
 
 const (
 	LockFile = "app.project86community.project86launcher"
