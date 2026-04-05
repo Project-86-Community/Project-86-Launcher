@@ -9,6 +9,7 @@ settings = "Paramètres"
 help = "Aide"
 
 [topbar.dl]
+selecting = "Sélection..."
 downloading = "Téléchargement..."
 connecting = "Connexion..."
 extracting = "Extraction..."
@@ -85,3 +86,7 @@ license = """ATTENTION : Traduction non officielle
 
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <https://www.gnu.org/licenses/>."""
+
+[logs]
+title = "Journal récent"
+error = "Impossible de lire le fichier journal."

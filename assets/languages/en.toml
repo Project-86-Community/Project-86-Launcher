@@ -9,6 +9,7 @@ settings = "Settings"
 help = "Help"
 
 [topbar.dl]
+selecting = "Selecting..."
 downloading = "Downloading..."
 connecting = "Connecting..."
 extracting = "Extracting..."
@@ -62,3 +63,7 @@ license = """Background music: "Project: 86 OST: Legion" by XYETRY.
 
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <https://www.gnu.org/licenses/>."""
+
+[logs]
+title = "Latest Log"
+error = "Could not read log file."
