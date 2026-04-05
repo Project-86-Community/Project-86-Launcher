@@ -29,6 +29,7 @@ type Root struct {
 	topbar          TopBar
 	settings        Settings
 	about           About
+	logs            Logs
 	bottombar       BottomBar
 
 	model    p86l.Model
@@ -68,6 +69,8 @@ func (r *Root) contentWidget() guigui.Widget {
 		return &r.settings
 	case types.ModeAbout:
 		return &r.about
+	case types.ModeLogs:
+		return &r.logs
 	}
 	return nil
 }

@@ -68,7 +68,7 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 			if model.Fake() {
 				url = p86l.FakeDownloadURL
 			} else {
-				t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.wait_select"))
+				t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.dl.selecting"))
 				reply := make(chan string, 1)
 				wvCh <- p86l.WebviewRequest{Source: configs.Github + "/releases", Reply: reply}
 				url = <-reply
@@ -79,7 +79,7 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 				return
 			}
 
-			t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.connect"))
+			t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.dl.connecting"))
 
 			err := model.InstallVersion(
 				gocontext.Background(),
@@ -178,6 +178,8 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 		switch item.Value {
 		case types.HelpsReport:
 			_ = open.Start(configs.Issues)
+		case types.HelpsLogs:
+			model.SetMode(types.ModeLogs)
 		case types.HelpsWebsite:
 			_ = open.Start(configs.Website)
 		case types.HelpsGithub:
