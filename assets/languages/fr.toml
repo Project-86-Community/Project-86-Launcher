@@ -1,54 +1,44 @@
 [common]
 open = "Ouvrir"
-reset = "Réinitialiser"
+close = "Fermer"
 
-[errors]
-translate_fail = "Échec de la traduction"
+[topbar]
+install = "Installer la version"
+folders = "Dossiers"
+settings = "Paramètres"
+help = "Aide"
 
-[model_play]
-missing_releases = "Versions manquantes dans le fichier cache"
-unknown_version = "Version inconnue"
-fail_resume = "Échec de la suppression des fichiers de compilation de reprise"
-missing_asset = "Fichier manquant pour le téléchargement"
-fail_asset = "Échec du téléchargement :"
-install_unzip = "Démarrage de l'installation..."
-fail_update = "Échec de la suppression des anciens fichiers"
-fail_unzip = "Échec de la décompression du fichier"
-fail_artifact = "Échec de la suppression des artefacts téléchargés"
-install = "Installation terminée."
-start = "Téléchargement en cours..."
-download = "Téléchargement du jeu"
-finished = "Téléchargement terminé."
-components = "Installer les composants"
+[topbar.dl]
+downloading = "Téléchargement..."
+connecting = "Connexion..."
+extracting = "Extraction..."
+extracting_files = "Extraction des fichiers : %d / %d"
+extracted_count = "%d fichiers extraits..."
+done = "Terminé !"
+install_complete = "Installation terminée."
+failed = "Échec"
 
-[home]
-title = "Maison"
-welcome = "Bienvenue à nouveau,"
-version = "Version installée"
-time = "temps joué"
-last = "Dernière partie jouée"
+[topbar.f]
+root = "Racine du lanceur"
+versions = "Versions"
+logs = "Journaux"
 
-[play]
-install = "Installer"
-update = "Mise à jour"
-play = "Jouer"
-version = "Version"
-total = "Nombre total de téléchargements"
-prerelease = "Activer la préversion"
+[topbar.h]
+cache = "Vider le cache"
+report = "Signaler un bug ou suggérer une fonctionnalité"
+view = "Voir les journaux"
+website = "Site web"
+about = "À propos"
 
 [settings]
-title = "Paramètres"
+color_mode = "Mode couleur"
+color_mode_auto = "Auto"
+color_mode_light = "Clair"
+color_mode_dark = "Sombre"
 language = "Langue"
 translate = "Traduire le journal des modifications - Google Traduction"
-darkmode = "utiliser le mode sombre"
 scale = "échelle"
-remember = "N'oubliez pas la taille et la position de la fenêtre"
-backgroundm = "Désactiver la musique de fond"
-openp86 = "Ouvrir le dossier 86-Projet"
-openl = "Ouvrir le dossier du lanceur"
-openlog = "Ouvrir le dossier des journaux de débogage"
-resetd = "Réinitialiser les données"
-resetc = "Réinitialiser le cache"
+music = "Désactiver la musique de fond"
 
 [about]
 title = "À propos"

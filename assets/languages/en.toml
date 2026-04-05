@@ -1,54 +1,44 @@
 [common]
 open = "Open"
-reset = "Reset"
+close = "Close"
 
-[errors]
-translate_fail = "Translation failed"
+[topbar]
+install = "Install version"
+folders = "Folders"
+settings = "Settings"
+help = "Help"
 
-[model_play]
-missing_releases = "Missing releases in cache file"
-unknown_version = "Unknown version"
-fail_resume = "Failed to remove resume files"
-missing_asset = "Missing asset for download"
-fail_asset = "Download failed:"
-install_unzip = "Starting installation..."
-fail_update = "Failed to remove old files"
-fail_unzip = "Failed to unzip asset"
-fail_artifact = "Failed to remove downloaded artifacts"
-install_finished = "Finished Installation."
-start = "Starting download..."
-download = "Downloading game"
-finished = "Finished downloading."
-components = "Install components"
+[topbar.dl]
+downloading = "Downloading..."
+connecting = "Connecting..."
+extracting = "Extracting..."
+extracting_files = "Extracting files: %d / %d"
+extracted_count = "Extracted %d files..."
+done = "Done!"
+install_complete = "Installation complete."
+failed = "Failed"
 
-[home]
-title = "Home"
-welcome = "Welcome back,"
-version = "Installed version"
-time = "Play time"
-last = "Last played"
+[topbar.f]
+root = "Launcher Root"
+versions = "Versions"
+logs = "Logs"
 
-[play]
-install = "Install"
-update = "Update"
-play = "Play"
-version = "Version"
-total = "Total downloads"
-prerelease = "Enable Pre-release"
+[topbar.h]
+cache = "Clear cache"
+report = "Report a Bug or Suggest a Feature"
+view = "View logs"
+website = "Website"
+about = "About"
 
 [settings]
-title = "Settings"
+color_mode = "Color mode"
+color_mode_auto = "Auto"
+color_mode_light = "Light"
+color_mode_dark = "Dark"
 language = "Language"
 translate = "Translate changelog - Google Translate"
-darkmode = "Use darkmode"
 scale = "Scale"
-remember = "Remember window size & position"
-backgroundm = "Disable background music"
-openp86 = "Open 86-Project folder"
-openl = "Open launcher folder"
-openlog = "Open logs folder"
-resetd = "Reset data"
-resetc = "Reset cache"
+music = "Disable background music"
 
 [about]
 title = "About"
