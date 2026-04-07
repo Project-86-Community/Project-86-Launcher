@@ -36,7 +36,7 @@ func (l *Logs) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 
 	context.SetOpacity(&l.background, 0.9)
 
-	l.backButton.SetText("<")
+	l.backButton.SetText("◀")
 	l.backButton.OnUp(func(context *guigui.Context) {
 		model.SetMode(types.ModeHome)
 	})

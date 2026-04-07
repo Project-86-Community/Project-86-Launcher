@@ -47,7 +47,7 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 
 	context.SetOpacity(&s.background, 0.9)
 
-	s.backButton.SetText("<")
+	s.backButton.SetText("◀")
 	s.backButton.OnUp(func(context *guigui.Context) {
 		model.SetMode(types.ModeHome)
 	})
