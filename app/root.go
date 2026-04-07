@@ -27,6 +27,7 @@ type Root struct {
 
 	backgroundImage basicwidget.Image
 	topbar          TopBar
+	home            Home
 	settings        Settings
 	about           About
 	logs            Logs
@@ -67,6 +68,8 @@ func (r *Root) Env(context *guigui.Context, key guigui.EnvKey, source *guigui.En
 
 func (r *Root) contentWidget() guigui.Widget {
 	switch r.model.Mode() {
+	case types.ModeHome:
+		return &r.home
 	case types.ModeSettings:
 		return &r.settings
 	case types.ModeAbout:

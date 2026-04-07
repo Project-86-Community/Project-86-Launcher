@@ -1,7 +1,11 @@
 package app
 
 import (
-	"image"
+	"os/exec"
+	"p86l"
+	"p86l/internal/logger"
+	"slices"
+	"sync"
 
 	"github.com/guigui-gui/guigui"
 	"github.com/guigui-gui/guigui/basicwidget"
@@ -10,69 +14,193 @@ import (
 type Sidebar struct {
 	guigui.DefaultWidget
 
-	panel        basicwidget.Panel
-	panelContent sidebarContent
+	background               basicwidget.Background
+	versionText              basicwidget.Text
+	launchButton             basicwidget.Button
+	killButton               basicwidget.Button
+	folderButton             basicwidget.Button
+	deleteButton             basicwidget.Button
+	shortcutButton           basicwidget.Button
+	positionSegmentedControl basicwidget.SegmentedControl[string]
+
+	version p86l.Version
+
+	proc       *exec.Cmd
+	procMu     sync.Mutex
+	runningTag string // tag of the currently running version
+	runningOS  string // OS of the currently running version
+
+	layoutItems []guigui.LinearLayoutItem
+
+	Position string
+}
+
+func (s *Sidebar) SetVersion(ver p86l.Version) {
+	s.version = ver
+}
+
+func (s *Sidebar) isRunningVersion(tag, os string) bool {
+	s.procMu.Lock()
+	defer s.procMu.Unlock()
+	return s.proc != nil && s.proc.ProcessState == nil && s.runningTag == tag && s.runningOS == os
+}
+
+func (s *Sidebar) isRunning() bool {
+	s.procMu.Lock()
+	defer s.procMu.Unlock()
+	return s.proc != nil && s.proc.ProcessState == nil
 }
 
 func (s *Sidebar) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
-	adder.AddWidget(&s.panel)
-	s.panel.SetStyle(basicwidget.PanelStyleSide)
-	s.panel.SetBorders(basicwidget.PanelBorders{
-		End: true,
+	adder.AddWidget(&s.background)
+	adder.AddWidget(&s.launchButton)
+	adder.AddWidget(&s.killButton)
+	adder.AddWidget(&s.folderButton)
+	adder.AddWidget(&s.deleteButton)
+	adder.AddWidget(&s.shortcutButton)
+	adder.AddWidget(&s.positionSegmentedControl)
+
+	v, ok := context.Env(s, modelKeyModel)
+	if !ok {
+		return nil
+	}
+	model := v.(*p86l.Model)
+	t := model.T()
+
+	context.SetOpacity(&s.background, 0.8)
+
+	hasVersion := s.version.Tag != ""
+	isRunningVersion := s.isRunningVersion(s.version.Tag, s.version.OS)
+
+	s.launchButton.SetText(t.Get("home.launch"))
+	context.SetEnabled(&s.launchButton, hasVersion && !isRunningVersion && s.version.Runnable)
+	s.launchButton.OnUp(func(context *guigui.Context) {
+		logger.Info.Printf("launching version: %s (%s)", s.version.Tag, s.version.OS)
+		cmd := exec.Command(s.version.Executable)
+		s.procMu.Lock()
+		s.proc = cmd
+		s.runningTag = s.version.Tag
+		s.runningOS = s.version.OS
+		s.procMu.Unlock()
+		if err := cmd.Start(); err != nil {
+			logger.Error.Printf("launch failed [%s]: %v", s.version.Tag, err)
+			return
+		}
+		logger.Info.Printf("launched PID %d [%s %s]", cmd.Process.Pid, s.version.Tag, s.version.OS)
+		// Wait in background so ProcessState gets set when it exits.
+		go func() {
+			_ = cmd.Wait()
+			logger.Info.Printf("process exited [%s %s]", s.version.Tag, s.version.OS)
+			s.procMu.Lock()
+			s.runningTag = ""
+			s.runningOS = ""
+			s.procMu.Unlock()
+			guigui.RequestRebuild(s)
+		}()
 	})
-	s.panel.SetContent(&s.panelContent)
+
+	s.killButton.SetText(t.Get("home.kill"))
+	context.SetEnabled(&s.killButton, isRunningVersion)
+	s.killButton.OnUp(func(context *guigui.Context) {
+		s.procMu.Lock()
+		proc := s.proc
+		s.procMu.Unlock()
+		if proc != nil && proc.Process != nil {
+			logger.Info.Printf("killing process PID %d [%s]", proc.Process.Pid, s.version.Tag)
+			if err := proc.Process.Kill(); err != nil {
+				logger.Warn.Printf("kill failed: %v", err)
+			}
+		}
+	})
+
+	s.folderButton.SetText(t.Get("home.folder"))
+	context.SetEnabled(&s.folderButton, hasVersion)
+	s.folderButton.OnUp(func(context *guigui.Context) {
+		model.OpenVersionFolder(s.version.Tag)
+	})
+
+	s.deleteButton.SetText(t.Get("home.delete"))
+	context.SetEnabled(&s.deleteButton, hasVersion && !isRunningVersion)
+	s.deleteButton.OnUp(func(context *guigui.Context) {
+		if err := model.DeleteVersion(s.version.Tag); err != nil {
+			logger.Error.Printf("delete failed [%s]: %v", s.version.Tag, err)
+		} else {
+			logger.Info.Printf("deleted version: %s", s.version.Tag)
+		}
+	})
+
+	s.shortcutButton.SetText(t.Get("home.shortcut"))
+	context.SetEnabled(&s.shortcutButton, hasVersion)
+	s.shortcutButton.OnUp(func(context *guigui.Context) {
+		if err := model.CreateShortcut(s.version); err != nil {
+			logger.Warn.Printf("shortcut failed [%s]: %v", s.version.Tag, err)
+		} else {
+			logger.Info.Printf("shortcut created for: %s", s.version.Tag)
+		}
+	})
+
+	s.positionSegmentedControl.SetItems([]basicwidget.SegmentedControlItem[string]{
+		{
+			Text:  "◀",
+			Value: "left",
+		},
+		{
+			Text:  "▶",
+			Value: "right",
+		},
+	})
+	s.positionSegmentedControl.OnItemSelected(func(context *guigui.Context, index int) {
+		item, ok := s.positionSegmentedControl.ItemByIndex(index)
+		if !ok {
+			return
+		}
+		s.Position = item.Value
+	})
+	if s.Position == "" {
+		s.positionSegmentedControl.SelectItemByValue("right")
+	}
+
 	return nil
 }
 
 func (s *Sidebar) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
-	s.panelContent.setSize(widgetBounds.Bounds().Size())
-	layouter.LayoutWidget(&s.panel, widgetBounds.Bounds())
-}
+	layouter.LayoutWidget(&s.background, widgetBounds.Bounds())
 
-type sidebarContent struct {
-	guigui.DefaultWidget
+	u := basicwidget.UnitSize(context)
+	s.layoutItems = slices.Delete(s.layoutItems, 0, len(s.layoutItems))
+	s.layoutItems = append(s.layoutItems,
+		guigui.LinearLayoutItem{
+			Widget: &s.launchButton,
+		},
+		guigui.LinearLayoutItem{
+			Widget: &s.killButton,
+		},
+		guigui.LinearLayoutItem{
+			Widget: &s.folderButton,
+		},
+		guigui.LinearLayoutItem{
+			Widget: &s.deleteButton,
+		},
+		guigui.LinearLayoutItem{
+			Widget: &s.shortcutButton,
+		},
+		guigui.LinearLayoutItem{
+			Size: guigui.FlexibleSize(1),
+		},
+		guigui.LinearLayoutItem{
+			Widget: &s.positionSegmentedControl,
+		},
+	)
 
-	list basicwidget.List[string]
-
-	size image.Point
-}
-
-func (s *sidebarContent) setSize(size image.Point) {
-	s.size = size
-}
-
-func (s *sidebarContent) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
-	adder.AddWidget(&s.list)
-
-	//v, ok := context.Env(s, modelKeyModel)
-	//if !ok {
-	//		return nil
-	//}
-	//model := v.(*p86l.Model)
-
-	s.list.SetStyle(basicwidget.ListStyleSidebar)
-
-	items := []basicwidget.ListItem[string]{}
-
-	s.list.SetItems(items)
-	//s.list.SelectItemByValue(model.Mode())
-	s.list.SetItemHeight(basicwidget.UnitSize(context))
-	s.list.OnItemSelected(func(context *guigui.Context, index int) {
-		//item, ok := s.list.ItemByIndex(index)
-		//if !ok {
-		//	model.SetMode("")
-		//	return
-		//}
-		//model.SetMode(item.Value)
-	})
-
-	return nil
-}
-
-func (s *sidebarContent) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
-	layouter.LayoutWidget(&s.list, widgetBounds.Bounds())
-}
-
-func (s *sidebarContent) Measure(context *guigui.Context, constraints guigui.Constraints) image.Point {
-	return s.size
+	(guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items:     s.layoutItems,
+		Gap:       u / 2,
+		Padding: guigui.Padding{
+			Start:  u / 2,
+			Top:    u / 2,
+			End:    u / 2,
+			Bottom: u / 2,
+		},
+	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }
