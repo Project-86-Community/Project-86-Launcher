@@ -10,6 +10,7 @@ import (
 	"p86l/internal/logger"
 	"p86l/internal/types"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -26,6 +27,13 @@ type InstallProgress struct {
 	ExtractTotal int
 
 	Phase types.Phase
+}
+
+type Version struct {
+	Tag        string
+	Executable string // absolute path
+	Runnable   bool   // whether this version can run on the current OS
+	OS         string // "windows", "darwin", "linux"
 }
 
 type Model struct {
@@ -197,4 +205,142 @@ func (m *Model) InstallVersion(ctx context.Context, url string, onProgress func(
 		onProgress(p)
 	}
 	return nil
+}
+
+func (m *Model) InstalledVersions() ([]Version, error) {
+	if m.fake {
+		return []Version{
+			{Tag: "v0.0.0-alpha", Executable: "/fake/Project-86", Runnable: true, OS: "linux"},
+			{Tag: "v1.0.0-beta", Executable: "/fake/Project-86", Runnable: true, OS: "linux"},
+		}, nil
+	}
+
+	versionsDir, err := fs.RealPath(m.fs, "versions")
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := os.ReadDir(versionsDir)
+	if err != nil {
+		return nil, err
+	}
+
+	// All possible executable types across platforms.
+	// Platform is determined by the executable file extension/pattern found.
+	type exeCandidate struct {
+		path string
+		os   string // "windows", "darwin", "linux"
+	}
+
+	allCandidates := []exeCandidate{
+		// Windows
+		{"Project-86.exe", "windows"},
+		{"Project86.exe", "windows"},
+		// Linux
+		{"Project-86.x86_64", "linux"},
+		{"Project86.x86_64", "linux"},
+		{"Project-86.x64", "linux"},
+		{"Project86.x64", "linux"},
+		{"Project-86", "linux"},
+		{"Project86", "linux"},
+	}
+
+	var versions []Version
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		tag := entry.Name()
+		tagDir := filepath.Join(versionsDir, tag)
+
+		subEntries, err := os.ReadDir(tagDir)
+		if err != nil {
+			continue
+		}
+
+		for _, sub := range subEntries {
+			if !sub.IsDir() {
+				continue
+			}
+			gameDir := filepath.Join(tagDir, sub.Name())
+
+			// First, check for macOS .app bundles (they're directories, not files)
+			subSubEntries, _ := os.ReadDir(gameDir)
+			for _, sse := range subSubEntries {
+				if sse.IsDir() && strings.HasSuffix(sse.Name(), ".app") {
+					appDir := filepath.Join(gameDir, sse.Name())
+					macOSDir := filepath.Join(appDir, "Contents", "MacOS")
+					macContents, _ := os.ReadDir(macOSDir)
+					for _, mc := range macContents {
+						if !mc.IsDir() {
+							exePath := filepath.Join(macOSDir, mc.Name())
+							runnable := runtime.GOOS == "darwin"
+							versions = append(versions, Version{
+								Tag:        tag,
+								Executable: exePath,
+								Runnable:   runnable,
+								OS:         "darwin",
+							})
+							goto nextVersionTag
+						}
+					}
+				}
+			}
+
+			// Check for regular executables (Windows/Linux)
+			for _, cand := range allCandidates {
+				candidate := filepath.Join(gameDir, cand.path)
+				info, err := os.Stat(candidate)
+				if err == nil && !info.IsDir() {
+					var runnable bool
+					switch cand.os {
+					case "windows":
+						runnable = runtime.GOOS == "windows"
+					case "linux":
+						runnable = runtime.GOOS == "linux"
+					}
+					versions = append(versions, Version{
+						Tag:        tag,
+						Executable: candidate,
+						Runnable:   runnable,
+						OS:         cand.os,
+					})
+					break
+				}
+			}
+		}
+
+	nextVersionTag:
+	}
+
+	return versions, nil
+}
+
+func (m *Model) OpenVersionFolder(tag string) {
+	path, err := fs.RealPath(m.fs, filepath.Join("versions", tag))
+	if err != nil {
+		return
+	}
+	logger.Info.Printf("opening version folder: %s", tag)
+	_ = open.Start(path)
+}
+
+func (m *Model) DeleteVersion(tag string) error {
+	path, err := fs.RealPath(m.fs, filepath.Join("versions", tag))
+	if err != nil {
+		return err
+	}
+	return os.RemoveAll(path)
+}
+
+func (m *Model) CreateShortcut(ver Version) error {
+	// Platform-specific shortcut creation.
+	switch runtime.GOOS {
+	case "windows":
+		return nil
+	case "darwin":
+		return nil
+	default:
+		return nil
+	}
 }
