@@ -31,6 +31,15 @@ view = "Voir les journaux"
 website = "Site web"
 about = "À propos"
 
+[home]
+title     = "Versions installées"
+no_versions = "Aucune version installée. Utilisez le bouton Installer pour en télécharger une."
+launch   = "Lancer"
+kill     = "Terminer"
+folder   = "Ouvrir le dossier"
+delete   = "Supprimer"
+shortcut = "Créer un raccourci"
+
 [settings]
 color_mode = "Mode couleur"
 color_mode_auto = "Auto"

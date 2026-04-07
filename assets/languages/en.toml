@@ -31,6 +31,15 @@ view = "View logs"
 website = "Website"
 about = "About"
 
+[home]
+title     = "Installed versions"
+no_versions = "No versions installed. Use the Install button to download one."
+launch   = "Launch"
+kill     = "Kill"
+folder   = "Open Folder"
+delete   = "Delete"
+shortcut = "Create Shortcut"
+
 [settings]
 color_mode = "Color mode"
 color_mode_auto = "Auto"

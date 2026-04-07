@@ -114,7 +114,7 @@ func (h *homeList) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 
 	context.SetOpacity(&h.background, 0.8)
 
-	h.titleText.SetValue("Installed versions")
+	h.titleText.SetValue(t.Get("home.title"))
 	h.titleText.SetScale(1.2)
 
 	h.items = slices.Delete(h.items, 0, len(h.items))
