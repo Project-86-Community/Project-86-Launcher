@@ -4,6 +4,7 @@ import (
 	"os/exec"
 	"p86l"
 	"p86l/internal/logger"
+	"p86l/internal/types"
 	"slices"
 	"sync"
 
@@ -21,7 +22,7 @@ type Sidebar struct {
 	folderButton             basicwidget.Button
 	deleteButton             basicwidget.Button
 	shortcutButton           basicwidget.Button
-	positionSegmentedControl basicwidget.SegmentedControl[string]
+	positionSegmentedControl basicwidget.SegmentedControl[types.SidebarPosition]
 
 	version p86l.Version
 
@@ -31,8 +32,6 @@ type Sidebar struct {
 	runningOS  string // OS of the currently running version
 
 	layoutItems []guigui.LinearLayoutItem
-
-	Position string
 }
 
 func (s *Sidebar) SetVersion(ver p86l.Version) {
@@ -139,14 +138,14 @@ func (s *Sidebar) Build(context *guigui.Context, adder *guigui.ChildAdder) error
 		}
 	})
 
-	s.positionSegmentedControl.SetItems([]basicwidget.SegmentedControlItem[string]{
+	s.positionSegmentedControl.SetItems([]basicwidget.SegmentedControlItem[types.SidebarPosition]{
 		{
 			Text:  "◀",
-			Value: "left",
+			Value: types.SidebarPositionLeft,
 		},
 		{
 			Text:  "▶",
-			Value: "right",
+			Value: types.SidebarPositionRight,
 		},
 	})
 	s.positionSegmentedControl.OnItemSelected(func(context *guigui.Context, index int) {
@@ -154,11 +153,9 @@ func (s *Sidebar) Build(context *guigui.Context, adder *guigui.ChildAdder) error
 		if !ok {
 			return
 		}
-		s.Position = item.Value
+		model.SetSidebarPosition(item.Value)
 	})
-	if s.Position == "" {
-		s.positionSegmentedControl.SelectItemByValue("right")
-	}
+	s.positionSegmentedControl.SelectItemByValue(model.SidebarPosition())
 
 	return nil
 }
@@ -191,7 +188,6 @@ func (s *Sidebar) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBou
 			Widget: &s.positionSegmentedControl,
 		},
 	)
-
 	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionVertical,
 		Items:     s.layoutItems,

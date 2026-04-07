@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"p86l"
+	"p86l/internal/types"
 	"slices"
 
 	"github.com/guigui-gui/guigui"
@@ -12,19 +13,47 @@ import (
 type Home struct {
 	guigui.DefaultWidget
 
-	list       homeList
-	info       homeInfo
-	sidebar    Sidebar
-	noVersions basicwidget.Text
+	sidebar                  Sidebar
+	positionSegmentedControl basicwidget.SegmentedControl[types.ListPosition]
+	list                     homeList
+	info                     homeInfo
+	noVersions               basicwidget.Text
 
-	layoutItems []guigui.LinearLayoutItem
+	contentItems []guigui.LinearLayoutItem
+	layoutItems  []guigui.LinearLayoutItem
 }
 
 func (h *Home) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
+	adder.AddWidget(&h.sidebar)
+	adder.AddWidget(&h.positionSegmentedControl)
 	adder.AddWidget(&h.list)
 	adder.AddWidget(&h.info)
-	adder.AddWidget(&h.sidebar)
 	adder.AddWidget(&h.noVersions)
+
+	v, ok := context.Env(h, modelKeyModel)
+	if !ok {
+		return nil
+	}
+	model := v.(*p86l.Model)
+
+	h.positionSegmentedControl.SetItems([]basicwidget.SegmentedControlItem[types.ListPosition]{
+		{
+			Text:  "▲",
+			Value: types.ListPositionTop,
+		},
+		{
+			Text:  "▼",
+			Value: types.ListPositionBottom,
+		},
+	})
+	h.positionSegmentedControl.OnItemSelected(func(context *guigui.Context, index int) {
+		item, ok := h.positionSegmentedControl.ItemByIndex(index)
+		if !ok {
+			return
+		}
+		model.SetListPosition(item.Value)
+	})
+	h.positionSegmentedControl.SelectItemByValue(model.ListPosition())
 
 	h.list.onVersionSelected = func(ver p86l.Version) {
 		h.sidebar.SetVersion(ver)
@@ -34,26 +63,53 @@ func (h *Home) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 }
 
 func (h *Home) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
+	v, ok := context.Env(h, modelKeyModel)
+	if !ok {
+		return
+	}
+	model := v.(*p86l.Model)
+
 	u := basicwidget.UnitSize(context)
 	sidebarItem := guigui.LinearLayoutItem{
 		Widget: &h.sidebar,
 		Size:   guigui.FixedSize(u * 8),
 	}
+
+	h.contentItems = slices.Delete(h.contentItems, 0, len(h.contentItems))
+	h.contentItems = append(h.contentItems,
+		guigui.LinearLayoutItem{
+			Widget: &h.positionSegmentedControl,
+		},
+	)
+	if model.ListPosition() == types.ListPositionTop {
+		h.contentItems = append(h.contentItems,
+			guigui.LinearLayoutItem{
+				Widget: &h.list,
+				Size:   guigui.FlexibleSize(1),
+			},
+			guigui.LinearLayoutItem{
+				Widget: &h.info,
+				Size:   guigui.FlexibleSize(2),
+			},
+		)
+	} else {
+		h.contentItems = append(h.contentItems,
+			guigui.LinearLayoutItem{
+				Widget: &h.info,
+				Size:   guigui.FlexibleSize(2),
+			},
+			guigui.LinearLayoutItem{
+				Widget: &h.list,
+				Size:   guigui.FlexibleSize(1),
+			},
+		)
+	}
 	contentItem := guigui.LinearLayoutItem{
 		Size: guigui.FlexibleSize(1),
 		Layout: guigui.LinearLayout{
 			Direction: guigui.LayoutDirectionVertical,
-			Items: []guigui.LinearLayoutItem{
-				{
-					Widget: &h.list,
-					Size:   guigui.FlexibleSize(1),
-				},
-				{
-					Widget: &h.info,
-					Size:   guigui.FlexibleSize(2),
-				},
-			},
-			Gap: u / 2,
+			Items:     h.contentItems,
+			Gap:       u / 2,
 			Padding: guigui.Padding{
 				Start:  u / 2,
 				Top:    u / 2,
@@ -64,8 +120,7 @@ func (h *Home) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds
 	}
 
 	h.layoutItems = slices.Delete(h.layoutItems, 0, len(h.layoutItems))
-
-	if h.sidebar.Position == "left" {
+	if model.SidebarPosition() == types.SidebarPositionLeft {
 		h.layoutItems = append(h.layoutItems, sidebarItem, contentItem)
 	} else {
 		h.layoutItems = append(h.layoutItems, contentItem, sidebarItem)
@@ -206,6 +261,8 @@ type homeInfo struct {
 
 	background basicwidget.Background
 	text       basicwidget.Text
+
+	layoutItems []guigui.LinearLayoutItem
 }
 
 func (h *homeInfo) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
@@ -228,21 +285,23 @@ func (h *homeInfo) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 }
 
 func (h *homeInfo) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
-	(guigui.LinearLayout{
-		Direction: guigui.LayoutDirectionVertical,
-		Items: []guigui.LinearLayoutItem{
-			guigui.LinearLayoutItem{
-				Widget: &h.background,
-				Size:   guigui.FlexibleSize(1),
-				Layout: guigui.LinearLayout{
-					Direction: guigui.LayoutDirectionVertical,
-					Items: []guigui.LinearLayoutItem{
-						{
-							Widget: &h.text,
-						},
+	h.layoutItems = slices.Delete(h.layoutItems, 0, len(h.layoutItems))
+	h.layoutItems = append(h.layoutItems,
+		guigui.LinearLayoutItem{
+			Widget: &h.background,
+			Size:   guigui.FlexibleSize(1),
+			Layout: guigui.LinearLayout{
+				Direction: guigui.LayoutDirectionVertical,
+				Items: []guigui.LinearLayoutItem{
+					{
+						Widget: &h.text,
 					},
 				},
 			},
 		},
+	)
+	(guigui.LinearLayout{
+		Direction: guigui.LayoutDirectionVertical,
+		Items:     h.layoutItems,
 	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }

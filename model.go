@@ -39,8 +39,10 @@ type Version struct {
 type Model struct {
 	fake bool
 
-	mode types.Mode
-	t    assets.T
+	mode            types.Mode
+	sidebarPosition types.SidebarPosition
+	listPosition    types.ListPosition
+	t               assets.T
 
 	fs afero.Fs
 	dl fs.Downloader
@@ -49,9 +51,11 @@ type Model struct {
 
 func NewModel(afs afero.Fs) Model {
 	return Model{
-		fs: afs,
-		dl: fs.GrabDownloader{},
-		ex: fs.FastExtractor{},
+		sidebarPosition: types.SidebarPositionRight,
+		listPosition:    types.ListPositionTop,
+		fs:              afs,
+		dl:              fs.GrabDownloader{},
+		ex:              fs.FastExtractor{},
 	}
 }
 
@@ -79,6 +83,22 @@ func (m *Model) Mode() types.Mode {
 
 func (m *Model) SetMode(mode types.Mode) {
 	m.mode = mode
+}
+
+func (m *Model) SetSidebarPosition(pos types.SidebarPosition) {
+	m.sidebarPosition = pos
+}
+
+func (m *Model) SidebarPosition() types.SidebarPosition {
+	return m.sidebarPosition
+}
+
+func (m *Model) SetListPosition(pos types.ListPosition) {
+	m.listPosition = pos
+}
+
+func (m *Model) ListPosition() types.ListPosition {
+	return m.listPosition
 }
 
 func (m *Model) T() assets.T {
