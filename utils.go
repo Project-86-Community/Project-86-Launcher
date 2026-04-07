@@ -10,6 +10,7 @@ import (
 
 // WebviewRequest is sent to the dedicated webview goroutine.
 type WebviewRequest struct {
+	Title  string
 	Source string
 	Reply  chan string
 }
@@ -23,13 +24,13 @@ func RunWebviewThread() chan<- WebviewRequest {
 		// Lock this goroutine to its OS thread permanently.
 		runtime.LockOSThread()
 		for req := range ch {
-			req.Reply <- webviewOpen(req.Source)
+			req.Reply <- webviewOpen(req.Title, req.Source)
 		}
 	}()
 	return ch
 }
 
-func webviewOpen(source string) string {
+func webviewOpen(title, source string) string {
 	selectedURL := make(chan string, 1)
 
 	w, err := webview.New(true)
@@ -41,7 +42,7 @@ func webviewOpen(source string) string {
 		w.Destroy()
 	}()
 
-	w.SetTitle("Select a release asset")
+	w.SetTitle(title)
 	w.SetSize(1024, 768, webview.HintNone)
 
 	if err := w.Bind("reportURL", func(url string) {

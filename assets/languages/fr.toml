@@ -9,6 +9,7 @@ settings = "Paramètres"
 help = "Aide"
 
 [topbar.dl]
+webview = "Sélectionner un fichier"
 selecting = "Sélection..."
 downloading = "Téléchargement..."
 connecting = "Connexion..."

@@ -71,7 +71,7 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 			} else {
 				t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.dl.selecting"))
 				reply := make(chan string, 1)
-				wvCh <- p86l.WebviewRequest{Source: configs.Github + "/releases", Reply: reply}
+				wvCh <- p86l.WebviewRequest{Title: _t.Get("topbar.dl.webview"), Source: configs.Github + "/releases", Reply: reply}
 				url = <-reply
 			}
 
@@ -291,6 +291,7 @@ type dlPopupContent struct {
 	popup *basicwidget.Popup
 
 	titleText   basicwidget.Text
+	statusPanel basicwidget.Panel
 	statusText  basicwidget.Text
 	progress    basicwidget.Slider
 	closeButton basicwidget.Button
@@ -300,10 +301,10 @@ type dlPopupContent struct {
 }
 
 func (d *dlPopupContent) Reset() {
-	d.showClose.Store(false)
 	d.titleText.SetValue("")
-	d.statusText.SetValue("")
 	d.progress.SetValue(0)
+	d.statusText.SetValue("")
+	d.showClose.Store(false)
 }
 
 func (d *dlPopupContent) SetPopup(popup *basicwidget.Popup) {
@@ -355,15 +356,15 @@ func (d *dlPopupContent) SetPhase(context *guigui.Context, phase types.Phase, ms
 
 	switch phase {
 	case types.PhaseDone:
-		d.showClose.Store(true)
 		d.titleText.SetValue(t.Get("topbar.dl.done"))
 		d.progress.SetValue(100)
 		d.statusText.SetValue(msg)
-	case types.PhaseError:
 		d.showClose.Store(true)
+	case types.PhaseError:
 		d.titleText.SetValue(t.Get("topbar.dl.failed"))
 		d.progress.SetValue(0)
 		d.statusText.SetValue(msg)
+		d.showClose.Store(true)
 	}
 }
 
@@ -374,7 +375,7 @@ func (d *dlPopupContent) SetStatus(msg string) {
 func (d *dlPopupContent) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	adder.AddWidget(&d.titleText)
 	adder.AddWidget(&d.progress)
-	adder.AddWidget(&d.statusText)
+	adder.AddWidget(&d.statusPanel)
 	adder.AddWidget(&d.closeButton)
 
 	v, ok := context.Env(d, modelKeyModel)
@@ -385,10 +386,16 @@ func (d *dlPopupContent) Build(context *guigui.Context, adder *guigui.ChildAdder
 	t := model.T()
 
 	d.titleText.SetScale(1.2)
-	d.statusText.SetAutoWrap(true)
+
 	d.progress.SetMinimumValue(0)
 	d.progress.SetMaximumValue(100)
 	context.SetEnabled(&d.progress, false)
+
+	d.statusText.SetAutoWrap(true)
+
+	d.statusPanel.SetContent(&d.statusText)
+	d.statusPanel.SetAutoBorder(true)
+	d.statusPanel.SetContentConstraints(basicwidget.PanelContentConstraintsFixedWidth)
 
 	showClose := d.showClose.Load()
 	d.closeButton.SetText(t.Get("common.close"))
@@ -415,7 +422,8 @@ func (d *dlPopupContent) Layout(context *guigui.Context, widgetBounds *guigui.Wi
 			Widget: &d.progress,
 		},
 		guigui.LinearLayoutItem{
-			Widget: &d.statusText,
+			Widget: &d.statusPanel,
+			Size:   guigui.FlexibleSize(1),
 		},
 		guigui.LinearLayoutItem{
 			Widget: &d.closeButton,

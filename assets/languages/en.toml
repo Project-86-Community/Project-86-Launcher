@@ -9,6 +9,7 @@ settings = "Settings"
 help = "Help"
 
 [topbar.dl]
+webview = "Select a release asset"
 selecting = "Selecting..."
 downloading = "Downloading..."
 connecting = "Connecting..."
