@@ -32,14 +32,22 @@ func main() {
 
 	// Fs
 	logger.Info.Println("initialising application filesystem...")
-	afs, err := fs.New()
+	afs, err := fs.New(*fake)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "fatal: fs init:", err)
 		os.Exit(1)
 	}
 
+	// Ensure icons are copied to icons directory (skip in fake mode)
+	if !*fake {
+		if err := fs.EnsureIcons(afs); err != nil {
+			fmt.Fprintln(os.Stderr, "fatal: failed to copy icons:", err)
+			os.Exit(1)
+		}
+	}
+
 	// Logger
-	if err := logger.Init(afs); err != nil {
+	if err := logger.Init(afs, *fake); err != nil {
 		fmt.Fprintln(os.Stderr, "fatal: logger init:", err)
 		os.Exit(1)
 	}
