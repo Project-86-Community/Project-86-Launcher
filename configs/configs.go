@@ -29,6 +29,7 @@ const (
 	LockFile = "app.project86community.project86launcher"
 	Name     = "project-86-community"
 	Title    = "Project 86 Launcher"
+	Game     = "Project 86"
 
 	LogPrefix = "log_"
 	LogExt    = ".log"
