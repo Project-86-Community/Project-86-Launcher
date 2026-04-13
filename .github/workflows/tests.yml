@@ -6,8 +6,8 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        go: ["1.25.x"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go: ["1.26.x"]
     name: Test with Go ${{ matrix.go }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     env:
@@ -24,10 +24,10 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
-      - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          version: 3.x
+      #- name: Setup Task
+      #  uses: arduino/setup-task@v2
+      #  with:
+      #    version: 3.x
 
       - name: Install dependencies
         if: runner.os == 'Linux'
@@ -53,17 +53,17 @@ jobs:
         run: |
           go test -v ./...
 
-      - name: Build artifacts
-        if: runner.os == 'Linux'
-        run: |
-          go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
-          task clean
-          task generate:version-info
-          task build
-
-      - name: Upload artifacts
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: builds
-          path: bin/*
+      #- name: Build artifacts
+      #  if: runner.os == 'Linux'
+      #  run: |
+      #    go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
+      #    task clean
+      #    task generate:version-info
+      #    task build
+      #
+      #- name: Upload artifacts
+      #  if: runner.os == 'Linux'
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: builds
+      #    path: bin/*
