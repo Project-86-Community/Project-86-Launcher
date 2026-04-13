@@ -54,7 +54,24 @@ func init() {
 	Error = makeStdout("[ERROR] ")
 }
 
-func Init(afs afero.Fs) error {
+func Init(afs afero.Fs, fake bool) error {
+	if fake {
+		// No file logging, only stdout
+		makeLogger := func(prefix string) *log.Logger {
+			return log.New(
+				localWriter{os.Stdout},
+				prefix,
+				log.Lshortfile,
+			)
+		}
+		Debug = makeLogger("[DEBUG] ")
+		Info = makeLogger("[INFO]  ")
+		Warn = makeLogger("[WARN] ")
+		Error = makeLogger("[ERROR] ")
+		Info.Println("logger initialised (fake mode)")
+		return nil
+	}
+
 	bpfs, ok := afs.(*afero.BasePathFs)
 	if !ok {
 		return fmt.Errorf("logger: requires BasePathFs")
@@ -98,7 +115,7 @@ func Init(afs afero.Fs) error {
 
 	Debug = makeLogger("[DEBUG] ")
 	Info = makeLogger("[INFO]  ")
-	Warn = makeLogger("[WARN]  ")
+	Warn = makeLogger("[WARN] ")
 	Error = makeLogger("[ERROR] ")
 
 	Info.Println("logger initialised")
