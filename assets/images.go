@@ -46,11 +46,16 @@ var (
 	// Icons holds all ico files as []image.Image.
 	// e.g. "images/app.ico" → Icons["app"]
 	Icons map[string][]image.Image
+
+	// IconData holds raw bytes of icon files, keyed by filename with extension.
+	// e.g. "images/icon.ico" → IconData["icon.ico"]
+	IconData map[string][]byte
 )
 
 func init() {
 	Images = make(map[string]*ebiten.Image)
 	Icons = make(map[string][]image.Image)
+	IconData = make(map[string][]byte)
 
 	entries, err := imagesFS.ReadDir("images")
 	if err != nil {
@@ -86,6 +91,13 @@ func init() {
 				panic(fmt.Sprintf("assets: failed to decode ico %s: %v", path, err))
 			}
 			Icons[key] = imgs
+		}
+
+		if strings.HasPrefix(name, "icon.") {
+			ext := strings.ToLower(filepath.Ext(name))
+			if ext == ".ico" || ext == ".icns" || ext == ".png" {
+				IconData[name] = data
+			}
 		}
 	}
 }
