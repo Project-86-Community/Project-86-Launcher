@@ -71,7 +71,6 @@ func (m *Model) UseFakes() {
 	m.dl = fs.FakeDownloader{}
 	m.ex = fs.FakeExtractor{}
 	m.fake = true
-	m.fs = fs.NewMem()
 }
 
 func (m *Model) Mode() types.Mode {
