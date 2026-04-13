@@ -189,7 +189,7 @@ func (h *homeList) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 			text += " (" + osLabel + ")"
 		}
 		if !ver.Runnable {
-			text += " - incompatible"
+			text += " - " + t.Get("home.incompatible")
 		}
 		h.items = append(h.items, basicwidget.ListItem[string]{
 			Text:  text,

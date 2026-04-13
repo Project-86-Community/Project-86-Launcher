@@ -40,6 +40,7 @@ kill     = "Kill"
 folder   = "Open Folder"
 delete   = "Delete"
 shortcut = "Create Shortcut"
+incompatible = "incompatible"
 
 [settings]
 color_mode = "Color mode"
