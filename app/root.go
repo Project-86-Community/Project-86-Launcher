@@ -17,9 +17,7 @@ import (
 )
 
 var (
-	modelKeyModel      = guigui.GenerateEnvKey()
-	webviewChKey       = guigui.GenerateEnvKey()
-	backgroundMusicKey = guigui.GenerateEnvKey()
+	modelKeyModel = guigui.GenerateEnvKey()
 )
 
 type Root struct {
@@ -34,8 +32,6 @@ type Root struct {
 	bottombar       BottomBar
 
 	model    p86l.Model
-	wvCh     chan<- p86l.WebviewRequest
-	player   *audio.Player
 	initOnce sync.Once
 
 	layoutItems []guigui.LinearLayoutItem
@@ -43,9 +39,7 @@ type Root struct {
 
 func NewRoot(afs afero.Fs, wvCh chan<- p86l.WebviewRequest, player *audio.Player) *Root {
 	return &Root{
-		model:  p86l.NewModel(afs),
-		wvCh:   wvCh,
-		player: player,
+		model: p86l.NewModel(afs, wvCh, player),
 	}
 }
 
@@ -57,10 +51,6 @@ func (r *Root) Env(context *guigui.Context, key guigui.EnvKey, source *guigui.En
 	switch key {
 	case modelKeyModel:
 		return &r.model, true
-	case webviewChKey:
-		return r.wvCh, true
-	case backgroundMusicKey:
-		return r.player, true
 	default:
 		return nil, false
 	}

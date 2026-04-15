@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/audio"
 	"golang.org/x/text/language"
 
 	"github.com/guigui-gui/guigui"
@@ -167,15 +166,10 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	// disables background music.
 	s.musicText.SetValue(t.Get("settings.music"))
 	s.musicToggle.OnValueChanged(func(context *guigui.Context, value bool) {
-		v, ok := context.Env(s, backgroundMusicKey)
-		if !ok {
-			return
-		}
-		player := v.(*audio.Player)
 		if value {
-			player.Pause()
+			model.PlayBackgroundMusic(true)
 		} else {
-			player.Play()
+			model.PlayBackgroundMusic(false)
 		}
 	})
 

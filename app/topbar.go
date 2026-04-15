@@ -53,12 +53,6 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 
 	t.installButton.SetText(_t.Get("topbar.install"))
 	t.installButton.OnUp(func(context *guigui.Context) {
-		v, ok := context.Env(t, webviewChKey)
-		if !ok {
-			return
-		}
-		wvCh := v.(chan<- p86l.WebviewRequest)
-
 		context.SetEnabled(&t.installButton, false)
 		t.downloadDone = make(chan error, 1)
 		t.dlPopupContent.Widget().Reset()
@@ -71,7 +65,8 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 			} else {
 				t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.dl.selecting"))
 				reply := make(chan string, 1)
-				wvCh <- p86l.WebviewRequest{Title: _t.Get("topbar.dl.webview"), Source: configs.Github + "/releases", Reply: reply}
+				opts := p86l.WebviewRequest{Title: _t.Get("topbar.dl.webview"), Source: configs.Github + "/releases", Reply: reply}
+				model.OpenWebview(opts)
 				url = <-reply
 			}
 
