@@ -73,7 +73,7 @@ func create(opts Options) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("shortcut: cannot create file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if err := desktopTmpl.Execute(f, data); err != nil {
 		return "", fmt.Errorf("shortcut: template error: %w", err)
