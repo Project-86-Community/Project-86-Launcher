@@ -38,7 +38,7 @@ func webviewOpen(title, source string) string {
 		return ""
 	}
 	defer func() {
-		w.Unbind("reportURL")
+		_ = w.Unbind("reportURL")
 		w.Destroy()
 	}()
 

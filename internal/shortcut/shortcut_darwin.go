@@ -90,10 +90,10 @@ func create(opts Options) (string, error) {
 		return "", err
 	}
 	if err := plistTmpl.Execute(plistFile, plistData); err != nil {
-		plistFile.Close()
+		_ = plistFile.Close()
 		return "", err
 	}
-	plistFile.Close()
+	_ = plistFile.Close()
 
 	// Launcher shell script
 	workDir := filepath.Dir(opts.Target)

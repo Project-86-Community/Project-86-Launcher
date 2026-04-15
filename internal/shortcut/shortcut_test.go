@@ -12,8 +12,8 @@ func TestCreate_Validation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpFile.Name())
-	tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	_ = tmpFile.Close()
 	validTarget := tmpFile.Name()
 
 	tests := []struct {
@@ -90,8 +90,8 @@ func TestMustExist(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpFile.Name())
-	tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	_ = tmpFile.Close()
 
 	// Test with existing file
 	if err := mustExist(tmpFile.Name()); err != nil {
