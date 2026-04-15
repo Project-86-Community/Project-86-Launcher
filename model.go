@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/afero"
 )
@@ -48,15 +49,20 @@ type Model struct {
 	fs afero.Fs
 	dl fs.Downloader
 	ex fs.Extractor
+
+	wvCh   chan<- WebviewRequest
+	player *audio.Player
 }
 
-func NewModel(afs afero.Fs) Model {
+func NewModel(afs afero.Fs, wvCh chan<- WebviewRequest, player *audio.Player) Model {
 	return Model{
 		sidebarPosition: types.SidebarPositionRight,
 		listPosition:    types.ListPositionTop,
 		fs:              afs,
 		dl:              fs.GrabDownloader{},
 		ex:              fs.FastExtractor{},
+		wvCh:            wvCh,
+		player:          player,
 	}
 }
 
@@ -82,6 +88,7 @@ func (m *Model) Mode() types.Mode {
 }
 
 func (m *Model) SetMode(mode types.Mode) {
+	logger.Info.Printf("navigation: mode changed to %v", mode)
 	m.mode = mode
 }
 
@@ -394,4 +401,16 @@ func (m *Model) CreateShortcut(ver Version) error {
 
 	logger.Info.Printf("Shortcut created successfully at: %s", createdPath)
 	return nil
+}
+
+func (m *Model) OpenWebview(opts WebviewRequest) {
+	m.wvCh <- opts
+}
+
+func (m *Model) PlayBackgroundMusic(value bool) {
+	if value {
+		m.player.Pause()
+	} else {
+		m.player.Play()
+	}
 }
