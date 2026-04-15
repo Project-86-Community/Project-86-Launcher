@@ -115,7 +115,7 @@ func (s *Sidebar) Build(context *guigui.Context, adder *guigui.ChildAdder) error
 	s.folderButton.SetText(t.Get("home.folder"))
 	context.SetEnabled(&s.folderButton, hasVersion)
 	s.folderButton.OnUp(func(context *guigui.Context) {
-		model.OpenVersionFolder(s.version.Tag)
+		model.Open(s.version.Tag, false)
 	})
 
 	s.deleteButton.SetText(t.Get("home.delete"))

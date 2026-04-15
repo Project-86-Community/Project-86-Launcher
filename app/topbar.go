@@ -7,6 +7,7 @@ import (
 	"p86l"
 	"p86l/configs"
 	"p86l/customwidget"
+	"p86l/internal/logger"
 	"p86l/internal/types"
 	"slices"
 	"sync/atomic"
@@ -15,7 +16,6 @@ import (
 	"github.com/guigui-gui/guigui/basicwidget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/skratchdot/open-golang/open"
 )
 
 type TopBar struct {
@@ -84,6 +84,10 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 					t.progress.Store(&p)
 				},
 			)
+			if model.FakeError() {
+				t.downloadDone <- fmt.Errorf("install failed: Loren ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+				return
+			}
 			t.downloadDone <- err
 		}()
 	})
@@ -164,17 +168,17 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 		}
 		switch item.Value {
 		case types.HelpsReport:
-			_ = open.Start(configs.Issues)
+			model.Open(configs.Issues, true)
 		case types.HelpsLogs:
 			model.SetMode(types.ModeLogs)
 		case types.HelpsWebsite:
-			_ = open.Start(configs.Website)
+			model.Open(configs.Website, true)
 		case types.HelpsGithub:
-			_ = open.Start(configs.Github)
+			model.Open(configs.Github, true)
 		case types.HelpsDiscord:
-			_ = open.Start(configs.Discord)
+			model.Open(configs.Discord, true)
 		case types.HelpsPatreon:
-			_ = open.Start(configs.Patreon)
+			model.Open(configs.Patreon, true)
 		case types.HelpsAbout:
 			model.SetMode(types.ModeAbout)
 		}
@@ -190,12 +194,13 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 
 func (t *TopBar) contentSize(context *guigui.Context) image.Point {
 	u := basicwidget.UnitSize(context)
-	return image.Pt(int(12*u), int(6*u))
+	return image.Pt(int(12*u), int(float64(6.5*float64(u))))
 }
 
 func (t *TopBar) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
 	layouter.LayoutWidget(&t.background, widgetBounds.Bounds())
 
+	u := basicwidget.UnitSize(context)
 	popupBounds := context.AppBounds()
 	t.dlPopup.SetBackgroundBounds(popupBounds)
 	contentSize := t.contentSize(context)
@@ -208,7 +213,6 @@ func (t *TopBar) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBoun
 		Max: center.Add(contentSize),
 	})
 
-	u := basicwidget.UnitSize(context)
 	t.layoutItems = slices.Delete(t.layoutItems, 0, len(t.layoutItems))
 	t.layoutItems = append(t.layoutItems,
 		guigui.LinearLayoutItem{
@@ -351,11 +355,13 @@ func (d *dlPopupContent) SetPhase(context *guigui.Context, phase types.Phase, ms
 
 	switch phase {
 	case types.PhaseDone:
+		logger.Info.Printf("install done: %s", msg)
 		d.titleText.SetValue(t.Get("topbar.dl.done"))
 		d.progress.SetValue(100)
 		d.statusText.SetValue(msg)
 		d.showClose.Store(true)
 	case types.PhaseError:
+		logger.Error.Printf("install failed: %v", msg)
 		d.titleText.SetValue(t.Get("topbar.dl.failed"))
 		d.progress.SetValue(0)
 		d.statusText.SetValue(msg)
@@ -418,7 +424,7 @@ func (d *dlPopupContent) Layout(context *guigui.Context, widgetBounds *guigui.Wi
 		},
 		guigui.LinearLayoutItem{
 			Widget: &d.statusPanel,
-			Size:   guigui.FlexibleSize(1),
+			Size:   guigui.FixedSize(int(float64(u) * 1.5)),
 		},
 		guigui.LinearLayoutItem{
 			Widget: &d.closeButton,

@@ -74,6 +74,10 @@ func (m *Model) Fake() bool {
 	return m.fake
 }
 
+func (m *Model) FakeError() bool {
+	return m.fakeError
+}
+
 func (m *Model) UseFakes(fakeError bool) {
 	m.dl = fs.FakeDownloader{}
 	m.ex = fs.FakeExtractor{}
@@ -344,12 +348,22 @@ func (m *Model) InstalledVersions() ([]Version, error) {
 	return versions, nil
 }
 
-func (m *Model) OpenVersionFolder(tag string) {
-	path, err := fs.RealPath(m.fs, filepath.Join("versions", tag))
+func (m *Model) Open(input string, isUrl bool) {
+	if m.fake {
+		return
+	}
+
+	logger.Info.Printf("opening: %s", input)
+
+	if isUrl {
+		_ = open.Start(input)
+		return
+	}
+
+	path, err := fs.RealPath(m.fs, filepath.Join("versions", input))
 	if err != nil {
 		return
 	}
-	logger.Info.Printf("opening version folder: %s", tag)
 	_ = open.Start(path)
 }
 
