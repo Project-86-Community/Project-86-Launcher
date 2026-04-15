@@ -43,8 +43,8 @@ func NewRoot(afs afero.Fs, wvCh chan<- p86l.WebviewRequest, player *audio.Player
 	}
 }
 
-func (r *Root) UseFakes() {
-	r.model.UseFakes()
+func (r *Root) UseFakes(fakeError bool) {
+	r.model.UseFakes(fakeError)
 }
 
 func (r *Root) Env(context *guigui.Context, key guigui.EnvKey, source *guigui.EnvSource) (any, bool) {

@@ -39,7 +39,8 @@ type Version struct {
 }
 
 type Model struct {
-	fake bool
+	fake      bool
+	fakeError bool
 
 	mode            types.Mode
 	sidebarPosition types.SidebarPosition
@@ -67,17 +68,17 @@ func NewModel(afs afero.Fs, wvCh chan<- WebviewRequest, player *audio.Player) Mo
 }
 
 // Only for testing.
-
 const FakeDownloadURL = "https://github.com/Taliayaya/Project-86/releases/download/v0.0.0-alpha/Project86-v0.0.0-alpha.zip"
 
 func (m *Model) Fake() bool {
 	return m.fake
 }
 
-func (m *Model) UseFakes() {
+func (m *Model) UseFakes(fakeError bool) {
 	m.dl = fs.FakeDownloader{}
 	m.ex = fs.FakeExtractor{}
 	m.fake = true
+	m.fakeError = fakeError
 }
 
 func (m *Model) Mode() types.Mode {

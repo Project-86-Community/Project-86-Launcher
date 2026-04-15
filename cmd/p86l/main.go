@@ -18,7 +18,8 @@ import (
 const VERSION = "dev"
 
 func main() {
-	fake := flag.Bool("fake", false, "use fake downloader/extractor for UI testing")
+	fakeFlag := flag.Bool("fake", false, "use fake downloader/extractor for UI testing")
+	errorFlag := flag.Bool("error", false, "simulate errors in fake mode (requires --fake)")
 	flag.Parse()
 
 	// Prevent multiple instances.
@@ -32,14 +33,14 @@ func main() {
 
 	// Fs
 	logger.Info.Println("initialising application filesystem...")
-	afs, err := fs.New(*fake)
+	afs, err := fs.New(*fakeFlag)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "fatal: fs init:", err)
 		os.Exit(1)
 	}
 
 	// Ensure icons are copied to icons directory (skip in fake mode)
-	if !*fake {
+	if !*fakeFlag {
 		if err := fs.EnsureIcons(afs); err != nil {
 			fmt.Fprintln(os.Stderr, "fatal: failed to copy icons:", err)
 			os.Exit(1)
@@ -47,7 +48,7 @@ func main() {
 	}
 
 	// Logger
-	if err := logger.Init(afs, *fake); err != nil {
+	if err := logger.Init(afs, *fakeFlag); err != nil {
 		fmt.Fprintln(os.Stderr, "fatal: logger init:", err)
 		os.Exit(1)
 	}
@@ -74,8 +75,8 @@ func main() {
 	// UI
 	logger.Info.Println("building UI root...")
 	root := app.NewRoot(afs, wvCh, player)
-	if *fake {
-		root.UseFakes()
+	if *fakeFlag {
+		root.UseFakes(*errorFlag)
 		logger.Warn.Println("running in FAKE mode - no real downloads or disk writes")
 	}
 
