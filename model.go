@@ -368,6 +368,11 @@ func (m *Model) Open(input string, isUrl bool) {
 }
 
 func (m *Model) DeleteVersion(tag string) error {
+	if m.fake {
+		logger.Info.Printf("DeleteVersion: fake mode, skipping delete for %s", tag)
+		return nil
+	}
+
 	path, err := fs.RealPath(m.fs, filepath.Join("versions", tag))
 	if err != nil {
 		return err

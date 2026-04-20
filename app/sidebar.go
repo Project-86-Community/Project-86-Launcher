@@ -121,6 +121,7 @@ func (s *Sidebar) Build(context *guigui.Context, adder *guigui.ChildAdder) error
 	s.deleteButton.SetText(t.Get("home.delete"))
 	context.SetEnabled(&s.deleteButton, hasVersion && !isRunningVersion)
 	s.deleteButton.OnUp(func(context *guigui.Context) {
+		// TODO: handle error properly
 		if err := model.DeleteVersion(s.version.Tag); err != nil {
 			logger.Error.Printf("delete failed [%s]: %v", s.version.Tag, err)
 		} else {
