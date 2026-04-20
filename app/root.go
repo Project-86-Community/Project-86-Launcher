@@ -5,12 +5,14 @@ import (
 	"p86l"
 	"p86l/assets"
 	"p86l/configs"
+	"p86l/internal/logger"
 	"p86l/internal/types"
 	"slices"
 	"sync"
 
 	"github.com/guigui-gui/guigui"
 	"github.com/guigui-gui/guigui/basicwidget"
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/spf13/afero"
 	"golang.org/x/text/language"
@@ -111,10 +113,16 @@ func (r *Root) handleBackgroundImage(widgetBounds *guigui.WidgetBounds) image.Re
 
 func (r *Root) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	r.initOnce.Do(func() {
-		if locales := context.AppendAppLocales(nil); len(locales) > 0 {
-			r.model.SetT(locales[0].String())
-		} else {
+		var ebdi ebiten.DebugInfo
+		ebiten.ReadDebugInfo(&ebdi)
+		logger.Info.Printf("Graphics library %s", ebdi.GraphicsLibrary.String())
+
+		locale := context.FirstLocale()
+		logger.Info.Printf("First locale: %s", locale.String())
+		if locale == (language.Tag{}) {
 			r.model.SetT(language.English.String())
+		} else {
+			r.model.SetT(locale.String())
 		}
 	})
 
