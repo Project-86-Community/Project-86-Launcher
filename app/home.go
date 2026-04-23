@@ -68,6 +68,7 @@ func (h *Home) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds
 		return
 	}
 	model := v.(*p86l.Model)
+	sidebarModel := model.Sidebar()
 
 	u := basicwidget.UnitSize(context)
 	sidebarItem := guigui.LinearLayoutItem{
@@ -120,7 +121,7 @@ func (h *Home) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds
 	}
 
 	h.layoutItems = slices.Delete(h.layoutItems, 0, len(h.layoutItems))
-	if model.SidebarPosition() == types.SidebarPositionLeft {
+	if sidebarModel.SidebarPosition() == types.SidebarPositionLeft {
 		h.layoutItems = append(h.layoutItems, sidebarItem, contentItem)
 	} else {
 		h.layoutItems = append(h.layoutItems, contentItem, sidebarItem)

@@ -42,10 +42,11 @@ type Model struct {
 	fake      bool
 	fakeError bool
 
-	mode            types.Mode
-	sidebarPosition types.SidebarPosition
-	listPosition    types.ListPosition
-	t               assets.T
+	mode         types.Mode
+	listPosition types.ListPosition
+	t            assets.T
+
+	sidebar SidebarModel
 
 	fs afero.Fs
 	dl fs.Downloader
@@ -57,13 +58,13 @@ type Model struct {
 
 func NewModel(afs afero.Fs, wvCh chan<- WebviewRequest, player *audio.Player) Model {
 	return Model{
-		sidebarPosition: types.SidebarPositionRight,
-		listPosition:    types.ListPositionTop,
-		fs:              afs,
-		dl:              fs.GrabDownloader{},
-		ex:              fs.FastExtractor{},
-		wvCh:            wvCh,
-		player:          player,
+		listPosition: types.ListPositionTop,
+		sidebar:      SidebarModel{sidebarPosition: types.SidebarPositionRight},
+		fs:           afs,
+		dl:           fs.GrabDownloader{},
+		ex:           fs.FastExtractor{},
+		wvCh:         wvCh,
+		player:       player,
 	}
 }
 
@@ -97,14 +98,6 @@ func (m *Model) SetMode(mode types.Mode) {
 	m.mode = mode
 }
 
-func (m *Model) SetSidebarPosition(pos types.SidebarPosition) {
-	m.sidebarPosition = pos
-}
-
-func (m *Model) SidebarPosition() types.SidebarPosition {
-	return m.sidebarPosition
-}
-
 func (m *Model) SetListPosition(pos types.ListPosition) {
 	m.listPosition = pos
 }
@@ -119,6 +112,10 @@ func (m *Model) T() assets.T {
 
 func (m *Model) SetT(lang string) {
 	m.t = assets.NewT(lang)
+}
+
+func (m *Model) Sidebar() *SidebarModel {
+	return &m.sidebar
 }
 
 func (m *Model) OpenFolder(folder types.Folder) {

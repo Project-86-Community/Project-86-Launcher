@@ -65,6 +65,7 @@ func (s *Sidebar) Build(context *guigui.Context, adder *guigui.ChildAdder) error
 	}
 	model := v.(*p86l.Model)
 	t := model.T()
+	sidebarModel := model.Sidebar()
 
 	context.SetOpacity(&s.background, 0.8)
 
@@ -154,9 +155,9 @@ func (s *Sidebar) Build(context *guigui.Context, adder *guigui.ChildAdder) error
 		if !ok {
 			return
 		}
-		model.SetSidebarPosition(item.Value)
+		sidebarModel.SetSidebarPosition(item.Value)
 	})
-	s.positionSegmentedControl.SelectItemByValue(model.SidebarPosition())
+	s.positionSegmentedControl.SelectItemByValue(sidebarModel.SidebarPosition())
 
 	return nil
 }
