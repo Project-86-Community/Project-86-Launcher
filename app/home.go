@@ -161,8 +161,9 @@ func (h *homeList) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	}
 	model := v.(*p86l.Model)
 	t := model.T()
+	dm := model.DownloadManager()
 
-	versions, err := model.InstalledVersions()
+	versions, err := dm.InstalledVersions(model.Fake(), model.FS())
 	if err != nil {
 		return fmt.Errorf("home: failed to list versions: %w", err)
 	}

@@ -50,6 +50,7 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 	}
 	model := v.(*p86l.Model)
 	_t := model.T()
+	dm := model.DownloadManager()
 
 	t.installButton.SetText(_t.Get("topbar.install"))
 	t.installButton.OnUp(func(context *guigui.Context) {
@@ -77,8 +78,9 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 
 			t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.dl.connecting"))
 
-			err := model.InstallVersion(
+			err := dm.InstallVersion(
 				gocontext.Background(),
+				model.FS(),
 				url,
 				func(p p86l.InstallProgress) {
 					t.progress.Store(&p)

@@ -33,7 +33,7 @@ type Root struct {
 	logs            Logs
 	bottombar       BottomBar
 
-	model    p86l.Model
+	model    *p86l.Model
 	initOnce sync.Once
 
 	layoutItems []guigui.LinearLayoutItem
@@ -52,7 +52,7 @@ func (r *Root) UseFakes(fakeError bool) {
 func (r *Root) Env(context *guigui.Context, key guigui.EnvKey, source *guigui.EnvSource) (any, bool) {
 	switch key {
 	case modelKeyModel:
-		return &r.model, true
+		return r.model, true
 	default:
 		return nil, false
 	}
