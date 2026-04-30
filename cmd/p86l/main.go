@@ -81,7 +81,7 @@ func main() {
 	root := app.NewRoot(afs, wvCh, player)
 	if *fakeFlag {
 		root.UseFakes(*errorFlag)
-		logger.Warn.Println("running in FAKE mode - no real downloads or disk writes")
+		logger.Warn.Println("running in FAKE mode")
 	}
 
 	logger.Info.Printf("setting window title: %s %s", configs.Title, VERSION)
