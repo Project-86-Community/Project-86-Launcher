@@ -35,6 +35,7 @@ func (h *Home) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 		return nil
 	}
 	model := v.(*p86l.Model)
+	sidebarModel := model.Sidebar()
 
 	h.positionSegmentedControl.SetItems([]basicwidget.SegmentedControlItem[types.ListPosition]{
 		{
@@ -56,7 +57,7 @@ func (h *Home) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	h.positionSegmentedControl.SelectItemByValue(model.ListPosition())
 
 	h.list.onVersionSelected = func(ver p86l.Version) {
-		h.sidebar.SetVersion(ver)
+		sidebarModel.SetVersion(ver)
 	}
 
 	return nil
