@@ -1,5 +1,9 @@
+// Copyright (c) 2026 Project 86 Community
+// SPDX-License-Identifier: GPL-3.0-only
+//
 // Package shortcut creates native desktop shortcuts for executables.
 // Supports Windows (.lnk), Linux (.desktop), and macOS (.app alias).
+
 package shortcut
 
 import (
