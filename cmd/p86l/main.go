@@ -41,6 +41,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "fatal: fs init:", err)
 		os.Exit(1)
 	}
+	defer func() { _ = logger.Close() }()
 
 	// Ensure icons are copied to icons directory (skip in fake mode)
 	if !*fakeFlag {

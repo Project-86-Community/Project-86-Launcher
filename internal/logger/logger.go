@@ -24,10 +24,11 @@ const (
 )
 
 var (
-	Debug *log.Logger
-	Info  *log.Logger
-	Warn  *log.Logger
-	Error *log.Logger
+	Debug   *log.Logger
+	Info    *log.Logger
+	Warn    *log.Logger
+	Error   *log.Logger
+	logFile io.Closer
 )
 
 type unixWriter struct{ w io.Writer }
@@ -71,6 +72,7 @@ func Init(afs afero.Fs, fake bool) error {
 		Info = makeLogger("[INFO]  ")
 		Warn = makeLogger("[WARN] ")
 		Error = makeLogger("[ERROR] ")
+		logFile = nil
 		Info.Println("logger initialised (fake mode)")
 		return nil
 	}
@@ -105,6 +107,7 @@ func Init(afs afero.Fs, fake bool) error {
 		return fmt.Errorf("logger: open latest.log: %w", err)
 	}
 
+	logFile = f
 	fileW := unixWriter{f}
 	stdoutW := localWriter{os.Stdout}
 
@@ -158,5 +161,16 @@ func prune(logsDir string) error {
 		logs = logs[1:]
 	}
 
+	return nil
+}
+
+func Close() error {
+	if logFile != nil {
+		Info.Println("logger shutting down")
+		if err := logFile.Close(); err != nil {
+			return fmt.Errorf("logger: close: %w", err)
+		}
+		logFile = nil
+	}
 	return nil
 }
