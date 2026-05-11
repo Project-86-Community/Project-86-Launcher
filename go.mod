@@ -7,8 +7,8 @@ require (
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/crgimenes/glaze v0.0.14
 	github.com/fyne-io/image v0.1.1
-	github.com/guigui-gui/guigui v0.0.0-20260421031711-58affb27e7d2
-	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.11.0.20260419062649-1a4c38c37d35
+	github.com/guigui-gui/guigui v0.0.0-20260503143821-f376afebfeee
+	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.11.0.20260503064022-84fc28f504ba
 	github.com/kisielk/errcheck v1.10.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/saracen/fastzip v0.2.0
@@ -28,8 +28,8 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20260211053922-3d992dae95d1 // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
-	github.com/ebitengine/oto/v3 v3.5.0-alpha.4 // indirect
-	github.com/ebitengine/purego v0.11.0-alpha.1 // indirect
+	github.com/ebitengine/oto/v3 v3.5.0-alpha.6 // indirect
+	github.com/ebitengine/purego v0.11.0-alpha.2 // indirect
 	github.com/go-text/typesetting v0.3.5-0.20260328164731-48df487c1500 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
