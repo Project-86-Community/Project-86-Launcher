@@ -4,7 +4,7 @@
 package app
 
 import (
-	"p86l"
+	"p86l/internal/service"
 	"p86l/internal/types"
 	"slices"
 
@@ -30,24 +30,24 @@ func (l *Logs) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	adder.AddWidget(&l.titleText)
 	adder.AddWidget(&l.logPanel)
 
-	v, ok := context.Env(l, modelKeyModel)
-	if !ok {
+	m, ok1 := envMust[*Model](context, l, modelKeyModel)
+	ls, ok2 := envMust[service.LogService](context, l, keyLog)
+	if !ok1 || !ok2 {
 		return nil
 	}
-	model := v.(*p86l.Model)
-	t := model.T()
+	t := m.T()
 
 	context.SetOpacity(&l.background, 0.9)
 
 	l.backButton.SetText("◀")
 	l.backButton.OnUp(func(context *guigui.Context) {
-		model.SetMode(types.ModeHome)
+		m.SetMode(types.ModeHome)
 	})
 
 	l.titleText.SetValue(t.Get("logs.title"))
 	l.titleText.SetScale(1.2)
 
-	content, err := model.ReadLatestLog()
+	content, err := ls.ReadLatestLog()
 	if err != nil {
 		l.logText.SetValue(t.Get("logs.error"))
 	} else {
@@ -55,7 +55,7 @@ func (l *Logs) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	}
 
 	l.logText.SetMultiline(true)
-	l.logText.SetAutoWrap(true)
+	l.logText.SetWrapMode(basicwidget.WrapModeWord)
 
 	l.logPanel.SetContent(&l.logText)
 	l.logPanel.SetAutoBorder(true)
@@ -79,23 +79,15 @@ func (l *Logs) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds
 				},
 			},
 		},
-		guigui.LinearLayoutItem{
-			Widget: &l.titleText,
-		},
-		guigui.LinearLayoutItem{
-			Widget: &l.logPanel,
-			Size:   guigui.FlexibleSize(1),
-		},
+		guigui.LinearLayoutItem{Widget: &l.titleText},
+		guigui.LinearLayoutItem{Widget: &l.logPanel, Size: guigui.FlexibleSize(1)},
 	)
 	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionVertical,
 		Items:     l.layoutItems,
 		Gap:       u / 2,
 		Padding: guigui.Padding{
-			Start:  u / 2,
-			Top:    u / 2,
-			End:    u / 2,
-			Bottom: u / 2,
+			Start: u / 2, Top: u / 2, End: u / 2, Bottom: u / 2,
 		},
 	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }

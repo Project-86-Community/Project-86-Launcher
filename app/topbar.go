@@ -7,10 +7,10 @@ import (
 	gocontext "context"
 	"fmt"
 	"image"
-	"p86l"
 	"p86l/configs"
 	"p86l/customwidget"
 	"p86l/internal/logger"
+	"p86l/internal/service"
 	"p86l/internal/types"
 	"slices"
 	"sync/atomic"
@@ -34,7 +34,7 @@ type TopBar struct {
 	dlPopupContent guigui.WidgetWithSize[*dlPopupContent]
 
 	downloadDone chan error
-	progress     atomic.Pointer[p86l.InstallProgress]
+	progress     atomic.Pointer[service.InstallProgress]
 
 	layoutItems []guigui.LinearLayoutItem
 }
@@ -47,13 +47,14 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 	adder.AddWidget(&t.settingsButton)
 	adder.AddWidget(&t.helpsDropdown)
 
-	v, ok := context.Env(t, modelKeyModel)
-	if !ok {
+	ds, ok1 := envMust[service.DownloadService](context, t, keyDownload)
+	fo, ok2 := envMust[service.FileOpenerService](context, t, keyFileOpen)
+	m, ok3 := envMust[*Model](context, t, modelKeyModel)
+	wv, ok4 := envMust[chan<- WebviewRequest](context, t, keyWvCh)
+	if !ok1 || !ok2 || !ok3 || !ok4 {
 		return nil
 	}
-	model := v.(*p86l.Model)
-	_t := model.T()
-	dm := model.DownloadManager()
+	_t := m.T()
 
 	t.installButton.SetText(_t.Get("topbar.install"))
 	t.installButton.OnUp(func(context *guigui.Context) {
@@ -63,16 +64,12 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 		t.dlPopup.SetOpen(true)
 
 		go func() {
-			var url string
-			if model.Fake() {
-				url = p86l.FakeDownloadURL
-			} else {
-				t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.dl.selecting"))
-				reply := make(chan string, 1)
-				opts := p86l.WebviewRequest{Title: _t.Get("topbar.dl.webview"), Source: configs.Github + "/releases", Reply: reply}
-				model.OpenWebview(opts)
-				url = <-reply
-			}
+			url := configs.Github + "/releases"
+			t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.dl.selecting"))
+			reply := make(chan string, 1)
+			opts := WebviewRequest{Title: _t.Get("topbar.dl.webview"), Source: url, Reply: reply}
+			wv <- opts
+			url = <-reply
 
 			if url == "" {
 				t.downloadDone <- nil
@@ -81,90 +78,48 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 
 			t.dlPopupContent.Widget().SetStatus(_t.Get("topbar.dl.connecting"))
 
-			err := dm.InstallVersion(
+			err := ds.InstallVersion(
 				gocontext.Background(),
-				model.FS(),
 				url,
-				func(p p86l.InstallProgress) {
+				func(p service.InstallProgress) {
 					t.progress.Store(&p)
 				},
 			)
-			if model.FakeError() {
-				t.downloadDone <- fmt.Errorf("install failed: Loren ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.")
-				return
-			}
 			t.downloadDone <- err
 		}()
 	})
 
 	t.folderDropdown.SetLabel(_t.Get("topbar.folders"))
 	t.folderDropdown.SetItems([]customwidget.DropdownItem[types.Folder]{
-		{
-			Text:  _t.Get("topbar.f.root"),
-			Value: types.FolderRoot,
-		},
-		{
-			Text:  _t.Get("topbar.f.versions"),
-			Value: types.FolderVersions,
-		},
-		{
-			Text:  _t.Get("topbar.f.logs"),
-			Value: types.FolderLogs,
-		},
+		{Text: _t.Get("topbar.f.root"), Value: types.FolderRoot},
+		{Text: _t.Get("topbar.f.versions"), Value: types.FolderVersions},
+		{Text: _t.Get("topbar.f.logs"), Value: types.FolderLogs},
 	})
 	t.folderDropdown.OnItemSelected(func(context *guigui.Context, index int) {
 		item, ok := t.folderDropdown.ItemByIndex(index)
 		if !ok {
 			return
 		}
-		model.OpenFolder(item.Value)
+		fo.OpenFolder(item.Value)
 	})
 
 	t.settingsButton.SetText(_t.Get("topbar.settings"))
 	t.settingsButton.OnUp(func(context *guigui.Context) {
-		model.SetMode(types.ModeSettings)
+		m.SetMode(types.ModeSettings)
 	})
 
 	t.helpsDropdown.SetLabel(_t.Get("topbar.help"))
 	t.helpsDropdown.SetItems([]customwidget.DropdownItem[types.Helps]{
-		{
-			Text:  _t.Get("topbar.h.cache"),
-			Value: types.HelpsCache,
-		},
-		{
-			Text:  _t.Get("topbar.h.report"),
-			Value: types.HelpsReport,
-		},
-		{
-			Text:  _t.Get("topbar.h.view"),
-			Value: types.HelpsLogs,
-		},
-		{
-			Border: true,
-		},
-		{
-			Text:  _t.Get("topbar.h.website"),
-			Value: types.HelpsWebsite,
-		},
-		{
-			Text:  "Github",
-			Value: types.HelpsGithub,
-		},
-		{
-			Text:  "Discord",
-			Value: types.HelpsDiscord,
-		},
-		{
-			Text:  "Patreon",
-			Value: types.HelpsPatreon,
-		},
-		{
-			Border: true,
-		},
-		{
-			Text:  _t.Get("topbar.h.about"),
-			Value: types.HelpsAbout,
-		},
+		{Text: _t.Get("topbar.h.cache"), Value: types.HelpsCache},
+		{Text: _t.Get("topbar.h.report"), Value: types.HelpsReport},
+		{Text: _t.Get("topbar.h.view"), Value: types.HelpsLogs},
+		{Border: true},
+		{Text: _t.Get("topbar.h.website"), Value: types.HelpsWebsite},
+		{Text: "Github", Value: types.HelpsGithub},
+		{Text: "Discord", Value: types.HelpsDiscord},
+		{Text: "Patreon", Value: types.HelpsPatreon},
+		{Border: true},
+		{Text: _t.Get("topbar.h.about"), Value: types.HelpsAbout},
 	})
 	t.helpsDropdown.OnItemSelected(func(context *guigui.Context, index int) {
 		item, ok := t.helpsDropdown.ItemByIndex(index)
@@ -173,19 +128,19 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 		}
 		switch item.Value {
 		case types.HelpsReport:
-			model.Open(configs.Issues, true)
+			fo.OpenURL(configs.Issues)
 		case types.HelpsLogs:
-			model.SetMode(types.ModeLogs)
+			m.SetMode(types.ModeLogs)
 		case types.HelpsWebsite:
-			model.Open(configs.Website, true)
+			fo.OpenURL(configs.Website)
 		case types.HelpsGithub:
-			model.Open(configs.Github, true)
+			fo.OpenURL(configs.Github)
 		case types.HelpsDiscord:
-			model.Open(configs.Discord, true)
+			fo.OpenURL(configs.Discord)
 		case types.HelpsPatreon:
-			model.Open(configs.Patreon, true)
+			fo.OpenURL(configs.Patreon)
 		case types.HelpsAbout:
-			model.SetMode(types.ModeAbout)
+			m.SetMode(types.ModeAbout)
 		}
 	})
 
@@ -220,41 +175,29 @@ func (t *TopBar) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBoun
 
 	t.layoutItems = slices.Delete(t.layoutItems, 0, len(t.layoutItems))
 	t.layoutItems = append(t.layoutItems,
-		guigui.LinearLayoutItem{
-			Widget: &t.installButton,
-		},
-		guigui.LinearLayoutItem{
-			Widget: &t.folderDropdown,
-		},
-		guigui.LinearLayoutItem{
-			Widget: &t.settingsButton,
-		},
-		guigui.LinearLayoutItem{
-			Widget: &t.helpsDropdown,
-		},
+		guigui.LinearLayoutItem{Widget: &t.installButton},
+		guigui.LinearLayoutItem{Widget: &t.folderDropdown},
+		guigui.LinearLayoutItem{Widget: &t.settingsButton},
+		guigui.LinearLayoutItem{Widget: &t.helpsDropdown},
 	)
 	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionHorizontal,
 		Items:     t.layoutItems,
 		Gap:       u / 2,
 		Padding: guigui.Padding{
-			Start:  u / 2,
-			Top:    u / 4,
-			End:    u / 2,
-			Bottom: u / 4,
+			Start: u / 2, Top: u / 4, End: u / 2, Bottom: u / 4,
 		},
 	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }
 
 func (t *TopBar) HandleButtonInput(context *guigui.Context, widgetBounds *guigui.WidgetBounds) guigui.HandleInputResult {
-	v, ok := context.Env(t, modelKeyModel)
+	m, ok := envMust[*Model](context, t, modelKeyModel)
 	if !ok {
 		return guigui.HandleInputResult{}
 	}
-	model := v.(*p86l.Model)
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyEscape) {
-		model.SetMode(types.ModeHome)
+		m.SetMode(types.ModeHome)
 		return guigui.HandleInputByWidget(t)
 	}
 
@@ -262,12 +205,11 @@ func (t *TopBar) HandleButtonInput(context *guigui.Context, widgetBounds *guigui
 }
 
 func (t *TopBar) Tick(context *guigui.Context, windowBounds *guigui.WidgetBounds) error {
-	v, ok := context.Env(t, modelKeyModel)
+	m, ok := envMust[*Model](context, t, modelKeyModel)
 	if !ok {
 		return nil
 	}
-	model := v.(*p86l.Model)
-	_t := model.T()
+	_t := m.T()
 
 	if t.downloadDone != nil {
 		select {
@@ -315,13 +257,12 @@ func (d *dlPopupContent) SetPopup(popup *basicwidget.Popup) {
 	d.popup = popup
 }
 
-func (d *dlPopupContent) SetInstallProgress(context *guigui.Context, p p86l.InstallProgress) {
-	v, ok := context.Env(d, modelKeyModel)
+func (d *dlPopupContent) SetInstallProgress(context *guigui.Context, p service.InstallProgress) {
+	m, ok := envMust[*Model](context, d, modelKeyModel)
 	if !ok {
 		return
 	}
-	model := v.(*p86l.Model)
-	t := model.T()
+	t := m.T()
 
 	switch p.Phase {
 	case types.PhaseDownload:
@@ -351,12 +292,11 @@ func (d *dlPopupContent) SetInstallProgress(context *guigui.Context, p p86l.Inst
 }
 
 func (d *dlPopupContent) SetPhase(context *guigui.Context, phase types.Phase, msg string) {
-	v, ok := context.Env(d, modelKeyModel)
+	m, ok := envMust[*Model](context, d, modelKeyModel)
 	if !ok {
 		return
 	}
-	model := v.(*p86l.Model)
-	t := model.T()
+	t := m.T()
 
 	switch phase {
 	case types.PhaseDone:
@@ -384,12 +324,11 @@ func (d *dlPopupContent) Build(context *guigui.Context, adder *guigui.ChildAdder
 	adder.AddWidget(&d.statusPanel)
 	adder.AddWidget(&d.closeButton)
 
-	v, ok := context.Env(d, modelKeyModel)
+	m, ok := envMust[*Model](context, d, modelKeyModel)
 	if !ok {
 		return nil
 	}
-	model := v.(*p86l.Model)
-	t := model.T()
+	t := m.T()
 
 	d.titleText.SetScale(1.2)
 
@@ -397,7 +336,7 @@ func (d *dlPopupContent) Build(context *guigui.Context, adder *guigui.ChildAdder
 	d.progress.SetMaximumValue(100)
 	context.SetEnabled(&d.progress, false)
 
-	d.statusText.SetAutoWrap(true)
+	d.statusText.SetWrapMode(basicwidget.WrapModeWord)
 
 	d.statusPanel.SetContent(&d.statusText)
 	d.statusPanel.SetAutoBorder(true)
@@ -421,29 +360,17 @@ func (d *dlPopupContent) Layout(context *guigui.Context, widgetBounds *guigui.Wi
 	u := basicwidget.UnitSize(context)
 	d.layoutItems = slices.Delete(d.layoutItems, 0, len(d.layoutItems))
 	d.layoutItems = append(d.layoutItems,
-		guigui.LinearLayoutItem{
-			Widget: &d.titleText,
-		},
-		guigui.LinearLayoutItem{
-			Widget: &d.progress,
-		},
-		guigui.LinearLayoutItem{
-			Widget: &d.statusPanel,
-			Size:   guigui.FixedSize(int(float64(u) * 1.5)),
-		},
-		guigui.LinearLayoutItem{
-			Widget: &d.closeButton,
-		},
+		guigui.LinearLayoutItem{Widget: &d.titleText},
+		guigui.LinearLayoutItem{Widget: &d.progress},
+		guigui.LinearLayoutItem{Widget: &d.statusPanel, Size: guigui.FixedSize(int(float64(u) * 1.5))},
+		guigui.LinearLayoutItem{Widget: &d.closeButton},
 	)
 	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionVertical,
 		Items:     d.layoutItems,
 		Gap:       u / 2,
 		Padding: guigui.Padding{
-			Start:  u / 2,
-			Top:    u / 4,
-			End:    u / 2,
-			Bottom: u / 4,
+			Start: u / 2, Top: u / 4, End: u / 2, Bottom: u / 4,
 		},
 	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }

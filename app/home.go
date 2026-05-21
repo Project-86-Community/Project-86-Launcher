@@ -5,7 +5,7 @@ package app
 
 import (
 	"fmt"
-	"p86l"
+	"p86l/internal/service"
 	"p86l/internal/types"
 	"slices"
 
@@ -33,22 +33,15 @@ func (h *Home) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	adder.AddWidget(&h.info)
 	adder.AddWidget(&h.noVersions)
 
-	v, ok := context.Env(h, modelKeyModel)
-	if !ok {
+	launchService, ok1 := envMust[service.LaunchService](context, h, keyLaunch)
+	model, ok2 := envMust[*Model](context, h, modelKeyModel)
+	if !ok1 || !ok2 {
 		return nil
 	}
-	model := v.(*p86l.Model)
-	sidebarModel := model.Sidebar()
 
 	h.positionSegmentedControl.SetItems([]basicwidget.SegmentedControlItem[types.ListPosition]{
-		{
-			Text:  "▲",
-			Value: types.ListPositionTop,
-		},
-		{
-			Text:  "▼",
-			Value: types.ListPositionBottom,
-		},
+		{Text: "▲", Value: types.ListPositionTop},
+		{Text: "▼", Value: types.ListPositionBottom},
 	})
 	h.positionSegmentedControl.OnItemSelected(func(context *guigui.Context, index int) {
 		item, ok := h.positionSegmentedControl.ItemByIndex(index)
@@ -59,20 +52,18 @@ func (h *Home) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	})
 	h.positionSegmentedControl.SelectItemByValue(model.ListPosition())
 
-	h.list.onVersionSelected = func(ver p86l.Version) {
-		sidebarModel.SetVersion(ver)
+	h.list.onVersionSelected = func(ver service.Version) {
+		launchService.SetCurrentVersion(ver)
 	}
 
 	return nil
 }
 
 func (h *Home) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds, layouter *guigui.ChildLayouter) {
-	v, ok := context.Env(h, modelKeyModel)
+	model, ok := envMust[*Model](context, h, modelKeyModel)
 	if !ok {
 		return
 	}
-	model := v.(*p86l.Model)
-	sidebarModel := model.Sidebar()
 
 	u := basicwidget.UnitSize(context)
 	sidebarItem := guigui.LinearLayoutItem{
@@ -82,31 +73,17 @@ func (h *Home) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds
 
 	h.contentItems = slices.Delete(h.contentItems, 0, len(h.contentItems))
 	h.contentItems = append(h.contentItems,
-		guigui.LinearLayoutItem{
-			Widget: &h.positionSegmentedControl,
-		},
+		guigui.LinearLayoutItem{Widget: &h.positionSegmentedControl},
 	)
 	if model.ListPosition() == types.ListPositionTop {
 		h.contentItems = append(h.contentItems,
-			guigui.LinearLayoutItem{
-				Widget: &h.list,
-				Size:   guigui.FlexibleSize(1),
-			},
-			guigui.LinearLayoutItem{
-				Widget: &h.info,
-				Size:   guigui.FlexibleSize(2),
-			},
+			guigui.LinearLayoutItem{Widget: &h.list, Size: guigui.FlexibleSize(1)},
+			guigui.LinearLayoutItem{Widget: &h.info, Size: guigui.FlexibleSize(2)},
 		)
 	} else {
 		h.contentItems = append(h.contentItems,
-			guigui.LinearLayoutItem{
-				Widget: &h.info,
-				Size:   guigui.FlexibleSize(2),
-			},
-			guigui.LinearLayoutItem{
-				Widget: &h.list,
-				Size:   guigui.FlexibleSize(1),
-			},
+			guigui.LinearLayoutItem{Widget: &h.info, Size: guigui.FlexibleSize(2)},
+			guigui.LinearLayoutItem{Widget: &h.list, Size: guigui.FlexibleSize(1)},
 		)
 	}
 	contentItem := guigui.LinearLayoutItem{
@@ -116,16 +93,13 @@ func (h *Home) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBounds
 			Items:     h.contentItems,
 			Gap:       u / 2,
 			Padding: guigui.Padding{
-				Start:  u / 2,
-				Top:    u / 2,
-				End:    u / 2,
-				Bottom: u / 2,
+				Start: u / 2, Top: u / 2, End: u / 2, Bottom: u / 2,
 			},
 		},
 	}
 
 	h.layoutItems = slices.Delete(h.layoutItems, 0, len(h.layoutItems))
-	if sidebarModel.SidebarPosition() == types.SidebarPositionLeft {
+	if model.SidebarPosition() == types.SidebarPositionLeft {
 		h.layoutItems = append(h.layoutItems, sidebarItem, contentItem)
 	} else {
 		h.layoutItems = append(h.layoutItems, contentItem, sidebarItem)
@@ -144,11 +118,11 @@ type homeList struct {
 	list       basicwidget.List[string]
 	noVersions basicwidget.Text
 
-	versions    []p86l.Version
+	versions    []service.Version
 	items       []basicwidget.ListItem[string]
 	layoutItems []guigui.LinearLayoutItem
 
-	onVersionSelected func(ver p86l.Version)
+	onVersionSelected func(ver service.Version)
 }
 
 func (h *homeList) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
@@ -159,15 +133,14 @@ func (h *homeList) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 		adder.AddWidget(&h.noVersions)
 	}
 
-	v, ok := context.Env(h, modelKeyModel)
-	if !ok {
+	downloadService, ok1 := envMust[service.DownloadService](context, h, keyDownload)
+	model, ok2 := envMust[*Model](context, h, modelKeyModel)
+	if !ok1 || !ok2 {
 		return nil
 	}
-	model := v.(*p86l.Model)
 	t := model.T()
-	dm := model.DownloadManager()
 
-	versions, err := dm.InstalledVersions(model.Fake(), model.FS())
+	versions, err := downloadService.InstalledVersions()
 	if err != nil {
 		return fmt.Errorf("home: failed to list versions: %w", err)
 	}
@@ -181,7 +154,6 @@ func (h *homeList) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	h.items = slices.Delete(h.items, 0, len(h.items))
 	for _, ver := range h.versions {
 		text := ver.Tag
-		// Show required OS
 		osLabel := ""
 		switch ver.OS {
 		case "windows":
@@ -198,8 +170,7 @@ func (h *homeList) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 			text += " - " + t.Get("home.incompatible")
 		}
 		h.items = append(h.items, basicwidget.ListItem[string]{
-			Text:  text,
-			Value: ver.Tag,
+			Text: text, Value: ver.Tag,
 		})
 	}
 	h.list.SetItems(h.items)
@@ -214,7 +185,7 @@ func (h *homeList) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	})
 
 	h.noVersions.SetValue(t.Get("home.no_versions"))
-	h.noVersions.SetAutoWrap(true)
+	h.noVersions.SetWrapMode(basicwidget.WrapModeWord)
 
 	return nil
 }
@@ -224,20 +195,12 @@ func (h *homeList) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBo
 	h.layoutItems = slices.Delete(h.layoutItems, 0, len(h.layoutItems))
 	if len(h.versions) == 0 {
 		h.layoutItems = append(h.layoutItems,
-			guigui.LinearLayoutItem{
-				Widget: &h.noVersions,
-				Size:   guigui.FlexibleSize(1),
-			},
+			guigui.LinearLayoutItem{Widget: &h.noVersions, Size: guigui.FlexibleSize(1)},
 		)
 	} else {
 		h.layoutItems = append(h.layoutItems,
-			guigui.LinearLayoutItem{
-				Widget: &h.titleText,
-			},
-			guigui.LinearLayoutItem{
-				Widget: &h.list,
-				Size:   guigui.FlexibleSize(1),
-			},
+			guigui.LinearLayoutItem{Widget: &h.titleText},
+			guigui.LinearLayoutItem{Widget: &h.list, Size: guigui.FlexibleSize(1)},
 		)
 	}
 	(guigui.LinearLayout{
@@ -251,10 +214,7 @@ func (h *homeList) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBo
 					Items:     h.layoutItems,
 					Gap:       u / 8,
 					Padding: guigui.Padding{
-						Start:  u / 4,
-						Top:    u / 4,
-						End:    u / 4,
-						Bottom: u / 4,
+						Start: u / 4, Top: u / 4, End: u / 4, Bottom: u / 4,
 					},
 				},
 			},
@@ -275,17 +235,15 @@ func (h *homeInfo) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	adder.AddWidget(&h.background)
 	adder.AddWidget(&h.text)
 
-	v, ok := context.Env(h, modelKeyModel)
+	model, ok := envMust[*Model](context, h, modelKeyModel)
 	if !ok {
 		return nil
 	}
-	model := v.(*p86l.Model)
 	t := model.T()
 
 	context.SetOpacity(&h.background, 0.8)
-
 	h.text.SetValue(t.Get("home.info"))
-	h.text.SetAutoWrap(true)
+	h.text.SetWrapMode(basicwidget.WrapModeWord)
 
 	return nil
 }
@@ -299,9 +257,7 @@ func (h *homeInfo) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBo
 			Layout: guigui.LinearLayout{
 				Direction: guigui.LayoutDirectionVertical,
 				Items: []guigui.LinearLayoutItem{
-					{
-						Widget: &h.text,
-					},
+					{Widget: &h.text},
 				},
 			},
 		},

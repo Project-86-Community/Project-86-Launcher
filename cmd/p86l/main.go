@@ -7,12 +7,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"p86l"
 	"p86l/app"
 	"p86l/assets"
 	"p86l/configs"
 	"p86l/internal/fs"
 	"p86l/internal/logger"
+	"p86l/internal/service"
 
 	"github.com/guigui-gui/guigui"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -34,7 +34,6 @@ func main() {
 	}
 	defer func() { _ = lock.Close() }()
 
-	// Fs
 	logger.Info.Println("initialising application filesystem...")
 	afs, err := fs.New(*fakeFlag)
 	if err != nil {
@@ -51,7 +50,6 @@ func main() {
 		}
 	}
 
-	// Logger
 	if err := logger.Init(afs, *fakeFlag); err != nil {
 		fmt.Fprintln(os.Stderr, "fatal: logger init:", err)
 		os.Exit(1)
@@ -60,12 +58,16 @@ func main() {
 
 	logger.Info.Println("instance lock acquired")
 
-	// Webview
 	logger.Info.Println("starting webview thread...")
-	wvCh := p86l.RunWebviewThread()
-	logger.Info.Println("webview thread ready")
+	var wvCh chan<- app.WebviewRequest
+	if *fakeFlag {
+		wvCh = app.FakeWebviewThread()
+		logger.Info.Println("webview thread ready (fake)")
+	} else {
+		wvCh = app.RunWebviewThread()
+		logger.Info.Println("webview thread ready")
+	}
 
-	// Background music
 	logger.Info.Println("loading background music...")
 	player, err := assets.NewAudioPlayer()
 	if err != nil {
@@ -76,13 +78,37 @@ func main() {
 	player.Play()
 	logger.Info.Println("background music playing")
 
-	// UI
-	logger.Info.Println("building UI root...")
-	root := app.NewRoot(afs, wvCh, player)
+	var (
+		download service.DownloadService
+		launch   service.LaunchService
+		fileOpen service.FileOpenerService
+		logSvc   service.LogService
+		shortcut service.ShortcutService
+		version  service.VersionService
+	)
+
 	if *fakeFlag {
-		root.UseFakes(*errorFlag)
+		fakeDS := service.NewFakeDownloadService(afs)
+		fakeDS.FakeError = *errorFlag
+		download = fakeDS
+		launch = service.NewFakeLaunchService()
+		fileOpen = service.NewFakeFileOpenerService()
+		logSvc = service.NewFakeLogService()
+		shortcut = service.NewFakeShortcutService()
+		version = service.NewFakeVersionService()
 		logger.Warn.Println("running in FAKE mode")
+	} else {
+		download = service.NewDownloadService(afs, fs.GrabDownloader{}, fs.FastExtractor{})
+		launch = service.NewLaunchService()
+		fileOpen = service.NewFileOpenerService(afs)
+		logSvc = service.NewLogService(afs)
+		shortcut = service.NewShortcutService(afs)
+		version = service.NewVersionService(afs)
 	}
+
+	logger.Info.Println("building UI root...")
+	model := app.NewModel()
+	root := app.NewRoot(download, launch, fileOpen, logSvc, shortcut, version, model, player, wvCh)
 
 	logger.Info.Printf("setting window title: %s %s", configs.Title, VERSION)
 	ebiten.SetWindowIcon(assets.Icons["icon"])

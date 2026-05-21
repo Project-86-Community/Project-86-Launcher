@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Project 86 Community
 // SPDX-License-Identifier: GPL-3.0-only
 
-package p86l
+package app
 
 import (
 	"runtime"
@@ -18,16 +18,28 @@ type WebviewRequest struct {
 	Reply  chan string
 }
 
-// RunWebviewThread starts a dedicated OS-locked goroutine that serves
-// webview requests. Call this once before guigui.Run().
-// Send requests to the returned channel to open a webview window.
+// RunWebviewThread starts a dedicated OS-locked goroutine that serves webview requests.
 func RunWebviewThread() chan<- WebviewRequest {
 	ch := make(chan WebviewRequest)
 	go func() {
-		// Lock this goroutine to its OS thread permanently.
 		runtime.LockOSThread()
 		for req := range ch {
 			req.Reply <- webviewOpen(req.Title, req.Source)
+		}
+	}()
+	return ch
+}
+
+// FakeWebviewThread returns a channel that immediately replies with a canned
+// download URL without opening any webview window. Used in --fake mode so the
+// fake download pipeline can run without touching the network or opening windows.
+func FakeWebviewThread() chan<- WebviewRequest {
+	ch := make(chan WebviewRequest)
+	go func() {
+		for req := range ch {
+			// Return a fake URL so FakeDownloadService.InstallVersion can parse
+			// the version and run the simulated download/extract pipeline.
+			req.Reply <- "https://github.com/Project-86/Project-86/releases/download/v0.0.0-alpha/fake.zip"
 		}
 	}()
 	return ch

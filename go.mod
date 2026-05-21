@@ -7,15 +7,15 @@ require (
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/crgimenes/glaze v0.0.14
 	github.com/fyne-io/image v0.1.1
-	github.com/guigui-gui/guigui v0.0.0-20260503143821-f376afebfeee
-	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.11.0.20260503064022-84fc28f504ba
+	github.com/guigui-gui/guigui v0.0.0-20260513023420-7cbe69b24c50
+	github.com/hajimehoshi/ebiten/v2 v2.10.0-alpha.11.0.20260510151556-c2959d299dee
 	github.com/kisielk/errcheck v1.10.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/saracen/fastzip v0.2.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spf13/afero v1.15.0
-	golang.org/x/sys v0.43.0
-	golang.org/x/text v0.36.0
+	golang.org/x/sys v0.44.0
+	golang.org/x/text v0.37.0
 	golang.org/x/tools v0.44.0
 )
 
@@ -30,7 +30,7 @@ require (
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/ebitengine/oto/v3 v3.5.0-alpha.6 // indirect
 	github.com/ebitengine/purego v0.11.0-alpha.2 // indirect
-	github.com/go-text/typesetting v0.3.5-0.20260328164731-48df487c1500 // indirect
+	github.com/go-text/typesetting v0.3.5-0.20260505125104-04e4e76f9371 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hajimehoshi/iro v0.2.0 // indirect
@@ -55,11 +55,8 @@ require (
 	github.com/urfave/cli/v2 v2.27.7 // indirect
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
-	golang.design/x/clipboard v0.7.1 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
-	golang.org/x/exp/shiny v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/image v0.39.0 // indirect
-	golang.org/x/mobile v0.0.0-20260410095206-2cfb76559b7b // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260409153401-be6f6cb8b1fa // indirect

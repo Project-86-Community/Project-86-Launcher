@@ -4,11 +4,12 @@
 package app
 
 import (
-	"p86l"
+	"p86l/assets"
 	"p86l/internal/types"
 	"slices"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/audio"
 	"golang.org/x/text/language"
 
 	"github.com/guigui-gui/guigui"
@@ -40,34 +41,25 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	adder.AddWidget(&s.backButton)
 	adder.AddWidget(&s.form)
 
-	v, ok := context.Env(s, modelKeyModel)
-	if !ok {
+	m, ok1 := envMust[*Model](context, s, modelKeyModel)
+	pl, ok2 := envMust[*audio.Player](context, s, keyPlayer)
+	if !ok1 || !ok2 {
 		return nil
 	}
-	model := v.(*p86l.Model)
-	t := model.T()
+	t := m.T()
 
 	context.SetOpacity(&s.background, 0.9)
 
 	s.backButton.SetText("◀")
 	s.backButton.OnUp(func(context *guigui.Context) {
-		model.SetMode(types.ModeHome)
+		m.SetMode(types.ModeHome)
 	})
 
 	s.colorModeText.SetValue(t.Get("settings.color_mode"))
 	s.colorModeSegmentedControl.SetItems([]basicwidget.SegmentedControlItem[string]{
-		{
-			Text:  t.Get("settings.color_mode_auto"),
-			Value: "",
-		},
-		{
-			Text:  t.Get("settings.color_mode_light"),
-			Value: "light",
-		},
-		{
-			Text:  t.Get("settings.color_mode_dark"),
-			Value: "dark",
-		},
+		{Text: t.Get("settings.color_mode_auto"), Value: ""},
+		{Text: t.Get("settings.color_mode_light"), Value: "light"},
+		{Text: t.Get("settings.color_mode_dark"), Value: "dark"},
 	})
 	s.colorModeSegmentedControl.OnItemSelected(func(context *guigui.Context, index int) {
 		item, ok := s.colorModeSegmentedControl.ItemByIndex(index)
@@ -95,29 +87,22 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 
 	s.languageText.SetValue(t.Get("settings.language"))
 	s.languageSelect.SetItems([]basicwidget.SelectItem[language.Tag]{
-		{
-			Text:  "English",
-			Value: language.English,
-		},
-		{
-			Text:  "French",
-			Value: language.French,
-		},
+		{Text: "English", Value: language.English},
+		{Text: "French", Value: language.French},
 	})
 	s.languageSelect.OnItemSelected(func(context *guigui.Context, index int) {
 		item, ok := s.languageSelect.ItemByIndex(index)
-		if !ok {
+		if !ok || item.Value == language.English {
 			context.SetAppLocales(nil)
-			model.SetT(language.English.String())
-			return
-		}
-		if item.Value == language.English {
-			context.SetAppLocales(nil)
-			model.SetT(language.English.String())
+			t := assets.NewT(language.English.String())
+			m.SetT(&t)
+			guigui.RequestRebuild(s)
 			return
 		}
 		context.SetAppLocales([]language.Tag{item.Value})
-		model.SetT(item.Value.String())
+		t := assets.NewT(item.Value.String())
+		m.SetT(&t)
+		guigui.RequestRebuild(s)
 	})
 	if !s.languageSelect.IsPopupOpen() {
 		if locales := context.AppendAppLocales(nil); len(locales) > 0 {
@@ -130,31 +115,15 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	// translate changelog or other text that is collected from a API.
 	s.translateText.SetValue(t.Get("settings.translate"))
 	s.translateToggle.OnValueChanged(func(context *guigui.Context, value bool) {
-
 	})
 
 	s.scaleText.SetValue(t.Get("settings.scale"))
 	s.scaleSegmentedControl.SetItems([]basicwidget.SegmentedControlItem[float64]{
-		{
-			Text:  "50%",
-			Value: 0.5,
-		},
-		{
-			Text:  "75%",
-			Value: 0.75,
-		},
-		{
-			Text:  "100%",
-			Value: 1.0,
-		},
-		{
-			Text:  "125%",
-			Value: 1.25,
-		},
-		{
-			Text:  "150%",
-			Value: 1.50,
-		},
+		{Text: "50%", Value: 0.5},
+		{Text: "75%", Value: 0.75},
+		{Text: "100%", Value: 1.0},
+		{Text: "125%", Value: 1.25},
+		{Text: "150%", Value: 1.50},
 	})
 	s.scaleSegmentedControl.OnItemSelected(func(context *guigui.Context, index int) {
 		item, ok := s.scaleSegmentedControl.ItemByIndex(index)
@@ -170,33 +139,18 @@ func (s *Settings) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	s.musicText.SetValue(t.Get("settings.music"))
 	s.musicToggle.OnValueChanged(func(context *guigui.Context, value bool) {
 		if value {
-			model.PlayBackgroundMusic(true)
+			pl.Pause()
 		} else {
-			model.PlayBackgroundMusic(false)
+			pl.Play()
 		}
 	})
 
 	s.form.SetItems([]basicwidget.FormItem{
-		{
-			PrimaryWidget:   &s.colorModeText,
-			SecondaryWidget: &s.colorModeSegmentedControl,
-		},
-		{
-			PrimaryWidget:   &s.languageText,
-			SecondaryWidget: &s.languageSelect,
-		},
-		{
-			PrimaryWidget:   &s.translateText,
-			SecondaryWidget: &s.translateToggle,
-		},
-		{
-			PrimaryWidget:   &s.scaleText,
-			SecondaryWidget: &s.scaleSegmentedControl,
-		},
-		{
-			PrimaryWidget:   &s.musicText,
-			SecondaryWidget: &s.musicToggle,
-		},
+		{PrimaryWidget: &s.colorModeText, SecondaryWidget: &s.colorModeSegmentedControl},
+		{PrimaryWidget: &s.languageText, SecondaryWidget: &s.languageSelect},
+		{PrimaryWidget: &s.translateText, SecondaryWidget: &s.translateToggle},
+		{PrimaryWidget: &s.scaleText, SecondaryWidget: &s.scaleSegmentedControl},
+		{PrimaryWidget: &s.musicText, SecondaryWidget: &s.musicToggle},
 	})
 
 	return nil
@@ -212,28 +166,19 @@ func (s *Settings) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBo
 			Layout: guigui.LinearLayout{
 				Direction: guigui.LayoutDirectionHorizontal,
 				Items: []guigui.LinearLayoutItem{
-					{
-						Widget: &s.backButton,
-					},
-					{
-						Size: guigui.FlexibleSize(1),
-					},
+					{Widget: &s.backButton},
+					{Size: guigui.FlexibleSize(1)},
 				},
 			},
 		},
-		guigui.LinearLayoutItem{
-			Widget: &s.form,
-		},
+		guigui.LinearLayoutItem{Widget: &s.form},
 	)
 	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionVertical,
 		Items:     s.layoutItems,
 		Gap:       u / 2,
 		Padding: guigui.Padding{
-			Start:  u / 2,
-			Top:    u / 2,
-			End:    u / 2,
-			Bottom: u / 2,
+			Start: u / 2, Top: u / 2, End: u / 2, Bottom: u / 2,
 		},
 	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }

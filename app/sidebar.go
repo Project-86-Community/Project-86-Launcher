@@ -4,8 +4,8 @@
 package app
 
 import (
-	"p86l"
 	"p86l/internal/logger"
+	"p86l/internal/service"
 	"p86l/internal/types"
 	"slices"
 
@@ -37,77 +37,75 @@ func (s *Sidebar) Build(context *guigui.Context, adder *guigui.ChildAdder) error
 	adder.AddWidget(&s.shortcutButton)
 	adder.AddWidget(&s.positionSegmentedControl)
 
-	v, ok := context.Env(s, modelKeyModel)
-	if !ok {
+	launch, ok1 := envMust[service.LaunchService](context, s, keyLaunch)
+	fileOpen, ok2 := envMust[service.FileOpenerService](context, s, keyFileOpen)
+	shortcutService, ok3 := envMust[service.ShortcutService](context, s, keyShortcut)
+	versionService, ok4 := envMust[service.VersionService](context, s, keyVersion)
+	model, ok5 := envMust[*Model](context, s, modelKeyModel)
+	if !ok1 || !ok2 || !ok3 || !ok4 || !ok5 {
 		return nil
 	}
-	model := v.(*p86l.Model)
 	t := model.T()
-	sidebarModel := model.Sidebar()
-	version := sidebarModel.Version()
+
+	ver := launch.CurrentVersion()
 
 	context.SetOpacity(&s.background, 0.8)
 
-	hasVersion := version.Tag != ""
-	isRunningVersion := sidebarModel.IsRunningVersion(version.Tag, version.OS)
+	hasVersion := ver.Tag != ""
+	isRunningVersion := launch.IsRunningVersion(ver.Tag, ver.OS)
 
 	s.launchButton.SetText(t.Get("home.launch"))
-	context.SetEnabled(&s.launchButton, hasVersion && !isRunningVersion && version.Runnable)
+	context.SetEnabled(&s.launchButton, hasVersion && !isRunningVersion && ver.Runnable)
 	s.launchButton.OnUp(func(context *guigui.Context) {
-		sidebarModel.Launch(model.Fake(), s)
+		launch.Launch(ver, func() {
+			guigui.RequestRebuild(s)
+		})
 	})
 
 	s.killButton.SetText(t.Get("home.kill"))
 	context.SetEnabled(&s.killButton, isRunningVersion)
 	s.killButton.OnUp(func(context *guigui.Context) {
-		sidebarModel.Kill(model.Fake())
+		launch.Kill()
 	})
 
 	s.folderButton.SetText(t.Get("home.folder"))
 	context.SetEnabled(&s.folderButton, hasVersion)
 	s.folderButton.OnUp(func(context *guigui.Context) {
-		model.Open(version.Tag, false)
+		fileOpen.OpenPath(ver.Tag)
 	})
 
 	s.deleteButton.SetText(t.Get("home.delete"))
 	context.SetEnabled(&s.deleteButton, hasVersion && !isRunningVersion)
 	s.deleteButton.OnUp(func(context *guigui.Context) {
-		// TODO: handle error properly
-		if err := model.DeleteVersion(version.Tag); err != nil {
-			logger.Error.Printf("delete failed [%s]: %v", version.Tag, err)
+		if err := versionService.DeleteVersion(ver.Tag); err != nil {
+			logger.Error.Printf("delete failed [%s]: %v", ver.Tag, err)
 		} else {
-			logger.Info.Printf("deleted version: %s", version.Tag)
+			logger.Info.Printf("deleted version: %s", ver.Tag)
 		}
 	})
 
 	s.shortcutButton.SetText(t.Get("home.shortcut"))
 	context.SetEnabled(&s.shortcutButton, hasVersion)
 	s.shortcutButton.OnUp(func(context *guigui.Context) {
-		if err := model.CreateShortcut(version); err != nil {
-			logger.Warn.Printf("shortcut failed [%s]: %v", version.Tag, err)
+		if err := shortcutService.CreateShortcut(ver); err != nil {
+			logger.Warn.Printf("shortcut failed [%s]: %v", ver.Tag, err)
 		} else {
-			logger.Info.Printf("shortcut created for: %s", version.Tag)
+			logger.Info.Printf("shortcut created for: %s", ver.Tag)
 		}
 	})
 
 	s.positionSegmentedControl.SetItems([]basicwidget.SegmentedControlItem[types.SidebarPosition]{
-		{
-			Text:  "◀",
-			Value: types.SidebarPositionLeft,
-		},
-		{
-			Text:  "▶",
-			Value: types.SidebarPositionRight,
-		},
+		{Text: "◀", Value: types.SidebarPositionLeft},
+		{Text: "▶", Value: types.SidebarPositionRight},
 	})
 	s.positionSegmentedControl.OnItemSelected(func(context *guigui.Context, index int) {
 		item, ok := s.positionSegmentedControl.ItemByIndex(index)
 		if !ok {
 			return
 		}
-		sidebarModel.SetSidebarPosition(item.Value)
+		model.SetSidebarPosition(item.Value)
 	})
-	s.positionSegmentedControl.SelectItemByValue(sidebarModel.SidebarPosition())
+	s.positionSegmentedControl.SelectItemByValue(model.SidebarPosition())
 
 	return nil
 }
@@ -118,37 +116,20 @@ func (s *Sidebar) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBou
 	u := basicwidget.UnitSize(context)
 	s.layoutItems = slices.Delete(s.layoutItems, 0, len(s.layoutItems))
 	s.layoutItems = append(s.layoutItems,
-		guigui.LinearLayoutItem{
-			Widget: &s.launchButton,
-		},
-		guigui.LinearLayoutItem{
-			Widget: &s.killButton,
-		},
-		guigui.LinearLayoutItem{
-			Widget: &s.folderButton,
-		},
-		guigui.LinearLayoutItem{
-			Widget: &s.deleteButton,
-		},
-		guigui.LinearLayoutItem{
-			Widget: &s.shortcutButton,
-		},
-		guigui.LinearLayoutItem{
-			Size: guigui.FlexibleSize(1),
-		},
-		guigui.LinearLayoutItem{
-			Widget: &s.positionSegmentedControl,
-		},
+		guigui.LinearLayoutItem{Widget: &s.launchButton},
+		guigui.LinearLayoutItem{Widget: &s.killButton},
+		guigui.LinearLayoutItem{Widget: &s.folderButton},
+		guigui.LinearLayoutItem{Widget: &s.deleteButton},
+		guigui.LinearLayoutItem{Widget: &s.shortcutButton},
+		guigui.LinearLayoutItem{Size: guigui.FlexibleSize(1)},
+		guigui.LinearLayoutItem{Widget: &s.positionSegmentedControl},
 	)
 	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionVertical,
 		Items:     s.layoutItems,
 		Gap:       u / 2,
 		Padding: guigui.Padding{
-			Start:  u / 2,
-			Top:    u / 2,
-			End:    u / 2,
-			Bottom: u / 2,
+			Start: u / 2, Top: u / 2, End: u / 2, Bottom: u / 2,
 		},
 	}).LayoutWidgets(context, widgetBounds.Bounds(), layouter)
 }

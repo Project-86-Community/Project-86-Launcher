@@ -5,10 +5,10 @@ package app
 
 import (
 	"image"
-	"p86l"
 	"p86l/assets"
 	"p86l/configs"
 	"p86l/internal/logger"
+	"p86l/internal/service"
 	"p86l/internal/types"
 	"slices"
 	"sync"
@@ -17,11 +17,18 @@ import (
 	"github.com/guigui-gui/guigui/basicwidget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
-	"github.com/spf13/afero"
 	"golang.org/x/text/language"
 )
 
 var (
+	keyDownload   = guigui.GenerateEnvKey()
+	keyLaunch     = guigui.GenerateEnvKey()
+	keyFileOpen   = guigui.GenerateEnvKey()
+	keyLog        = guigui.GenerateEnvKey()
+	keyShortcut   = guigui.GenerateEnvKey()
+	keyVersion    = guigui.GenerateEnvKey()
+	keyPlayer     = guigui.GenerateEnvKey()
+	keyWvCh       = guigui.GenerateEnvKey()
 	modelKeyModel = guigui.GenerateEnvKey()
 )
 
@@ -36,26 +43,65 @@ type Root struct {
 	logs            Logs
 	bottombar       BottomBar
 
-	model    *p86l.Model
+	download service.DownloadService
+	launch   service.LaunchService
+	fileOpen service.FileOpenerService
+	logSvc   service.LogService
+	shortcut service.ShortcutService
+	version  service.VersionService
+	model    *Model
+	player   *audio.Player
+	wvCh     chan<- WebviewRequest
+
 	initOnce sync.Once
 
 	layoutItems []guigui.LinearLayoutItem
 }
 
-func NewRoot(afs afero.Fs, wvCh chan<- p86l.WebviewRequest, player *audio.Player) *Root {
+func NewRoot(
+	download service.DownloadService,
+	launch service.LaunchService,
+	fileOpen service.FileOpenerService,
+	logSvc service.LogService,
+	shortcut service.ShortcutService,
+	version service.VersionService,
+	model *Model,
+	player *audio.Player,
+	wvCh chan<- WebviewRequest,
+) *Root {
 	return &Root{
-		model: p86l.NewModel(afs, wvCh, player),
+		download: download,
+		launch:   launch,
+		fileOpen: fileOpen,
+		logSvc:   logSvc,
+		shortcut: shortcut,
+		version:  version,
+		model:    model,
+		player:   player,
+		wvCh:     wvCh,
 	}
-}
-
-func (r *Root) UseFakes(fakeError bool) {
-	r.model.UseFakes(fakeError)
 }
 
 func (r *Root) Env(context *guigui.Context, key guigui.EnvKey, source *guigui.EnvSource) (any, bool) {
 	switch key {
+	case keyDownload:
+		return r.download, true
+	case keyLaunch:
+		return r.launch, true
+	case keyFileOpen:
+		return r.fileOpen, true
+	case keyLog:
+		return r.logSvc, true
+	case keyShortcut:
+		return r.shortcut, true
+	case keyVersion:
+		return r.version, true
 	case modelKeyModel:
 		return r.model, true
+	case keyPlayer:
+		return r.player, true
+	case keyWvCh:
+		return r.wvCh, true
 	default:
 		return nil, false
 	}
@@ -123,9 +169,11 @@ func (r *Root) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 		locale := context.FirstLocale()
 		logger.Info.Printf("First locale: %s", locale.String())
 		if locale == (language.Tag{}) {
-			r.model.SetT(language.English.String())
+			t := assets.NewT(language.English.String())
+			r.model.SetT(&t)
 		} else {
-			r.model.SetT(locale.String())
+			t := assets.NewT(locale.String())
+			r.model.SetT(&t)
 		}
 	})
 
@@ -141,12 +189,7 @@ func (r *Root) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	{
 		w := int(float64(configs.WindowMinSize.X)*context.AppScale()) + basicwidget.UnitSize(context)*2
 		h := int(float64(configs.WindowMinSize.Y)*context.AppScale()) + basicwidget.UnitSize(context)*2
-		context.SetWindowSizeLimits(
-			w,
-			h,
-			-1,
-			-1,
-		)
+		context.SetWindowSizeLimits(w, h, -1, -1)
 	}
 
 	return nil
