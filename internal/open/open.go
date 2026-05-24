@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Project 86 Community
 // SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Project 86 Community
 
 // Package open provides a cross-platform way to open files, directories, and
 // URLs using the OS's default application. It replaces the external
