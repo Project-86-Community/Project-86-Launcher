@@ -76,13 +76,12 @@ func (s *downloadService) InstalledVersions() ([]Version, error) {
 			// Check for macOS .app bundles first.
 			if vers := findMacOSExecutables(gameDir, tag); len(vers) > 0 {
 				versions = append(versions, vers...)
-				break
+				continue
 			}
 
 			// Check for regular executables (Windows/Linux).
 			if ver, ok := findExe(gameDir, tag); ok {
 				versions = append(versions, ver)
-				break
 			}
 		}
 	}

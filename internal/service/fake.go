@@ -33,6 +33,7 @@ func NewFakeDownloadService(afs afero.Fs) *FakeDownloadService {
 func (s *FakeDownloadService) InstalledVersions() ([]Version, error) {
 	return []Version{
 		{Tag: "v0.0.0-alpha", Executable: "/fake/Project-86", Runnable: true, OS: "linux"},
+		{Tag: "v1.0.0-beta", Executable: "/fake/Project-86.exe", Runnable: false, OS: "windows"},
 		{Tag: "v1.0.0-beta", Executable: "/fake/Project-86", Runnable: true, OS: "linux"},
 	}, nil
 }

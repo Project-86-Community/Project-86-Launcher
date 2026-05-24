@@ -152,7 +152,7 @@ func (h *homeList) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	h.titleText.SetScale(1.2)
 
 	h.items = slices.Delete(h.items, 0, len(h.items))
-	for _, ver := range h.versions {
+	for i, ver := range h.versions {
 		text := ver.Tag
 		osLabel := ""
 		switch ver.OS {
@@ -169,8 +169,10 @@ func (h *homeList) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 		if !ver.Runnable {
 			text += " - " + t.Get("home.incompatible")
 		}
+		// Use index as value to ensure uniqueness when the same tag has
+		// multiple OS builds (e.g. v1.0.0 for both Windows and Linux).
 		h.items = append(h.items, basicwidget.ListItem[string]{
-			Text: text, Value: ver.Tag,
+			Text: text, Value: fmt.Sprintf("%s:%d", ver.Tag, i),
 		})
 	}
 	h.list.SetItems(h.items)
