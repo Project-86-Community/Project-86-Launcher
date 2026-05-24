@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"image"
 	"p86l/configs"
-	"p86l/customwidget"
 	"p86l/internal/logger"
 	"p86l/internal/service"
 	"p86l/internal/types"
@@ -26,9 +25,9 @@ type TopBar struct {
 
 	background     basicwidget.Background
 	installButton  basicwidget.Button
-	folderDropdown customwidget.Dropdown[types.Folder]
+	folderMenubar  basicwidget.Menubar[types.Folder]
 	settingsButton basicwidget.Button
-	helpsDropdown  customwidget.Dropdown[types.Helps]
+	helpsMenubar   basicwidget.Menubar[types.Helps]
 
 	dlPopup        basicwidget.Popup
 	dlPopupContent guigui.WidgetWithSize[*dlPopupContent]
@@ -43,9 +42,9 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 	adder.AddWidget(&t.dlPopup)
 	adder.AddWidget(&t.background)
 	adder.AddWidget(&t.installButton)
-	adder.AddWidget(&t.folderDropdown)
+	adder.AddWidget(&t.folderMenubar)
 	adder.AddWidget(&t.settingsButton)
-	adder.AddWidget(&t.helpsDropdown)
+	adder.AddWidget(&t.helpsMenubar)
 
 	ds, ok1 := envMust[service.DownloadService](context, t, keyDownload)
 	fo, ok2 := envMust[service.FileOpenerService](context, t, keyFileOpen)
@@ -89,18 +88,20 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 		}()
 	})
 
-	t.folderDropdown.SetLabel(_t.Get("topbar.folders"))
-	t.folderDropdown.SetItems([]customwidget.DropdownItem[types.Folder]{
+	folderItems := []basicwidget.PopupMenuItem[types.Folder]{
 		{Text: _t.Get("topbar.f.root"), Value: types.FolderRoot},
 		{Text: _t.Get("topbar.f.versions"), Value: types.FolderVersions},
 		{Text: _t.Get("topbar.f.logs"), Value: types.FolderLogs},
+	}
+	t.folderMenubar.SetItems([]basicwidget.MenubarItem{
+		{Text: _t.Get("topbar.folders")},
 	})
-	t.folderDropdown.OnItemSelected(func(context *guigui.Context, index int) {
-		item, ok := t.folderDropdown.ItemByIndex(index)
-		if !ok {
+	t.folderMenubar.PopupMenuAt(0).SetItems(folderItems)
+	t.folderMenubar.OnItemSelected(func(context *guigui.Context, menuIndex, itemIndex int) {
+		if itemIndex < 0 || itemIndex >= len(folderItems) {
 			return
 		}
-		fo.OpenFolder(item.Value)
+		fo.OpenFolder(folderItems[itemIndex].Value)
 	})
 
 	t.settingsButton.SetText(_t.Get("topbar.settings"))
@@ -108,8 +109,7 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 		m.SetMode(types.ModeSettings)
 	})
 
-	t.helpsDropdown.SetLabel(_t.Get("topbar.help"))
-	t.helpsDropdown.SetItems([]customwidget.DropdownItem[types.Helps]{
+	helpsItems := []basicwidget.PopupMenuItem[types.Helps]{
 		{Text: _t.Get("topbar.h.cache"), Value: types.HelpsCache},
 		{Text: _t.Get("topbar.h.report"), Value: types.HelpsReport},
 		{Text: _t.Get("topbar.h.view"), Value: types.HelpsLogs},
@@ -120,13 +120,16 @@ func (t *TopBar) Build(context *guigui.Context, adder *guigui.ChildAdder) error 
 		{Text: "Patreon", Value: types.HelpsPatreon},
 		{Border: true},
 		{Text: _t.Get("topbar.h.about"), Value: types.HelpsAbout},
+	}
+	t.helpsMenubar.SetItems([]basicwidget.MenubarItem{
+		{Text: _t.Get("topbar.help")},
 	})
-	t.helpsDropdown.OnItemSelected(func(context *guigui.Context, index int) {
-		item, ok := t.helpsDropdown.ItemByIndex(index)
-		if !ok {
+	t.helpsMenubar.PopupMenuAt(0).SetItems(helpsItems)
+	t.helpsMenubar.OnItemSelected(func(context *guigui.Context, menuIndex, itemIndex int) {
+		if itemIndex < 0 || itemIndex >= len(helpsItems) {
 			return
 		}
-		switch item.Value {
+		switch helpsItems[itemIndex].Value {
 		case types.HelpsReport:
 			fo.OpenURL(configs.Issues)
 		case types.HelpsLogs:
@@ -176,9 +179,9 @@ func (t *TopBar) Layout(context *guigui.Context, widgetBounds *guigui.WidgetBoun
 	t.layoutItems = slices.Delete(t.layoutItems, 0, len(t.layoutItems))
 	t.layoutItems = append(t.layoutItems,
 		guigui.LinearLayoutItem{Widget: &t.installButton},
-		guigui.LinearLayoutItem{Widget: &t.folderDropdown},
+		guigui.LinearLayoutItem{Widget: &t.folderMenubar},
 		guigui.LinearLayoutItem{Widget: &t.settingsButton},
-		guigui.LinearLayoutItem{Widget: &t.helpsDropdown},
+		guigui.LinearLayoutItem{Widget: &t.helpsMenubar},
 	)
 	(guigui.LinearLayout{
 		Direction: guigui.LayoutDirectionHorizontal,
