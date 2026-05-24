@@ -55,7 +55,7 @@ func (l *Logs) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	}
 
 	l.logText.SetMultiline(true)
-	l.logText.SetWrapMode(basicwidget.WrapModeWord)
+	l.logText.SetWrapMode(basicwidget.WrapModeNormal)
 
 	l.logPanel.SetContent(&l.logText)
 	l.logPanel.SetAutoBorder(true)

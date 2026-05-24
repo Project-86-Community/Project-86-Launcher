@@ -336,7 +336,7 @@ func (d *dlPopupContent) Build(context *guigui.Context, adder *guigui.ChildAdder
 	d.progress.SetMaximumValue(100)
 	context.SetEnabled(&d.progress, false)
 
-	d.statusText.SetWrapMode(basicwidget.WrapModeWord)
+	d.statusText.SetWrapMode(basicwidget.WrapModeNormal)
 
 	d.statusPanel.SetContent(&d.statusText)
 	d.statusPanel.SetAutoBorder(true)

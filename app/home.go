@@ -185,7 +185,7 @@ func (h *homeList) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 	})
 
 	h.noVersions.SetValue(t.Get("home.no_versions"))
-	h.noVersions.SetWrapMode(basicwidget.WrapModeWord)
+	h.noVersions.SetWrapMode(basicwidget.WrapModeNormal)
 
 	return nil
 }
@@ -243,7 +243,7 @@ func (h *homeInfo) Build(context *guigui.Context, adder *guigui.ChildAdder) erro
 
 	context.SetOpacity(&h.background, 0.8)
 	h.text.SetValue(t.Get("home.info"))
-	h.text.SetWrapMode(basicwidget.WrapModeWord)
+	h.text.SetWrapMode(basicwidget.WrapModeNormal)
 
 	return nil
 }

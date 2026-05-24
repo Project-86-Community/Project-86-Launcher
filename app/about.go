@@ -48,7 +48,7 @@ func (a *About) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	})
 
 	a.text1.SetValue(tr.Get("about.content"))
-	a.text1.SetWrapMode(basicwidget.WrapModeWord)
+	a.text1.SetWrapMode(basicwidget.WrapModeNormal)
 
 	a.text2.SetValue(tr.Get("about.lead"))
 	a.text2.SetScale(1.2)
@@ -57,7 +57,7 @@ func (a *About) Build(context *guigui.Context, adder *guigui.ChildAdder) error {
 	a.text3.SetScale(1.2)
 
 	a.text4.SetScale(0.8)
-	a.text4.SetWrapMode(basicwidget.WrapModeWord)
+	a.text4.SetWrapMode(basicwidget.WrapModeNormal)
 	a.text4.SetMultiline(true)
 	a.text4.SetValue(tr.Get("about.license"))
 
