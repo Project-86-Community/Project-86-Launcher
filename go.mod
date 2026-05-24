@@ -12,7 +12,6 @@ require (
 	github.com/kisielk/errcheck v1.20.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/saracen/fastzip v0.2.0
-	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spf13/afero v1.15.0
 	golang.org/x/sys v0.45.0
 	golang.org/x/text v0.37.0

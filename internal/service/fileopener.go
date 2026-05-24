@@ -8,9 +8,9 @@ import (
 
 	"p86l/internal/fs"
 	"p86l/internal/logger"
+	"p86l/internal/open"
 	"p86l/internal/types"
 
-	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/afero"
 )
 
